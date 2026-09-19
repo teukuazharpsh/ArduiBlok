@@ -1,7 +1,7 @@
 # 🤖 ArduiBlok — Arduino Visual Block Programmer & Cloud Compiler
 
 <p align="center">
-  <img src="public/favicon.ico" alt="ArduiBlok Logo" width="80" height="80" style="border-radius: 16px;">
+  <img src="public/logo.jpeg" alt="ArduiBlok Robotika Nesklar Logo" width="100" height="100" style="border-radius: 20px; object-fit: contain; background: #fff; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
   <br>
   <b>Pemrograman visual Arduino berbasis Google Blockly dengan cloud compiler langsung ke berkas biner <code>.hex</code>.</b>
 </p>
