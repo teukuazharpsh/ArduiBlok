@@ -384,6 +384,42 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── COMMENT / NOTES (TINKERCAD STYLE) ────────────────────
+  {
+    "type": "comment_block",
+    "message0": "// %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "COMMENT",
+        "text": "Catatan penjelasan singkat..."
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#78909c",
+    "tooltip": "Catatan / komentar program (seperti di Tinkercad). Diabaikan oleh mikrokontroler dan tidak memakan memori Flash/RAM.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "comment_group_block",
+    "message0": "// Catatan: %1 %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "COMMENT",
+        "text": "Kelompok blok untuk fungsi ini..."
+      },
+      { "type": "input_statement", "name": "DO" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#78909c",
+    "tooltip": "Membungkus sekumpulan blok dengan catatan penjelasan.",
+    "helpUrl": ""
+  },
+
   // ── IF / ELSE ─────────────────────────────────────────────
   {
     "type": "controls_if_arduino",

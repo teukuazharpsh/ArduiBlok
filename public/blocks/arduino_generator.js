@@ -264,6 +264,17 @@ arduinoGenerator.forBlock['logic_boolean'] = function(block, generator) {
   return [bool, generator.ORDER_ATOMIC];
 };
 
+arduinoGenerator.forBlock['comment_block'] = function(block, generator) {
+  var comment = block.getFieldValue('COMMENT') || '';
+  return '  // ' + comment + '\n';
+};
+
+arduinoGenerator.forBlock['comment_group_block'] = function(block, generator) {
+  var comment = block.getFieldValue('COMMENT') || '';
+  var branch = generator.statementToCode(block, 'DO');
+  return '  // ' + comment + '\n' + branch;
+};
+
 arduinoGenerator.forBlock['controls_if_arduino'] = function(block, generator) {
   var condition = generator.valueToCode(block, 'CONDITION', generator.ORDER_NONE) || 'false';
   var doCode = generator.statementToCode(block, 'DO');
