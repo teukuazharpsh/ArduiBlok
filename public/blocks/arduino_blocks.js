@@ -285,6 +285,19 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── CHAR CHARACTER ────────────────────────────────────────
+  {
+    "type": "char_character",
+    "message0": "' %1 '",
+    "args0": [
+      { "type": "field_input", "name": "CHAR", "text": "A" }
+    ],
+    "output": null,
+    "colour": 160,
+    "tooltip": "A single character literal.",
+    "helpUrl": ""
+  },
+
   // ── COMPARISON OPERATOR ───────────────────────────────────
   {
     "type": "compare_op",
@@ -495,18 +508,61 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
-  // ── VARIABLE SET ──────────────────────────────────────────
+  // ── VARIABLE DECLARE ──────────────────────────────────────
   {
-    "type": "variables_set_arduino",
-    "message0": "set %1 to %2",
+    "type": "variables_declare_arduino",
+    "message0": "declare %1 %2 = %3",
     "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "TYPE",
+        "options": [
+          [ "int", "int" ],
+          [ "float", "float" ],
+          [ "char", "char" ],
+          [ "String", "String" ],
+          [ "boolean", "bool" ],
+          [ "long", "long" ],
+          [ "byte", "byte" ],
+          [ "double", "double" ]
+        ]
+      },
       { "type": "field_input", "name": "VAR_NAME", "text": "item" },
       { "type": "input_value", "name": "VALUE" }
     ],
     "previousStatement": null,
     "nextStatement": null,
     "colour": 330,
-    "tooltip": "Sets this variable to be equal to the input.",
+    "tooltip": "Declares an Arduino variable with a data type (int, float, char, String, boolean, long, byte) and initial value.",
+    "helpUrl": ""
+  },
+
+  // ── VARIABLE SET ──────────────────────────────────────────
+  {
+    "type": "variables_set_arduino",
+    "message0": "set %1 %2 to %3",
+    "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "TYPE",
+        "options": [
+          [ "int", "int" ],
+          [ "float", "float" ],
+          [ "char", "char" ],
+          [ "String", "String" ],
+          [ "boolean", "bool" ],
+          [ "long", "long" ],
+          [ "byte", "byte" ],
+          [ "double", "double" ]
+        ]
+      },
+      { "type": "field_input", "name": "VAR_NAME", "text": "item" },
+      { "type": "input_value", "name": "VALUE" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 330,
+    "tooltip": "Sets this variable with the chosen data type (int, float, char, String, boolean, long, byte).",
     "helpUrl": ""
   },
 

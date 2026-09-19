@@ -230,6 +230,14 @@ arduinoGenerator.forBlock['text_string'] = function(block, generator) {
   return ['"' + text + '"', generator.ORDER_ATOMIC];
 };
 
+arduinoGenerator.forBlock['char_character'] = function(block, generator) {
+  var charVal = block.getFieldValue('CHAR') || 'A';
+  var c = charVal.charAt(0) || 'A';
+  if (c === "'") c = "\\'";
+  if (c === "\\") c = "\\\\";
+  return ["'" + c + "'", generator.ORDER_ATOMIC];
+};
+
 arduinoGenerator.forBlock['compare_op'] = function(block, generator) {
   var a = generator.valueToCode(block, 'A', generator.ORDER_RELATIONAL) || '0';
   var op = block.getFieldValue('OP');
@@ -309,14 +317,56 @@ arduinoGenerator.forBlock['map_value'] = function(block, generator) {
   return ['map(' + value + ', ' + fromLow + ', ' + fromHigh + ', ' + toLow + ', ' + toHigh + ')', generator.ORDER_ATOMIC];
 };
 
+function getDefaultInitValue(type) {
+  switch (type) {
+    case 'float':
+    case 'double':
+      return '0.0';
+    case 'char':
+      return "'\\0'";
+    case 'String':
+      return '""';
+    case 'bool':
+    case 'boolean':
+      return 'false';
+    case 'long':
+      return '0L';
+    case 'byte':
+    case 'int':
+    default:
+      return '0';
+  }
+}
+
+arduinoGenerator.forBlock['variables_declare_arduino'] = function(block, generator) {
+  var type = block.getFieldValue('TYPE') || 'int';
+  var varName = block.getFieldValue('VAR_NAME') || 'item';
+  varName = varName.replace(/[^a-zA-Z0-9_]/g, '');
+  if (!varName) varName = 'item';
+
+  var defaultInit = getDefaultInitValue(type);
+  var value = generator.valueToCode(block, 'VALUE', generator.ORDER_ASSIGNMENT) || defaultInit;
+
+  generator.declarations_['var_' + varName] = type + ' ' + varName + ' = ' + value + ';';
+  return '';
+};
+
 arduinoGenerator.forBlock['variables_set_arduino'] = function(block, generator) {
-  var varName = block.getFieldValue('VAR_NAME');
-  var value = generator.valueToCode(block, 'VALUE', generator.ORDER_ASSIGNMENT) || '0';
-  generator.declarations_['var_' + varName] = 'int ' + varName + ' = 0;';
+  var type = block.getFieldValue('TYPE') || 'int';
+  var varName = block.getFieldValue('VAR_NAME') || 'item';
+  varName = varName.replace(/[^a-zA-Z0-9_]/g, '');
+  if (!varName) varName = 'item';
+
+  var defaultInit = getDefaultInitValue(type);
+  var value = generator.valueToCode(block, 'VALUE', generator.ORDER_ASSIGNMENT) || defaultInit;
+
+  generator.declarations_['var_' + varName] = type + ' ' + varName + ' = ' + defaultInit + ';';
   return '  ' + varName + ' = ' + value + ';\n';
 };
 
 arduinoGenerator.forBlock['variables_get_arduino'] = function(block, generator) {
-  var varName = block.getFieldValue('VAR_NAME');
+  var varName = block.getFieldValue('VAR_NAME') || 'item';
+  varName = varName.replace(/[^a-zA-Z0-9_]/g, '');
+  if (!varName) varName = 'item';
   return [varName, generator.ORDER_ATOMIC];
 };
