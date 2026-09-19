@@ -6,6 +6,10 @@
   <meta name="description" content="ArduiBlok — Editor visual berbasis Blockly untuk pemrograman Arduino Uno.">
   <title>ArduiBlok — Arduino Uno Visual Programmer</title>
 
+  <!-- Favicon & Touch Icon -->
+  <link rel="icon" type="image/jpeg" href="logo.jpeg">
+  <link rel="apple-touch-icon" href="logo.jpeg">
+
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,8 +24,12 @@
 
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner"></div>
+    <div class="loading-logo-container">
+      <img src="logo.jpeg" alt="Logo Robotika Nesklar" class="loading-logo-img">
+      <div class="loading-spinner"></div>
+    </div>
     <div class="loading-text">Menyiapkan Workspace ArduiBlok...</div>
+    <div class="loading-subtext">Robotika Nesklar</div>
   </div>
 
   <!-- Modal Konfigurasi Board & Bootloader Target -->
@@ -29,18 +37,7 @@
     <div class="modal-container">
       <div class="modal-header">
         <div class="modal-title-group">
-          <svg class="svg-icon modal-icon" viewBox="0 0 24 24">
-            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-            <rect x="9" y="9" width="6" height="6"></rect>
-            <line x1="9" y1="1" x2="9" y2="4"></line>
-            <line x1="15" y1="1" x2="15" y2="4"></line>
-            <line x1="9" y1="20" x2="9" y2="23"></line>
-            <line x1="15" y1="20" x2="15" y2="23"></line>
-            <line x1="20" y1="9" x2="23" y2="9"></line>
-            <line x1="20" y1="14" x2="23" y2="14"></line>
-            <line x1="1" y1="9" x2="4" y2="9"></line>
-            <line x1="1" y1="14" x2="4" y2="14"></line>
-          </svg>
+          <img src="logo.jpeg" alt="Logo Robotika Nesklar" class="modal-logo-img">
           <h2>Pilih Board &amp; Bootloader Target</h2>
         </div>
         <button class="modal-close-btn" id="btnCloseBoardModal" title="Tutup">
@@ -120,18 +117,10 @@
 
         <div class="header-brand">
           <!-- Clean Circuit / Microchip Vector Logo -->
-          <svg class="svg-icon logo-icon" viewBox="0 0 24 24">
-            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-            <rect x="9" y="9" width="6" height="6"></rect>
-            <line x1="9" y1="1" x2="9" y2="4"></line>
-            <line x1="15" y1="1" x2="15" y2="4"></line>
-            <line x1="9" y1="20" x2="9" y2="23"></line>
-            <line x1="15" y1="20" x2="15" y2="23"></line>
-            <line x1="20" y1="9" x2="23" y2="9"></line>
-            <line x1="20" y1="14" x2="23" y2="14"></line>
-            <line x1="1" y1="9" x2="4" y2="9"></line>
-            <line x1="1" y1="14" x2="4" y2="14"></line>
-          </svg>
+          <!-- Robotika Nesklar Logo Badge -->
+          <div class="header-logo-badge" title="ArduiBlok by Robotika Nesklar">
+            <img src="logo.jpeg" alt="Logo Robotika Nesklar" class="header-logo-img">
+          </div>
           <h1>ArduiBlok</h1>
           <button class="board-selector-badge" id="btnOpenBoardModal" title="Klik untuk mengganti target Board &amp; Bootloader">
             <span class="board-badge-dot"></span>
