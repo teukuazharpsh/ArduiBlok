@@ -15,6 +15,10 @@ RUN arduino-cli config init && \
     arduino-cli core install arduino:avr && \
     arduino-cli lib install Servo
 
+# Copy custom libraries to Arduino libraries directory
+RUN mkdir -p /root/Arduino/libraries
+COPY libraries/ /root/Arduino/libraries/
+
 # Set working directory
 WORKDIR /app
 

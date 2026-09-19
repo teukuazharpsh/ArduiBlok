@@ -145,6 +145,17 @@ arduinoGenerator.forBlock['servo_write'] = function(block, generator) {
   return '  servo_pin' + pin + '.write(' + angle + ');\n';
 };
 
+arduinoGenerator.forBlock['motor_driver_shield'] = function(block, generator) {
+  var motorNum = block.getFieldValue('MOTOR_NUM');
+  var command = block.getFieldValue('COMMAND');
+  var speed = block.getFieldValue('SPEED');
+
+  generator.includes_['motordriver'] = '#include <MotorDriver.h>';
+  generator.declarations_['motordriver_obj'] = 'MotorDriver m;';
+
+  return '  m.motor(' + motorNum + ', ' + command + ', ' + speed + ');\n';
+};
+
 arduinoGenerator.forBlock['delay_ms'] = function(block, generator) {
   var duration = block.getFieldValue('DURATION');
   return '  delay(' + duration + ');\n';

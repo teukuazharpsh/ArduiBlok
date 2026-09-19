@@ -466,6 +466,46 @@ Blockly.defineBlocksWithJsonArray([
     "colour": 330,
     "tooltip": "Returns the value of this variable.",
     "helpUrl": ""
+  },
+
+  // ── MOTOR SHIELD L293D ─────────────────────────────────────
+  {
+    "type": "motor_driver_shield",
+    "message0": "motor shield %1 direction %2 speed %3",
+    "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "MOTOR_NUM",
+        "options": [
+          [ "M1", "1" ],
+          [ "M2", "2" ],
+          [ "M3", "3" ],
+          [ "M4", "4" ]
+        ]
+      },
+      {
+        "type": "field_dropdown",
+        "name": "COMMAND",
+        "options": [
+          [ "FORWARD", "FORWARD" ],
+          [ "BACKWARD", "BACKWARD" ],
+          [ "BRAKE", "BRAKE" ],
+          [ "RELEASE", "RELEASE" ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "SPEED",
+        "value": 255,
+        "min": 0,
+        "max": 255
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 20,
+    "tooltip": "Control DC motor on L293D Arduino Motor Shield (M1-M4).",
+    "helpUrl": ""
   }
 
 ]);
