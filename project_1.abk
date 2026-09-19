@@ -1,0 +1,37 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="arduino_setup" id="AQid%63fs%a=h9!j#@ks" x="35" y="35">
+    <statement name="SETUP_CODE">
+      <block type="pin_mode" id="=QHl0IVHOdFWpyu3:8C5">
+        <field name="PIN">13</field>
+        <field name="MODE">OUTPUT</field>
+      </block>
+    </statement>
+  </block>
+  <block type="arduino_loop" id="x|h5+Z^(17RP7=uudE13" x="36" y="252">
+    <statement name="LOOP_CODE">
+      <block type="controls_if_arduino" id="T+3Hqphx=e()nycdKTo=">
+        <value name="CONDITION">
+          <block type="compare_op" id="mnsfnom~306knkwO18/3">
+            <field name="OP">==</field>
+            <value name="A">
+              <block type="digital_read" id="PB[+xi#RqNAAa:e2jpqy">
+                <field name="PIN">2</field>
+              </block>
+            </value>
+            <value name="B">
+              <block type="logic_boolean" id="+}gmlEfF52^;Y7]ig1MO">
+                <field name="BOOL">true</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="digital_write" id="Fu|H^n3fq-=@`^t*T4/u">
+            <field name="PIN">13</field>
+            <field name="VALUE">HIGH</field>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>

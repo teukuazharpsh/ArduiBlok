@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="ArduiBlok — Editor visual berbasis Blockly untuk pemrograman Arduino Uno.">
+  <title>ArduiBlok — Arduino Uno Visual Programmer</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Blockly Core (CDN) -->
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Menyiapkan Workspace ArduiBlok...</div>
+  </div>
+
+  <!-- Modal Konfigurasi Board & Bootloader Target -->
+  <div class="modal-overlay hidden" id="boardModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon modal-icon" viewBox="0 0 24 24">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="1" x2="9" y2="4"></line>
+            <line x1="15" y1="1" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="23"></line>
+            <line x1="15" y1="20" x2="15" y2="23"></line>
+            <line x1="20" y1="9" x2="23" y2="9"></line>
+            <line x1="20" y1="14" x2="23" y2="14"></line>
+            <line x1="1" y1="9" x2="4" y2="9"></line>
+            <line x1="1" y1="14" x2="4" y2="14"></line>
+          </svg>
+          <h2>Pilih Board &amp; Bootloader Target</h2>
+        </div>
+        <button class="modal-close-btn" id="btnCloseBoardModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="selectBoardType" class="form-label">Tipe Board Arduino:</label>
+          <select id="selectBoardType" class="form-select">
+            <option value="uno">Arduino Uno (ATmega328P)</option>
+            <option value="nano">Arduino Nano (ATmega328P / 168)</option>
+            <option value="mega">Arduino Mega 2560 (ATmega2560)</option>
+            <option value="promini">Arduino Pro / Pro Mini</option>
+            <option value="leonardo">Arduino Leonardo (ATmega32U4)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="groupSubOption">
+          <label for="selectSubOption" class="form-label" id="labelSubOption">Pilihan Processor / Bootloader:</label>
+          <select id="selectSubOption" class="form-select"></select>
+          <div class="form-helper" id="helperSubOption"></div>
+        </div>
+
+        <!-- Info Card Spesifikasi & Baud Upload OTG -->
+        <div class="board-info-card">
+          <div class="info-card-header">
+            <span class="info-card-title">Ringkasan Konfigurasi Board</span>
+            <span class="info-badge" id="infoBaudBadge">115200 bps</span>
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-key">Chip MCU:</span>
+              <span class="info-val" id="infoMcuVal">ATmega328P</span>
+            </div>
+            <div class="info-item">
+              <span class="info-key">Batas Memori Flash:</span>
+              <span class="info-val" id="infoFlashVal">32 KB</span>
+            </div>
+            <div class="info-item">
+              <span class="info-key">Baud Upload OTG (Kodular):</span>
+              <span class="info-val text-accent" id="infoBaudVal">115200 baud</span>
+            </div>
+            <div class="info-item">
+              <span class="info-key">FQBN Compiler:</span>
+              <span class="info-val code-font" id="infoFqbnVal">arduino:avr:uno</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelBoardModal">Batal</button>
+        <button class="btn btn-compile" id="btnSaveBoardModal" style="padding: 0 16px;">Terapkan Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Container -->
+  <div id="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <!-- Toggle Button untuk Navigasi Blok -->
+        <button class="btn btn-toggle-toolbox active" id="btnToggleToolbox" title="Buka / Tutup Kategori Blok">
+          <svg class="svg-icon btn-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Tutup Blok</span>
+        </button>
+
+        <div class="header-brand">
+          <!-- Clean Circuit / Microchip Vector Logo -->
+          <svg class="svg-icon logo-icon" viewBox="0 0 24 24">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+            <line x1="9" y1="1" x2="9" y2="4"></line>
+            <line x1="15" y1="1" x2="15" y2="4"></line>
+            <line x1="9" y1="20" x2="9" y2="23"></line>
+            <line x1="15" y1="20" x2="15" y2="23"></line>
+            <line x1="20" y1="9" x2="23" y2="9"></line>
+            <line x1="20" y1="14" x2="23" y2="14"></line>
+            <line x1="1" y1="9" x2="4" y2="9"></line>
+            <line x1="1" y1="14" x2="4" y2="14"></line>
+          </svg>
+          <h1>ArduiBlok</h1>
+          <button class="board-selector-badge" id="btnOpenBoardModal" title="Klik untuk mengganti target Board &amp; Bootloader">
+            <span class="board-badge-dot"></span>
+            <span id="currentBoardLabel">Uno</span>
+            <svg class="svg-icon badge-chevron" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Text Box Nama Project (.tazp & .hex) -->
+      <div class="project-name-wrapper" title="Nama project untuk file .tazp dan .hex">
+        <svg class="svg-icon project-name-icon" viewBox="0 0 24 24">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        <input type="text" id="projectNameInput" class="project-name-input" placeholder="Nama project..." spellcheck="false" autocomplete="off" maxlength="50" title="Ketik nama file untuk .tazp dan .hex">
+      </div>
+
+      <div class="header-actions">
+        <!-- Input File Tersembunyi untuk Buka Project -->
+        <input type="file" id="projectFileInput" accept=".tazp,.xml" style="display: none;">
+
+        <!-- Tombol Buka File Project -->
+        <button class="btn btn-secondary" id="btnOpenFile" title="Buka File Project (.tazp / .xml)">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Buka</span>
+        </button>
+
+        <!-- Tombol Simpan File Project -->
+        <button class="btn btn-secondary" id="btnSaveFile" title="Simpan File Project (.tazp)">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Simpan</span>
+        </button>
+
+        <!-- Tombol Clear / Reset -->
+        <button class="btn btn-secondary" id="btnClear" title="Kosongkan workspace">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Reset</span>
+        </button>
+
+        <!-- Tombol Ganti Tema (Terang / Gelap) -->
+        <button class="btn btn-secondary" id="btnThemeToggle" title="Ganti Tema (Terang / Gelap)">
+          <svg class="svg-icon theme-icon" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide" id="themeText">Gelap</span>
+        </button>
+
+        <!-- Tombol Unduh Kode .INO -->
+        <button class="btn btn-secondary" id="btnDownloadInoHeader" title="Unduh source code .INO">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">.INO</span>
+        </button>
+      </div>
+
+      <!-- Tombol Compile -->
+      <button class="btn btn-compile" id="btnCompile" title="Compile sketch ke file biner Arduino">
+        <svg class="svg-icon btn-compile-icon" viewBox="0 0 24 24">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <svg class="svg-icon btn-compile-spinner" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.25"></circle>
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"></path>
+        </svg>
+        <span class="btn-text">Compile</span>
+      </button>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+      <!-- Blockly Workspace Container -->
+      <div class="workspace-container" id="workspaceContainer">
+        <!-- Floating Mobile Toggle Button -->
+        <button class="floating-toolbox-btn toolbox-open" id="btnFloatingToolbox" title="Buka/Tutup Menu Kategori">
+          <svg class="svg-icon floating-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span class="floating-text">Tutup</span>
+        </button>
+
+        <div id="blocklyDiv"></div>
+      </div>
+
+      <!-- Resize Handle -->
+      <div class="resize-handle" id="resizeHandle"></div>
+
+      <!-- Bottom Panel: Source Code Preview + Output -->
+      <div class="bottom-panel" id="bottomPanel">
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tab="code" id="tabCode">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px; height:14px;">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            Kode Arduino (.ino)
+          </button>
+          <button class="panel-tab" data-tab="output" id="tabOutput">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px; height:14px;">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            Status & Output
+            <span class="tab-indicator" id="outputIndicator"></span>
+          </button>
+        </div>
+        <div class="panel-content">
+          <!-- Code Preview Tab -->
+          <div class="tab-content active" id="codeTab">
+            <pre class="code-preview" id="codePreview">// Menunggu penambahan blok di workspace...</pre>
+          </div>
+          <!-- Output Tab -->
+          <div class="tab-content" id="outputTab">
+            <div class="output-content" id="outputContent">
+              <div class="output-placeholder">
+                Klik tombol "Compile" di bagian atas untuk memvalidasi dan memproses kode Arduino.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-left">
+        <span class="status-dot"></span>
+        <span>ArduiBlok Web IDE</span>
+        <span>|</span>
+        <span>Target: Arduino Uno (FQBN: arduino:avr:uno)</span>
+      </div>
+      <div class="status-right">
+        <span id="blockCount">0 blok</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbox XML (Standard Blockly Categories in English) -->
+  <xml id="toolbox" style="display: none">
+
+    <!-- Category: Setup & Loop -->
+    <category name="Setup &amp; Loop" colour="180">
+      <block type="arduino_setup"></block>
+      <block type="arduino_loop"></block>
+    </category>
+
+    <!-- Category: Motors -->
+    <category name="Motors" colour="20">
+      <block type="motor_dc">
+        <field name="PIN_IN1">7</field>
+        <field name="PIN_IN2">8</field>
+        <field name="PIN_ENA">9</field>
+        <field name="DIRECTION">FORWARD</field>
+        <field name="SPEED">200</field>
+      </block>
+      <block type="servo_write">
+        <field name="PIN">9</field>
+        <field name="ANGLE">90</field>
+      </block>
+    </category>
+
+    <!-- Category: Input / Output -->
+    <category name="Input / Output" colour="60">
+      <block type="digital_write">
+        <field name="PIN">13</field>
+        <field name="VALUE">HIGH</field>
+      </block>
+      <block type="digital_read">
+        <field name="PIN">2</field>
+      </block>
+      <block type="analog_read">
+        <field name="PIN">0</field>
+      </block>
+      <block type="pin_mode">
+        <field name="PIN">13</field>
+        <field name="MODE">OUTPUT</field>
+      </block>
+    </category>
+
+    <!-- Category: Control -->
+    <category name="Control" colour="120">
+      <block type="controls_if_arduino"></block>
+      <block type="controls_if_only"></block>
+      <block type="controls_repeat_arduino">
+        <field name="TIMES">10</field>
+      </block>
+      <block type="controls_while_arduino"></block>
+      <block type="delay_ms">
+        <field name="DURATION">1000</field>
+      </block>
+    </category>
+
+    <!-- Category: Logic -->
+    <category name="Logic" colour="210">
+      <block type="compare_op"></block>
+      <block type="logic_boolean"></block>
+      <block type="logic_not"></block>
+      <block type="logic_operation"></block>
+    </category>
+
+    <!-- Category: Math -->
+    <category name="Math" colour="230">
+      <block type="math_number">
+        <field name="NUM">0</field>
+      </block>
+      <block type="math_op"></block>
+      <block type="map_value"></block>
+    </category>
+
+    <!-- Category: Text & Serial -->
+    <category name="Text &amp; Serial" colour="160">
+      <block type="serial_begin">
+        <field name="BAUD">9600</field>
+      </block>
+      <block type="serial_print"></block>
+      <block type="serial_print_inline"></block>
+      <block type="text_string"></block>
+    </category>
+
+    <!-- Category: Variables -->
+    <category name="Variables" colour="330">
+      <block type="variables_set_arduino"></block>
+      <block type="variables_get_arduino"></block>
+    </category>
+
+  </xml>
+
+  <!-- Custom Block Definitions -->
+  <script src="blocks/arduino_blocks.js"></script>
+
+  <!-- Custom Arduino Code Generator -->
+  <script src="blocks/arduino_generator.js"></script>
+
+  <!-- Application Logic -->
+  <script>
+  (function() {
+    'use strict';
+
+    const API_URL = window.location.origin;
+
+    // ── DOM References ────────────────────────────────────
+    const blocklyDiv = document.getElementById('blocklyDiv');
+    const workspaceContainer = document.getElementById('workspaceContainer');
+    const btnCompile = document.getElementById('btnCompile');
+    const btnClear = document.getElementById('btnClear');
+    const btnOpenFile = document.getElementById('btnOpenFile');
+    const btnSaveFile = document.getElementById('btnSaveFile');
+    const projectFileInput = document.getElementById('projectFileInput');
+    const projectNameInput = document.getElementById('projectNameInput');
+    const btnThemeToggle = document.getElementById('btnThemeToggle');
+    const btnDownloadInoHeader = document.getElementById('btnDownloadInoHeader');
+    const btnToggleToolbox = document.getElementById('btnToggleToolbox');
+    const btnFloatingToolbox = document.getElementById('btnFloatingToolbox');
+    const codePreview = document.getElementById('codePreview');
+    const outputContent = document.getElementById('outputContent');
+    const outputIndicator = document.getElementById('outputIndicator');
+    const blockCount = document.getElementById('blockCount');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const bottomPanel = document.getElementById('bottomPanel');
+    const resizeHandle = document.getElementById('resizeHandle');
+    let workspace = null;
+    let lastCompiledHex = null;
+    let currentTheme = localStorage.getItem('arduiblok_theme') || 'light';
+
+    // ── Manajemen Board & Bootloader Target ───────────────
+    const BOARD_CONFIGS = {
+      'uno': {
+        name: 'Arduino Uno',
+        shortName: 'Uno',
+        subOptions: [
+          {
+            id: 'atmega328',
+            name: 'ATmega328P (Optiboot 115200 bps)',
+            displayName: 'Arduino Uno (ATmega328P)',
+            fqbn: 'arduino:avr:uno',
+            baud: 115200,
+            mcu: 'ATmega328P',
+            flash: '32 KB',
+            helper: 'Standar Arduino Uno dengan bootloader Optiboot.'
+          }
+        ]
+      },
+      'nano': {
+        name: 'Arduino Nano',
+        shortName: 'Nano',
+        subOptions: [
+          {
+            id: 'atmega328old',
+            name: 'ATmega328P (Old Bootloader - 57600 bps)',
+            displayName: 'Arduino Nano (Old Bootloader)',
+            fqbn: 'arduino:avr:nano:cpu=atmega328old',
+            baud: 57600,
+            mcu: 'ATmega328P',
+            flash: '30 KB',
+            helper: '⚡ Sangat disarankan untuk modul Arduino Nano kloningan CH340 umum.'
+          },
+          {
+            id: 'atmega328',
+            name: 'ATmega328P (New Bootloader - 115200 bps)',
+            displayName: 'Arduino Nano (New Bootloader)',
+            fqbn: 'arduino:avr:nano:cpu=atmega328',
+            baud: 115200,
+            mcu: 'ATmega328P',
+            flash: '32 KB',
+            helper: 'Untuk modul Arduino Nano original atau rilisan terbaru.'
+          },
+          {
+            id: 'atmega168',
+            name: 'ATmega168 (19200 bps)',
+            displayName: 'Arduino Nano (ATmega168)',
+            fqbn: 'arduino:avr:nano:cpu=atmega168',
+            baud: 19200,
+            mcu: 'ATmega168',
+            flash: '14 KB',
+            helper: 'Khusus modul Nano versi ekonomis dengan chip ATmega168.'
+          }
+        ]
+      },
+      'mega': {
+        name: 'Arduino Mega 2560',
+        shortName: 'Mega 2560',
+        subOptions: [
+          {
+            id: 'atmega2560',
+            name: 'ATmega2560 (115200 bps)',
+            displayName: 'Arduino Mega 2560',
+            fqbn: 'arduino:avr:mega:cpu=atmega2560',
+            baud: 115200,
+            mcu: 'ATmega2560',
+            flash: '256 KB',
+            helper: 'Modul mikrokontroler dengan pin I/O dan memori besar.'
+          }
+        ]
+      },
+      'promini': {
+        name: 'Arduino Pro / Pro Mini',
+        shortName: 'Pro Mini',
+        subOptions: [
+          {
+            id: '16mhz',
+            name: 'ATmega328P (5V, 16 MHz - 57600 bps)',
+            displayName: 'Arduino Pro Mini (5V, 16MHz)',
+            fqbn: 'arduino:avr:pro:cpu=16MHzatmega328',
+            baud: 57600,
+            mcu: 'ATmega328P',
+            flash: '30 KB',
+            helper: 'Varian Pro Mini 5 Volt clock 16 MHz.'
+          },
+          {
+            id: '8mhz',
+            name: 'ATmega328P (3.3V, 8 MHz - 57600 bps)',
+            displayName: 'Arduino Pro Mini (3.3V, 8MHz)',
+            fqbn: 'arduino:avr:pro:cpu=8MHzatmega328',
+            baud: 57600,
+            mcu: 'ATmega328P',
+            flash: '30 KB',
+            helper: 'Varian Pro Mini tegangan rendah 3.3 Volt clock 8 MHz.'
+          }
+        ]
+      },
+      'leonardo': {
+        name: 'Arduino Leonardo',
+        shortName: 'Leonardo',
+        subOptions: [
+          {
+            id: 'leonardo',
+            name: 'ATmega32U4 (Native USB - 57600 bps)',
+            displayName: 'Arduino Leonardo',
+            fqbn: 'arduino:avr:leonardo',
+            baud: 57600,
+            mcu: 'ATmega32U4',
+            flash: '28 KB',
+            helper: 'Modul dengan dukungan USB HID keyboard/mouse bawaan.'
+          }
+        ]
+      }
+    };
+
+    let currentBoardConfig = {
+      boardType: 'uno',
+      subOptionId: 'atmega328',
+      displayName: 'Arduino Uno (ATmega328P)',
+      shortLabel: 'Uno',
+      fqbn: 'arduino:avr:uno',
+      baud: 115200,
+      mcu: 'ATmega328P',
+      flash: '32 KB'
+    };
+
+    try {
+      const savedBoard = localStorage.getItem('arduiblok_board_config');
+      if (savedBoard) {
+        const parsed = JSON.parse(savedBoard);
+        if (parsed && parsed.fqbn) {
+          currentBoardConfig = parsed;
+        }
+      }
+    } catch (e) {}
+
+    const btnOpenBoardModal = document.getElementById('btnOpenBoardModal');
+    const boardModal = document.getElementById('boardModal');
+    const btnCloseBoardModal = document.getElementById('btnCloseBoardModal');
+    const btnCancelBoardModal = document.getElementById('btnCancelBoardModal');
+    const btnSaveBoardModal = document.getElementById('btnSaveBoardModal');
+    const selectBoardType = document.getElementById('selectBoardType');
+    const selectSubOption = document.getElementById('selectSubOption');
+    const helperSubOption = document.getElementById('helperSubOption');
+    const currentBoardLabel = document.getElementById('currentBoardLabel');
+
+    const infoBaudBadge = document.getElementById('infoBaudBadge');
+    const infoMcuVal = document.getElementById('infoMcuVal');
+    const infoFlashVal = document.getElementById('infoFlashVal');
+    const infoBaudVal = document.getElementById('infoBaudVal');
+    const infoFqbnVal = document.getElementById('infoFqbnVal');
+
+    function updateBoardBadgeLabel() {
+      if (currentBoardLabel) {
+        currentBoardLabel.textContent = currentBoardConfig.shortLabel || currentBoardConfig.displayName;
+      }
+    }
+    updateBoardBadgeLabel();
+
+    function populateSubOptions(boardType, selectedSubId) {
+      const board = BOARD_CONFIGS[boardType];
+      if (!board) return;
+
+      selectSubOption.innerHTML = '';
+      board.subOptions.forEach(function(opt) {
+        const el = document.createElement('option');
+        el.value = opt.id;
+        el.textContent = opt.name;
+        if (opt.id === selectedSubId) {
+          el.selected = true;
+        }
+        selectSubOption.appendChild(el);
+      });
+
+      updateModalInfoCard(boardType, selectSubOption.value);
+    }
+
+    function updateModalInfoCard(boardType, subId) {
+      const board = BOARD_CONFIGS[boardType];
+      if (!board) return;
+      const sub = board.subOptions.find(function(s) { return s.id === subId; }) || board.subOptions[0];
+      if (!sub) return;
+
+      if (infoBaudBadge) infoBaudBadge.textContent = sub.baud + ' bps';
+      if (infoMcuVal) infoMcuVal.textContent = sub.mcu;
+      if (infoFlashVal) infoFlashVal.textContent = sub.flash;
+      if (infoBaudVal) infoBaudVal.textContent = sub.baud + ' baud';
+      if (infoFqbnVal) infoFqbnVal.textContent = sub.fqbn;
+      if (helperSubOption) helperSubOption.textContent = sub.helper || '';
+    }
+
+    function openBoardModal() {
+      if (selectBoardType) {
+        selectBoardType.value = currentBoardConfig.boardType || 'uno';
+      }
+      populateSubOptions(selectBoardType.value, currentBoardConfig.subOptionId);
+      if (boardModal) {
+        boardModal.classList.remove('hidden');
+      }
+    }
+
+    function closeBoardModal() {
+      if (boardModal) {
+        boardModal.classList.add('hidden');
+      }
+    }
+
+    if (btnOpenBoardModal) {
+      btnOpenBoardModal.addEventListener('click', openBoardModal);
+    }
+    if (btnCloseBoardModal) {
+      btnCloseBoardModal.addEventListener('click', closeBoardModal);
+    }
+    if (btnCancelBoardModal) {
+      btnCancelBoardModal.addEventListener('click', closeBoardModal);
+    }
+
+    if (boardModal) {
+      boardModal.addEventListener('click', function(e) {
+        if (e.target === boardModal) {
+          closeBoardModal();
+        }
+      });
+    }
+
+    if (selectBoardType) {
+      selectBoardType.addEventListener('change', function() {
+        populateSubOptions(this.value);
+      });
+    }
+
+    if (selectSubOption) {
+      selectSubOption.addEventListener('change', function() {
+        updateModalInfoCard(selectBoardType.value, this.value);
+      });
+    }
+
+    if (btnSaveBoardModal) {
+      btnSaveBoardModal.addEventListener('click', function() {
+        const bType = selectBoardType.value;
+        const subId = selectSubOption.value;
+        const board = BOARD_CONFIGS[bType];
+        if (!board) return;
+        const sub = board.subOptions.find(function(s) { return s.id === subId; }) || board.subOptions[0];
+        if (!sub) return;
+
+        let shortLabel = board.shortName;
+        if (bType === 'nano') {
+          shortLabel = subId === 'atmega328old' ? 'Nano (Old)' : (subId === 'atmega328' ? 'Nano (New)' : 'Nano (168)');
+        }
+
+        currentBoardConfig = {
+          boardType: bType,
+          subOptionId: subId,
+          displayName: sub.displayName,
+          shortLabel: shortLabel,
+          fqbn: sub.fqbn,
+          baud: sub.baud,
+          mcu: sub.mcu,
+          flash: sub.flash
+        };
+
+        localStorage.setItem('arduiblok_board_config', JSON.stringify(currentBoardConfig));
+        updateBoardBadgeLabel();
+        closeBoardModal();
+      });
+    }
+
+    // ── Manajemen Nama Project (.tazp & .hex) ─────────────
+    function getDefaultProjectBaseName() {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const dateStr = dd + mm + yyyy; // contoh: 19092026
+
+      let counter = parseInt(localStorage.getItem('arduiblok_project_save_counter') || '1', 10);
+      if (isNaN(counter) || counter < 1) {
+        counter = 1;
+      }
+      return 'project_' + counter + '_' + dateStr;
+    }
+
+    function getCleanProjectName() {
+      let name = projectNameInput ? (projectNameInput.value || '').trim() : '';
+      // Bersihkan ekstensi jika user mengetikkan ekstensi secara manual
+      name = name.replace(/\.(tazp|hex|ino|xml|abk)$/i, '').trim();
+      // Bersihkan karakter ilegal untuk nama berkas OS
+      name = name.replace(/[/\\?%*:|"<>]/g, '_');
+      if (!name) {
+        name = getDefaultProjectBaseName();
+        if (projectNameInput) projectNameInput.value = name;
+      }
+      return name;
+    }
+
+    // Inisialisasi nama di text box
+    const initialProjectName = localStorage.getItem('arduiblok_current_project_name') || getDefaultProjectBaseName();
+    if (projectNameInput) {
+      projectNameInput.value = initialProjectName;
+      projectNameInput.addEventListener('input', function() {
+        const val = this.value.trim().replace(/\.(tazp|hex|ino|xml|abk)$/i, '');
+        if (val) {
+          localStorage.setItem('arduiblok_current_project_name', val);
+        }
+      });
+    }
+
+    // ── Save & Open Project File (.tazp / .xml) ───────────
+    function saveProjectFile() {
+      if (!workspace) return;
+      try {
+        const baseName = getCleanProjectName();
+        const filename = baseName + '.tazp';
+
+        // Increment counter jika menggunakan pola default project_
+        if (baseName.startsWith('project_')) {
+          let counter = parseInt(localStorage.getItem('arduiblok_project_save_counter') || '1', 10);
+          if (!isNaN(counter)) {
+            localStorage.setItem('arduiblok_project_save_counter', counter + 1);
+          }
+        }
+        localStorage.setItem('arduiblok_current_project_name', baseName);
+
+        const xmlDom = Blockly.Xml.workspaceToDom(workspace);
+        const xmlText = Blockly.Xml.domToPrettyText(xmlDom);
+        const blob = new Blob([xmlText], { type: 'application/xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Gagal menyimpan berkas project: ' + err.message);
+      }
+    }
+
+    function openProjectFile(file) {
+      if (!file || !workspace) return;
+      // Perbarui text box nama file dengan nama file yang baru dibuka
+      const cleanName = file.name.replace(/\.(tazp|abk|xml)$/i, '').trim();
+      if (cleanName && projectNameInput) {
+        projectNameInput.value = cleanName;
+        localStorage.setItem('arduiblok_current_project_name', cleanName);
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const xmlText = e.target.result;
+          const xmlDom = Blockly.utils.xml.textToDom(xmlText);
+          workspace.clear();
+          Blockly.Xml.domToWorkspace(xmlDom, workspace);
+          generateCode();
+          localStorage.setItem('arduiblok_saved_workspace', xmlText);
+        } catch (err) {
+          alert('Gagal membuka file. Pastikan format file .tazp atau .xml valid: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    if (btnSaveFile) {
+      btnSaveFile.addEventListener('click', saveProjectFile);
+    }
+
+    if (btnOpenFile && projectFileInput) {
+      btnOpenFile.addEventListener('click', function() {
+        projectFileInput.value = '';
+        projectFileInput.click();
+      });
+
+      projectFileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files.length > 0) {
+          openProjectFile(e.target.files[0]);
+        }
+      });
+    }
+
+    // ── File Download Utilities ───────────────────────────
+    function downloadHexFile(base64Data, filename) {
+      if (!base64Data) {
+        alert('File .hex belum tersedia. Jalankan compile terlebih dahulu.');
+        return;
+      }
+      try {
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || (getCleanProjectName() + '.hex');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Gagal mengunduh file .hex: ' + err.message);
+      }
+    }
+
+    function downloadInoFile(codeString, filename) {
+      if (!codeString || !codeString.trim()) {
+        alert('Tidak ada kode program untuk diunduh.');
+        return;
+      }
+      try {
+        const blob = new Blob([codeString], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || (getCleanProjectName() + '.ino');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Gagal mengunduh file .ino: ' + err.message);
+      }
+    }
+
+    if (btnDownloadInoHeader) {
+      btnDownloadInoHeader.addEventListener('click', function() {
+        var filename = getCleanProjectName() + '.ino';
+        var currentCode = arduinoGenerator.workspaceToCode(workspace);
+        downloadInoFile(currentCode, filename);
+      });
+    }
+
+    // ── Blockly Themes Setup ──────────────────────────────
+    const lightTheme = Blockly.Theme.defineTheme('arduiblok_light', {
+      'base': Blockly.Themes.Classic,
+      'componentStyles': {
+        'workspaceBackgroundColour': '#f8fafc',
+        'toolboxBackgroundColour': '#ffffff',
+        'toolboxForegroundColour': '#334155',
+        'flyoutBackgroundColour': '#ffffff',
+        'flyoutForegroundColour': '#334155',
+        'flyoutOpacity': 0.98,
+        'scrollbarColour': '#cbd5e1',
+        'scrollbarOpacity': 0.7,
+        'insertionMarkerColour': '#00878a',
+        'insertionMarkerOpacity': 0.4,
+        'cursorColour': '#00878a'
+      },
+      'fontStyle': {
+        'family': 'Inter, sans-serif',
+        'weight': '500',
+        'size': 12
+      }
+    });
+
+    const darkTheme = Blockly.Theme.defineTheme('arduiblok_dark', {
+      'base': Blockly.Themes.Classic,
+      'componentStyles': {
+        'workspaceBackgroundColour': '#0f172a',
+        'toolboxBackgroundColour': '#1e293b',
+        'toolboxForegroundColour': '#e2e8f0',
+        'flyoutBackgroundColour': '#1e293b',
+        'flyoutForegroundColour': '#e2e8f0',
+        'flyoutOpacity': 0.98,
+        'scrollbarColour': '#475569',
+        'scrollbarOpacity': 0.7,
+        'insertionMarkerColour': '#38bdf8',
+        'insertionMarkerOpacity': 0.4,
+        'cursorColour': '#38bdf8'
+      },
+      'fontStyle': {
+        'family': 'Inter, sans-serif',
+        'weight': '500',
+        'size': 12
+      }
+    });
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('arduiblok_theme', theme);
+
+      if (typeof workspace !== 'undefined' && workspace) {
+        workspace.setTheme(theme === 'dark' ? darkTheme : lightTheme);
+      }
+
+      if (btnThemeToggle) {
+        const iconSvg = btnThemeToggle.querySelector('.theme-icon');
+        const textSpan = btnThemeToggle.querySelector('#themeText');
+        if (theme === 'dark') {
+          if (iconSvg) {
+            iconSvg.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+          }
+          if (textSpan) textSpan.textContent = 'Terang';
+        } else {
+          if (iconSvg) {
+            iconSvg.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+          }
+          if (textSpan) textSpan.textContent = 'Gelap';
+        }
+      }
+    }
+
+    if (btnThemeToggle) {
+      btnThemeToggle.addEventListener('click', function() {
+        applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      });
+    }
+
+    workspace = Blockly.inject(blocklyDiv, {
+      toolbox: document.getElementById('toolbox'),
+      theme: currentTheme === 'dark' ? darkTheme : lightTheme,
+      grid: {
+        spacing: 24,
+        length: 2,
+        colour: '#cbd5e1',
+        snap: true
+      },
+      zoom: {
+        controls: true,
+        wheel: true,
+        startScale: 0.9,
+        maxScale: 2,
+        minScale: 0.4,
+        scaleSpeed: 1.1,
+        pinch: true
+      },
+      trashcan: true,
+      move: {
+        scrollbars: true,
+        drag: true,
+        wheel: true
+      },
+      renderer: 'geras',
+      sounds: false
+    });
+
+    // Apply saved theme state to DOM & UI
+    applyTheme(currentTheme);
+
+    // ── Preload Blocks (Restore from auto-save or use default) ──
+    const defaultXml = '<xml>' +
+      '<block type="arduino_setup" x="35" y="35"></block>' +
+      '<block type="arduino_loop" x="35" y="210"></block>' +
+      '</xml>';
+
+    const savedWorkspaceXml = localStorage.getItem('arduiblok_saved_workspace');
+    if (savedWorkspaceXml && savedWorkspaceXml.trim().length > 0) {
+      try {
+        const xmlDom = Blockly.utils.xml.textToDom(savedWorkspaceXml);
+        Blockly.Xml.domToWorkspace(xmlDom, workspace);
+      } catch (e) {
+        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(defaultXml), workspace);
+      }
+    } else {
+      Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(defaultXml), workspace);
+    }
+
+    // ── Toolbox Visibility (Open / Close) ─────────────────
+    let toolboxVisible = true;
+
+    function updateToolboxIcons(visible) {
+      const closeSvg = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
+      const menuSvg = '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>';
+
+      if (btnToggleToolbox) {
+        btnToggleToolbox.classList.toggle('active', visible);
+        const iconSvg = btnToggleToolbox.querySelector('.btn-icon');
+        const textSpan = btnToggleToolbox.querySelector('.btn-text');
+        if (iconSvg) iconSvg.innerHTML = visible ? closeSvg : menuSvg;
+        if (textSpan) textSpan.textContent = visible ? 'Tutup Blok' : 'Kategori Blok';
+      }
+
+      if (btnFloatingToolbox) {
+        btnFloatingToolbox.classList.toggle('toolbox-open', visible);
+        const floatIcon = btnFloatingToolbox.querySelector('.floating-icon');
+        const floatText = btnFloatingToolbox.querySelector('.floating-text');
+        if (floatIcon) floatIcon.innerHTML = visible ? closeSvg : menuSvg;
+        if (floatText) floatText.textContent = visible ? 'Tutup' : 'Kategori';
+      }
+    }
+
+    function setToolboxVisibility(visible) {
+      toolboxVisible = visible;
+      const toolbox = workspace.getToolbox();
+
+      if (toolbox && typeof toolbox.setVisible === 'function') {
+        toolbox.setVisible(visible);
+      }
+
+      if (visible) {
+        workspaceContainer.classList.remove('toolbox-hidden');
+      } else {
+        workspaceContainer.classList.add('toolbox-hidden');
+      }
+
+      updateToolboxIcons(visible);
+
+      setTimeout(function() {
+        Blockly.svgResize(workspace);
+      }, 50);
+    }
+
+    function toggleToolbox() {
+      setToolboxVisibility(!toolboxVisible);
+    }
+
+    if (btnToggleToolbox) {
+      btnToggleToolbox.addEventListener('click', toggleToolbox);
+    }
+    if (btnFloatingToolbox) {
+      btnFloatingToolbox.addEventListener('click', toggleToolbox);
+    }
+
+    // ── Code Generation & Auto-Save ───────────────────────
+    function generateCode() {
+      try {
+        var code = arduinoGenerator.workspaceToCode(workspace);
+        codePreview.textContent = code || '// (Workspace kosong)';
+      } catch (e) {
+        codePreview.textContent = '// Error dalam menghasilkan kode C++: ' + e.message;
+      }
+
+      var count = workspace.getAllBlocks(false).length;
+      blockCount.textContent = count + ' blok';
+    }
+
+    workspace.addChangeListener(function(event) {
+      if (event.type === Blockly.Events.BLOCK_MOVE ||
+          event.type === Blockly.Events.BLOCK_CHANGE ||
+          event.type === Blockly.Events.BLOCK_CREATE ||
+          event.type === Blockly.Events.BLOCK_DELETE) {
+        generateCode();
+        // Auto-save workspace to browser localStorage
+        try {
+          const xmlDom = Blockly.Xml.workspaceToDom(workspace);
+          const xmlText = Blockly.Xml.domToText(xmlDom);
+          localStorage.setItem('arduiblok_saved_workspace', xmlText);
+        } catch (e) {}
+      }
+    });
+
+    generateCode();
+
+    // ── Tab Navigation ────────────────────────────────────
+    document.querySelectorAll('.panel-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var targetTab = this.getAttribute('data-tab');
+
+        document.querySelectorAll('.panel-tab').forEach(function(t) {
+          t.classList.remove('active');
+        });
+        this.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(function(c) {
+          c.classList.remove('active');
+        });
+        document.getElementById(targetTab + 'Tab').classList.add('active');
+      });
+    });
+
+    // ── Compile Flow ──────────────────────────────────────
+    var isCompiling = false;
+
+    btnCompile.addEventListener('click', async function() {
+      if (isCompiling) return;
+
+      var code;
+      try {
+        code = arduinoGenerator.workspaceToCode(workspace);
+      } catch (e) {
+        showOutput('error', 'Gagal memproses blok: ' + e.message);
+        return;
+      }
+
+      if (!code || code.trim().length === 0) {
+        showOutput('error', 'Workspace kosong. Pasang minimal satu blok sebelum melakukan compile.');
+        return;
+      }
+
+      isCompiling = true;
+      btnCompile.classList.add('compiling');
+      const btnText = btnCompile.querySelector('.btn-text');
+      if (btnText) btnText.textContent = 'Memproses...';
+
+      document.querySelector('[data-tab="output"]').click();
+      showOutput('info', 'Sedang memproses kompilasi kode melalui arduino-cli...');
+
+      try {
+        var response = await fetch(API_URL + '/compile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: code,
+            fqbn: currentBoardConfig.fqbn
+          })
+        });
+
+        var result = await response.json();
+
+        if (result.success) {
+          lastCompiledHex = result.hex;
+          var hexSize = Math.round(atob(result.hex).length / 1024 * 100) / 100;
+
+          outputContent.innerHTML =
+            '<div class="output-message success">' +
+              '<strong>Kompilasi Berhasil</strong>' +
+              '<p style="margin-top:6px; color:#166534;">File biner .hex siap di-upload ke mikrokontroler.</p>' +
+              '<div style="margin-top:10px; font-size:12px; color:#374151; line-height: 1.6;">' +
+                'Ukuran berkas biner: <b>' + hexSize + ' KB</b><br>' +
+                'Target Board: <b>' + currentBoardConfig.displayName + '</b> (' + currentBoardConfig.mcu + ')<br>' +
+                'FQBN Compiler: <code>' + currentBoardConfig.fqbn + '</code><br>' +
+                'Baud Upload OTG (Kodular): <b style="color:#0f766e;">' + currentBoardConfig.baud + ' bps</b>' +
+              '</div>' +
+              '<div class="output-actions">' +
+                '<button class="btn btn-download-hex" id="btnDownloadHex">' +
+                  '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
+                  'Unduh File .HEX' +
+                '</button>' +
+                '<button class="btn btn-download-ino" id="btnDownloadIno">' +
+                  '<svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>' +
+                  'Unduh Source .INO' +
+                '</button>' +
+              '</div>' +
+            '</div>';
+
+          document.getElementById('btnDownloadHex').addEventListener('click', function() {
+            var hexFilename = getCleanProjectName() + '.hex';
+            downloadHexFile(lastCompiledHex, hexFilename);
+          });
+          document.getElementById('btnDownloadIno').addEventListener('click', function() {
+            var inoFilename = getCleanProjectName() + '.ino';
+            var currentCode = arduinoGenerator.workspaceToCode(workspace);
+            downloadInoFile(currentCode, inoFilename);
+          });
+
+          outputIndicator.className = 'tab-indicator success';
+        } else {
+          showOutput('error',
+            '<strong>Kompilasi Gagal</strong><br><br>' +
+            'Detail kendala dari compiler:<br>' + result.error
+          );
+          outputIndicator.className = 'tab-indicator error';
+        }
+      } catch (err) {
+        showOutput('error',
+          '<strong>Koneksi Gagal</strong><br><br>' +
+          'Tidak dapat terhubung ke server backend: ' + err.message + '<br>' +
+          'Pastikan service lokal aktif (node server/app.js) dan arduino-cli telah terkonfigurasi.'
+        );
+        outputIndicator.className = 'tab-indicator error';
+      } finally {
+        isCompiling = false;
+        btnCompile.classList.remove('compiling');
+        if (btnText) btnText.textContent = 'Compile';
+      }
+    });
+
+    function showOutput(type, message) {
+      outputContent.innerHTML = '<div class="output-message ' + type + '">' + message + '</div>';
+    }
+
+    // ── Clear Workspace ───────────────────────────────────
+    btnClear.addEventListener('click', function() {
+      if (confirm('Kosongkan semua blok dan kembalikan ke struktur awal?')) {
+        localStorage.removeItem('arduiblok_saved_workspace');
+        workspace.clear();
+        Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(defaultXml), workspace);
+        outputContent.innerHTML = '<div class="output-placeholder">' +
+          'Klik tombol "Compile" di bagian atas untuk memvalidasi dan memproses kode Arduino.</div>';
+        outputIndicator.className = 'tab-indicator';
+        generateCode();
+      }
+    });
+
+    // ── Bottom Panel Drag Resizer ─────────────────────────
+    var isResizing = false;
+    var startY, startHeight;
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+      isResizing = true;
+      startY = e.clientY;
+      startHeight = bottomPanel.offsetHeight;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    resizeHandle.addEventListener('touchstart', function(e) {
+      isResizing = true;
+      startY = e.touches[0].clientY;
+      startHeight = bottomPanel.offsetHeight;
+    }, { passive: true });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isResizing) return;
+      var delta = startY - e.clientY;
+      var newHeight = Math.max(80, Math.min(window.innerHeight * 0.55, startHeight + delta));
+      bottomPanel.style.height = newHeight + 'px';
+      Blockly.svgResize(workspace);
+    });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!isResizing) return;
+      var delta = startY - e.touches[0].clientY;
+      var newHeight = Math.max(80, Math.min(window.innerHeight * 0.55, startHeight + delta));
+      bottomPanel.style.height = newHeight + 'px';
+      Blockly.svgResize(workspace);
+    }, { passive: true });
+
+    document.addEventListener('mouseup', function() {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        Blockly.svgResize(workspace);
+      }
+    });
+
+    document.addEventListener('touchend', function() {
+      if (isResizing) {
+        isResizing = false;
+        Blockly.svgResize(workspace);
+      }
+    });
+
+    window.addEventListener('resize', function() {
+      Blockly.svgResize(workspace);
+    });
+
+    // ── Remove Loading Screen ─────────────────────────────
+    setTimeout(function() {
+      loadingOverlay.classList.add('hidden');
+      Blockly.svgResize(workspace);
+    }, 400);
+
+  })();
+  </script>
+
+</body>
+</html>
