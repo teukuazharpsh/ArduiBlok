@@ -13,8 +13,9 @@ app.use(cors());                        // Izinkan request dari origin manapun (
 app.use(express.json({ limit: '1mb' })); // Parse JSON body, max 1MB
 app.use(express.static(path.join(__dirname, '..', 'public'))); // Serve frontend statis
 
-// Path ke folder temp (relative ke project root)
+// Path ke folder temp dan libraries (relative ke project root)
 const TEMP_DIR = path.join(__dirname, '..', 'temp');
+const LIBRARIES_DIR = path.join(__dirname, '..', 'libraries');
 
 // Pastikan folder temp ada
 if (!fs.existsSync(TEMP_DIR)) {
@@ -64,24 +65,33 @@ app.post('/compile', async (req, res) => {
 
     console.log(`[compile] Sketch created: ${sketchFile} | Target FQBN: ${targetFqbn}`);
 
-    const hexPath = await new Promise((resolve, reject) => {
+    const compileArgs = [
+      'compile',
+      '--fqbn', targetFqbn,
+      '--output-dir', outputDir
+    ];
+
+    if (fs.existsSync(LIBRARIES_DIR)) {
+      compileArgs.push('--libraries', LIBRARIES_DIR);
+    }
+    compileArgs.push(sketchDir);
+
+    const compileResult = await new Promise((resolve, reject) => {
       execFile(
         'arduino-cli',
-        [
-          'compile',
-          '--fqbn', targetFqbn,
-          '--output-dir', outputDir,
-          sketchDir
-        ],
+        compileArgs,
         {
           timeout: 120000,
           maxBuffer: 1024 * 1024
         },
         (error, stdout, stderr) => {
+          const rawLog = ((stdout || '') + (stderr ? '\n' + stderr : '')).trim();
           if (error) {
             const errorMsg = (stderr || '') + (stdout || '') + (error.message || '');
             console.error(`[compile] ERROR: ${errorMsg}`);
-            reject(new Error(errorMsg));
+            const compileErr = new Error(errorMsg);
+            compileErr.log = rawLog || errorMsg;
+            reject(compileErr);
             return;
           }
 
@@ -91,29 +101,37 @@ app.post('/compile', async (req, res) => {
           const hexFile = files.find(f => f.endsWith('.hex'));
 
           if (!hexFile) {
-            reject(new Error('Compile berhasil tapi file .hex tidak ditemukan di output directory.'));
+            const noHexErr = new Error('Compile berhasil tapi file .hex tidak ditemukan di output directory.');
+            noHexErr.log = rawLog;
+            reject(noHexErr);
             return;
           }
 
-          resolve(path.join(outputDir, hexFile));
+          resolve({
+            hexPath: path.join(outputDir, hexFile),
+            log: rawLog
+          });
         }
       );
     });
 
-    const hexContent = fs.readFileSync(hexPath);
+    const hexContent = fs.readFileSync(compileResult.hexPath);
     const hexBase64 = hexContent.toString('base64');
 
     console.log(`[compile] Hex file size: ${hexContent.length} bytes`);
 
     res.json({
       success: true,
-      hex: hexBase64
+      hex: hexBase64,
+      log: compileResult.log,
+      fqbn: targetFqbn
     });
 
   } catch (err) {
     res.status(400).json({
       success: false,
-      error: err.message || 'Terjadi error saat compile.'
+      error: err.message || 'Terjadi error saat compile.',
+      log: err.log || err.message || 'Terjadi error saat compile.'
     });
   } finally {
     try {

@@ -6,3 +6,6 @@ temp/*
 !temp/.gitkeep
 .agents
 .user_uploaded
+library_arduino
+scratch
+*.md

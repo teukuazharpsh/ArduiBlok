@@ -1084,6 +1084,102 @@
       });
     });
 
+    // ── Helper Formatting & Terminal Logs ──────────────────
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function cleanCompilerPaths(text) {
+      if (!text) return '';
+      return text.replace(/[A-Za-z]:\\[^:\n\r]+?sketch_[a-f0-9]+[\\\/](sketch_[a-f0-9]+\.ino)/gi, 'sketch.ino')
+                 .replace(/[A-Za-z]:\\[^:\n\r]+?sketch_[a-f0-9]+/gi, 'sketch');
+    }
+
+    function highlightTerminalLog(logText) {
+      if (!logText || !logText.trim()) {
+        return '<span class="terminal-line dim">// Tidak ada data log dari compiler</span>';
+      }
+      var clean = cleanCompilerPaths(logText);
+      var lines = clean.split(/\r?\n/);
+      return lines.map(function(line) {
+        var escaped = escapeHtml(line);
+        if (/Sketch uses/i.test(line)) {
+          return '<span class="terminal-line cyan">' + escaped + '</span>';
+        } else if (/Global variables use/i.test(line)) {
+          return '<span class="terminal-line green">' + escaped + '</span>';
+        } else if (/warning:/i.test(line)) {
+          return '<span class="terminal-line yellow">' + escaped + '</span>';
+        } else if (/error:|Error during build|failed:/i.test(line)) {
+          return '<span class="terminal-line red">' + escaped + '</span>';
+        } else if (/Used platform|arduino:avr|Command failed/i.test(line)) {
+          return '<span class="terminal-line dim">' + escaped + '</span>';
+        }
+        return '<span class="terminal-line">' + escaped + '</span>';
+      }).join('\n');
+    }
+
+    function parseMemoryStats(logText) {
+      if (!logText) return null;
+      var flash = null;
+      var ram = null;
+
+      var flashMatch = logText.match(/Sketch uses\s+([\d,]+)\s+bytes\s+\((\d+)%\)\s+of program storage space\.\s+Maximum is\s+([\d,]+)\s+bytes/i);
+      if (flashMatch) {
+        flash = {
+          used: flashMatch[1],
+          percent: parseInt(flashMatch[2], 10),
+          max: flashMatch[3]
+        };
+      }
+
+      var ramMatch = logText.match(/Global variables use\s+([\d,]+)\s+bytes\s+\((\d+)%\)\s+of dynamic memory(?:,\s+leaving\s+[\d,]+\s+bytes for local variables\.\s+Maximum is\s+([\d,]+)\s+bytes)?/i);
+      if (ramMatch) {
+        ram = {
+          used: ramMatch[1],
+          percent: parseInt(ramMatch[2], 10),
+          max: ramMatch[3] || '2048'
+        };
+      }
+
+      return { flash: flash, ram: ram };
+    }
+
+    function setupTerminalCopyButton(rawLog) {
+      var btn = document.getElementById('btnCopyTerminal');
+      if (!btn) return;
+      btn.addEventListener('click', function() {
+        var textToCopy = cleanCompilerPaths(rawLog || '');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textToCopy).then(function() {
+            var label = btn.querySelector('.copy-label');
+            if (label) {
+              var old = label.textContent;
+              label.textContent = 'Tersalin! ✓';
+              setTimeout(function() { label.textContent = old; }, 1800);
+            }
+          });
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = textToCopy;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          var label = btn.querySelector('.copy-label');
+          if (label) {
+            var old = label.textContent;
+            label.textContent = 'Tersalin! ✓';
+            setTimeout(function() { label.textContent = old; }, 1800);
+          }
+        }
+      });
+    }
+
     // ── Compile Flow ──────────────────────────────────────
     var isCompiling = false;
 
@@ -1109,7 +1205,77 @@
       if (btnText) btnText.textContent = 'Memproses...';
 
       document.querySelector('[data-tab="output"]').click();
-      showOutput('info', 'Sedang memproses kompilasi kode melalui arduino-cli...');
+      outputIndicator.className = 'tab-indicator';
+
+      const startTime = Date.now();
+
+      // Render live animated compile progress
+      outputContent.innerHTML =
+        '<div class="compiling-indicator">' +
+          '<div class="compiling-header">' +
+            '<div class="compiling-spinner-ring"></div>' +
+            '<div class="compiling-meta">' +
+              '<div class="compiling-title">Memproses Kompilasi Kode...</div>' +
+              '<div class="compiling-subtitle">' +
+                'Target: <strong>' + escapeHtml(currentBoardConfig.displayName) + '</strong> &bull; ' +
+                'FQBN: <code>' + escapeHtml(currentBoardConfig.fqbn) + '</code>' +
+              '</div>' +
+            '</div>' +
+            '<div class="compiling-timer" id="compileTimer">0.0s</div>' +
+          '</div>' +
+          '<div class="compiling-steps-list">' +
+            '<div class="compiling-step-item current" id="cStep1">' +
+              '<div class="cstep-icon-wrapper">' +
+                '<span class="cstep-spinner"></span>' +
+                '<svg class="cstep-check svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+              '</div>' +
+              '<div class="cstep-info">' +
+                '<div class="cstep-title">Inisialisasi &amp; Penyiapan Sketch Arduino</div>' +
+                '<div class="cstep-desc">Menerjemahkan diagram blok Blockly ke kode Arduino C++ dan verifikasi library...</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="compiling-step-item pending" id="cStep2">' +
+              '<div class="cstep-icon-wrapper">' +
+                '<span class="cstep-spinner"></span>' +
+                '<svg class="cstep-check svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+              '</div>' +
+              '<div class="cstep-info">' +
+                '<div class="cstep-title">Kompilasi AVR-GCC (arduino-cli)</div>' +
+                '<div class="cstep-desc">Memvalidasi sintaks, kompilasi object binary, dan linking library mikrokontroler...</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="compiling-step-item pending" id="cStep3">' +
+              '<div class="cstep-icon-wrapper">' +
+                '<span class="cstep-spinner"></span>' +
+                '<svg class="cstep-check svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+              '</div>' +
+              '<div class="cstep-info">' +
+                '<div class="cstep-title">Ekstraksi Firmware HEX &amp; Analisis Log</div>' +
+                '<div class="cstep-desc">Menghasilkan berkas biner .hex dan menghitung alokasi memori Flash/RAM...</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      const timerEl = document.getElementById('compileTimer');
+      const step1El = document.getElementById('cStep1');
+      const step2El = document.getElementById('cStep2');
+      const step3El = document.getElementById('cStep3');
+
+      const timerInterval = setInterval(function() {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+        if (timerEl) timerEl.textContent = elapsed;
+
+        const ms = Date.now() - startTime;
+        if (ms > 450 && step1El && step2El && step1El.classList.contains('current')) {
+          step1El.className = 'compiling-step-item done';
+          step2El.className = 'compiling-step-item current';
+        }
+        if (ms > 2200 && step2El && step3El && step2El.classList.contains('current')) {
+          step2El.className = 'compiling-step-item done';
+          step3El.className = 'compiling-step-item current';
+        }
+      }, 100);
 
       try {
         var response = await fetch(API_URL + '/compile', {
@@ -1121,22 +1287,63 @@
           })
         });
 
+        clearInterval(timerInterval);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2) + ' detik';
         var result = await response.json();
 
         if (result.success) {
           lastCompiledHex = result.hex;
           var hexSize = Math.round(atob(result.hex).length / 1024 * 100) / 100;
+          var mem = parseMemoryStats(result.log);
+
+          var memoryGaugesHtml = '';
+          if (mem && (mem.flash || mem.ram)) {
+            memoryGaugesHtml = '<div class="memory-gauges">';
+            if (mem.flash) {
+              memoryGaugesHtml +=
+                '<div class="memory-card flash">' +
+                  '<div class="memory-card-header">' +
+                    '<span class="memory-label">Memori Program (Flash)</span>' +
+                    '<span class="memory-percentage">' + mem.flash.percent + '%</span>' +
+                  '</div>' +
+                  '<div class="memory-progress-track">' +
+                    '<div class="memory-progress-fill" style="width: ' + Math.min(100, Math.max(1, mem.flash.percent)) + '%;"></div>' +
+                  '</div>' +
+                  '<div class="memory-detail">' + mem.flash.used + ' Bytes / ' + mem.flash.max + ' Bytes</div>' +
+                '</div>';
+            }
+            if (mem.ram) {
+              memoryGaugesHtml +=
+                '<div class="memory-card ram">' +
+                  '<div class="memory-card-header">' +
+                    '<span class="memory-label">Memori Dinamis (SRAM)</span>' +
+                    '<span class="memory-percentage">' + mem.ram.percent + '%</span>' +
+                  '</div>' +
+                  '<div class="memory-progress-track">' +
+                    '<div class="memory-progress-fill" style="width: ' + Math.min(100, Math.max(1, mem.ram.percent)) + '%;"></div>' +
+                  '</div>' +
+                  '<div class="memory-detail">' + mem.ram.used + ' Bytes / ' + mem.ram.max + ' Bytes</div>' +
+                '</div>';
+            }
+            memoryGaugesHtml += '</div>';
+          }
+
+          var highlightedLog = highlightTerminalLog(result.log);
 
           outputContent.innerHTML =
             '<div class="output-message success">' +
-              '<strong>Kompilasi Berhasil</strong>' +
-              '<p style="margin-top:6px; color:#166534;">File biner .hex siap di-upload ke mikrokontroler.</p>' +
-              '<div style="margin-top:10px; font-size:12px; color:#374151; line-height: 1.6;">' +
-                'Ukuran berkas biner: <b>' + hexSize + ' KB</b><br>' +
-                'Target Board: <b>' + currentBoardConfig.displayName + '</b> (' + currentBoardConfig.mcu + ')<br>' +
-                'FQBN Compiler: <code>' + currentBoardConfig.fqbn + '</code><br>' +
+              '<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">' +
+                '<strong>Kompilasi Berhasil</strong>' +
+                '<span class="badge" style="background:rgba(21,128,61,0.15); color:#15803d; border-color:transparent;">Waktu: ' + duration + '</span>' +
+              '</div>' +
+              '<p style="margin-top:6px; color:#166534;">File biner .hex siap di-upload ke mikrokontroler target.</p>' +
+              '<div style="margin-top:10px; font-size:12px; color:var(--text-secondary); line-height: 1.6;">' +
+                'Ukuran Berkas Biner: <b>' + hexSize + ' KB</b><br>' +
+                'Target Board: <b>' + escapeHtml(currentBoardConfig.displayName) + '</b> (' + escapeHtml(currentBoardConfig.mcu) + ')<br>' +
+                'FQBN Compiler: <code>' + escapeHtml(currentBoardConfig.fqbn) + '</code><br>' +
                 'Baud Upload OTG (Kodular): <b style="color:#0f766e;">' + currentBoardConfig.baud + ' bps</b>' +
               '</div>' +
+              memoryGaugesHtml +
               '<div class="output-actions">' +
                 '<button class="btn btn-download-hex" id="btnDownloadHex">' +
                   '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
@@ -1147,6 +1354,24 @@
                   'Unduh Source .INO' +
                 '</button>' +
               '</div>' +
+            '</div>' +
+            '<div class="compiler-terminal" id="terminalBox">' +
+              '<div class="terminal-header">' +
+                '<div class="terminal-controls">' +
+                  '<span class="t-dot t-red"></span>' +
+                  '<span class="t-dot t-yellow"></span>' +
+                  '<span class="t-dot t-green"></span>' +
+                '</div>' +
+                '<span class="terminal-title">arduino-cli compile output &bull; build finished</span>' +
+                '<div class="terminal-actions">' +
+                  '<button class="btn-toggle-terminal" id="btnToggleTerminal">Ciutkan</button>' +
+                  '<button class="btn-copy-terminal" id="btnCopyTerminal">' +
+                    '<svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
+                    '<span class="copy-label">Salin Log</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<pre class="terminal-body" id="terminalBody">' + highlightedLog + '</pre>' +
             '</div>';
 
           document.getElementById('btnDownloadHex').addEventListener('click', function() {
@@ -1159,20 +1384,61 @@
             downloadInoFile(currentCode, inoFilename);
           });
 
+          var btnToggleTerminal = document.getElementById('btnToggleTerminal');
+          var terminalBox = document.getElementById('terminalBox');
+          if (btnToggleTerminal && terminalBox) {
+            btnToggleTerminal.addEventListener('click', function() {
+              var isCollapsed = terminalBox.classList.toggle('terminal-collapsed');
+              btnToggleTerminal.textContent = isCollapsed ? 'Rentangkan' : 'Ciutkan';
+            });
+          }
+
+          setupTerminalCopyButton(result.log);
           outputIndicator.className = 'tab-indicator success';
+
         } else {
-          showOutput('error',
-            '<strong>Kompilasi Gagal</strong><br><br>' +
-            'Detail kendala dari compiler:<br>' + result.error
-          );
+          var errorLog = result.log || result.error || 'Terjadi kesalahan tidak dikenal saat kompilasi.';
+          var highlightedError = highlightTerminalLog(errorLog);
+
+          outputContent.innerHTML =
+            '<div class="output-message error">' +
+              '<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">' +
+                '<strong>Kompilasi Gagal</strong>' +
+                '<span class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444; border-color:transparent;">Waktu: ' + duration + '</span>' +
+              '</div>' +
+              '<p style="margin-top:6px; color:var(--text-secondary); font-family:Inter,sans-serif;">' +
+                'Compiler menemukan kesalahan pada program. Periksa detail baris kode dan pesan kesalahan di bawah:' +
+              '</p>' +
+            '</div>' +
+            '<div class="compiler-terminal terminal-error" id="terminalBox">' +
+              '<div class="terminal-header">' +
+                '<div class="terminal-controls">' +
+                  '<span class="t-dot t-red"></span>' +
+                  '<span class="t-dot t-yellow"></span>' +
+                  '<span class="t-dot t-green"></span>' +
+                '</div>' +
+                '<span class="terminal-title">arduino-cli compiler error &bull; build failed</span>' +
+                '<div class="terminal-actions">' +
+                  '<button class="btn-copy-terminal" id="btnCopyTerminal">' +
+                    '<svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
+                    '<span class="copy-label">Salin Log Error</span>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<pre class="terminal-body" id="terminalBody">' + highlightedError + '</pre>' +
+            '</div>';
+
+          setupTerminalCopyButton(errorLog);
           outputIndicator.className = 'tab-indicator error';
         }
       } catch (err) {
-        showOutput('error',
-          '<strong>Koneksi Gagal</strong><br><br>' +
-          'Tidak dapat terhubung ke server backend: ' + err.message + '<br>' +
-          'Pastikan service lokal aktif (node server/app.js) dan arduino-cli telah terkonfigurasi.'
-        );
+        clearInterval(timerInterval);
+        outputContent.innerHTML =
+          '<div class="output-message error">' +
+            '<strong>Koneksi Gagal</strong><br><br>' +
+            'Tidak dapat terhubung ke server backend: ' + escapeHtml(err.message) + '<br>' +
+            'Pastikan service server lokal aktif (node server/app.js) dan koneksi internet stabil.' +
+          '</div>';
         outputIndicator.className = 'tab-indicator error';
       } finally {
         isCompiling = false;
