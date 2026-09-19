@@ -217,6 +217,61 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── SERIAL AVAILABLE (STATEMENT CONTAINER) ────────────────
+  {
+    "type": "serial_available_do",
+    "message0": "if Serial.available() > 0 %1 %2",
+    "args0": [
+      { "type": "input_dummy" },
+      { "type": "input_statement", "name": "DO" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 160,
+    "tooltip": "Executes enclosed blocks when data is available to read from the serial buffer (Serial.available() > 0).",
+    "helpUrl": ""
+  },
+
+  // ── SERIAL AVAILABLE (VALUE) ──────────────────────────────
+  {
+    "type": "serial_available",
+    "message0": "Serial.available()",
+    "output": "Number",
+    "colour": 160,
+    "tooltip": "Returns the number of bytes available for reading from the serial port buffer.",
+    "helpUrl": ""
+  },
+
+  // ── SERIAL READ (BYTE / CHAR) ─────────────────────────────
+  {
+    "type": "serial_read",
+    "message0": "Serial.read()",
+    "output": null,
+    "colour": 160,
+    "tooltip": "Reads the first incoming byte of serial data as a character/integer.",
+    "helpUrl": ""
+  },
+
+  // ── SERIAL READ STRING ────────────────────────────────────
+  {
+    "type": "serial_read_string",
+    "message0": "Serial.readString()",
+    "output": "String",
+    "colour": 160,
+    "tooltip": "Reads characters from the serial buffer into a String.",
+    "helpUrl": ""
+  },
+
+  // ── SERIAL PARSE INT ──────────────────────────────────────
+  {
+    "type": "serial_parse_int",
+    "message0": "Serial.parseInt()",
+    "output": "Number",
+    "colour": 160,
+    "tooltip": "Looks for the next valid integer in the incoming serial stream.",
+    "helpUrl": ""
+  },
+
   // ── TEXT STRING ───────────────────────────────────────────
   {
     "type": "text_string",

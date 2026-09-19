@@ -189,6 +189,42 @@ arduinoGenerator.forBlock['serial_print_inline'] = function(block, generator) {
   return '  Serial.print(' + text + ');\n';
 };
 
+arduinoGenerator.forBlock['serial_available_do'] = function(block, generator) {
+  if (!generator.setups_['serial']) {
+    generator.setups_['serial'] = 'Serial.begin(9600);';
+  }
+  var branch = generator.statementToCode(block, 'DO');
+  return '  if (Serial.available() > 0) {\n' + branch + '  }\n';
+};
+
+arduinoGenerator.forBlock['serial_available'] = function(block, generator) {
+  if (!generator.setups_['serial']) {
+    generator.setups_['serial'] = 'Serial.begin(9600);';
+  }
+  return ['Serial.available()', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['serial_read'] = function(block, generator) {
+  if (!generator.setups_['serial']) {
+    generator.setups_['serial'] = 'Serial.begin(9600);';
+  }
+  return ['Serial.read()', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['serial_read_string'] = function(block, generator) {
+  if (!generator.setups_['serial']) {
+    generator.setups_['serial'] = 'Serial.begin(9600);';
+  }
+  return ['Serial.readString()', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['serial_parse_int'] = function(block, generator) {
+  if (!generator.setups_['serial']) {
+    generator.setups_['serial'] = 'Serial.begin(9600);';
+  }
+  return ['Serial.parseInt()', generator.ORDER_ATOMIC];
+};
+
 arduinoGenerator.forBlock['text_string'] = function(block, generator) {
   var text = block.getFieldValue('TEXT');
   return ['"' + text + '"', generator.ORDER_ATOMIC];
