@@ -102,8 +102,8 @@
         elSerialStatusBadge.className = 'info-badge connected';
       }
       if (elBtnToggleConnect) {
-        elBtnToggleConnect.textContent = 'Putuskan Port';
-        elBtnToggleConnect.className = 'btn btn-secondary btn-disconnect';
+        elBtnToggleConnect.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Putuskan</span>';
+        elBtnToggleConnect.className = 'btn btn-disconnect btn-serial-action';
       }
     } else {
       elPortDot.className = 'board-badge-dot port-dot';
@@ -113,8 +113,8 @@
         elSerialStatusBadge.className = 'info-badge disconnected';
       }
       if (elBtnToggleConnect) {
-        elBtnToggleConnect.textContent = 'Hubungkan Port';
-        elBtnToggleConnect.className = 'btn btn-compile';
+        elBtnToggleConnect.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Hubungkan</span>';
+        elBtnToggleConnect.className = 'btn btn-compile btn-serial-action';
       }
     }
   }
