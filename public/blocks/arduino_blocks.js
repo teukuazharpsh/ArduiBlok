@@ -99,13 +99,52 @@ Blockly.defineBlocksWithJsonArray([
   // ── ANALOG READ ───────────────────────────────────────────
   {
     "type": "analog_read",
-    "message0": "analog read pin A%1",
+    "message0": "analog read pin %1",
     "args0": [
-      { "type": "field_number", "name": "PIN", "value": 0, "min": 0, "max": 5 }
+      {
+        "type": "field_dropdown",
+        "name": "PIN",
+        "options": [
+          ["A0", "A0"],
+          ["A1", "A1"],
+          ["A2", "A2"],
+          ["A3", "A3"],
+          ["A4", "A4"],
+          ["A5", "A5"],
+          ["A6", "A6"],
+          ["A7", "A7"]
+        ]
+      }
     ],
     "output": "Number",
     "colour": 60,
-    "tooltip": "Read analog value from pins A0-A5 (0 to 1023).",
+    "tooltip": "Read analog value from pins A0-A7 (returns integer 0 to 1023).",
+    "helpUrl": ""
+  },
+
+  // ── ANALOG WRITE (PWM) ────────────────────────────────────
+  {
+    "type": "analog_write",
+    "message0": "analog write pin %1 value %2",
+    "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "PIN",
+        "options": [
+          ["3 (PWM)", "3"],
+          ["5 (PWM)", "5"],
+          ["6 (PWM)", "6"],
+          ["9 (PWM)", "9"],
+          ["10 (PWM)", "10"],
+          ["11 (PWM)", "11"]
+        ]
+      },
+      { "type": "input_value", "name": "VALUE" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 30,
+    "tooltip": "Writes an analog value (PWM wave, 0-255) to a PWM-enabled pin.",
     "helpUrl": ""
   },
 

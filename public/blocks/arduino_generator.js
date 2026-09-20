@@ -130,8 +130,18 @@ arduinoGenerator.forBlock['digital_read'] = function(block, generator) {
 };
 
 arduinoGenerator.forBlock['analog_read'] = function(block, generator) {
-  var pin = block.getFieldValue('PIN');
-  return ['analogRead(A' + pin + ')', generator.ORDER_ATOMIC];
+  var pin = String(block.getFieldValue('PIN') || 'A0').trim();
+  if (!pin.toUpperCase().startsWith('A')) {
+    pin = 'A' + pin;
+  }
+  return ['analogRead(' + pin + ')', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['analog_write'] = function(block, generator) {
+  var pin = block.getFieldValue('PIN') || '3';
+  var value = generator.valueToCode(block, 'VALUE', generator.ORDER_ASSIGNMENT) || '0';
+  generator.setups_['pin_output_' + pin] = 'pinMode(' + pin + ', OUTPUT);';
+  return '  analogWrite(' + pin + ', ' + value + ');\n';
 };
 
 arduinoGenerator.forBlock['servo_write'] = function(block, generator) {
