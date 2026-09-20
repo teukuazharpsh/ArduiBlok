@@ -944,7 +944,7 @@
       }
 
       try {
-        // Get the workspace SVG element
+        // Get the main workspace SVG
         var svgElement = workspace.getParentSvg();
         var blockCanvas = svgElement.querySelector('.blocklyBlockCanvas');
         if (!blockCanvas) {
@@ -952,35 +952,69 @@
           return;
         }
 
-        // Calculate bounding box of all blocks
-        var bbox = blockCanvas.getBBox();
-        var padding = 20;
-        var x = bbox.x - padding;
-        var y = bbox.y - padding;
-        var width = bbox.width + padding * 2;
-        var height = bbox.height + padding * 2;
+        // Calculate true bounding box by examining each top-level block position
+        var topBlocks = workspace.getTopBlocks(false);
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
-        // Clone SVG for export
-        var svgClone = svgElement.cloneNode(true);
+        topBlocks.forEach(function(block) {
+          var blockSvg = block.getSvgRoot();
+          if (!blockSvg) return;
 
-        // Remove UI elements we don't need in the export
-        var removeSelectors = [
-          '.blocklyToolboxDiv', '.blocklyFlyout', '.blocklyScrollbarHorizontal',
-          '.blocklyScrollbarVertical', '.blocklyTrash', '.blocklyBubbleCanvas',
-          '.blocklyZoom', '.blocklyMainBackground'
-        ];
-        removeSelectors.forEach(function(sel) {
-          var elements = svgClone.querySelectorAll(sel);
-          elements.forEach(function(el) { el.remove(); });
+          // Get the block's position in workspace coordinates
+          var xy = block.getRelativeToSurfaceXY();
+          var blockBBox = blockSvg.getBBox();
+
+          var bx = xy.x;
+          var by = xy.y;
+          var bRight = bx + blockBBox.width;
+          var bBottom = by + blockBBox.height;
+
+          if (bx < minX) minX = bx;
+          if (by < minY) minY = by;
+          if (bRight > maxX) maxX = bRight;
+          if (bBottom > maxY) maxY = bBottom;
         });
 
-        // Set viewBox to fit blocks only
-        svgClone.setAttribute('viewBox', x + ' ' + y + ' ' + width + ' ' + height);
-        svgClone.setAttribute('width', width * 2);
-        svgClone.setAttribute('height', height * 2);
-        svgClone.style.backgroundColor = 'transparent';
+        if (!isFinite(minX)) {
+          alert('Tidak dapat menghitung area blok.');
+          return;
+        }
 
-        // Collect all relevant styles from stylesheets
+        var padding = 30;
+        var exportWidth = (maxX - minX) + padding * 2;
+        var exportHeight = (maxY - minY) + padding * 2;
+
+        // Scale factor for high-res output
+        var scale = 2;
+        var canvasWidth = exportWidth * scale;
+        var canvasHeight = exportHeight * scale;
+
+        // Create a new standalone SVG with only the block content
+        var ns = 'http://www.w3.org/2000/svg';
+        var newSvg = document.createElementNS(ns, 'svg');
+        newSvg.setAttribute('xmlns', ns);
+        newSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        newSvg.setAttribute('width', canvasWidth);
+        newSvg.setAttribute('height', canvasHeight);
+        newSvg.setAttribute('viewBox',
+          (minX - padding) + ' ' + (minY - padding) + ' ' + exportWidth + ' ' + exportHeight
+        );
+
+        // Clone blockCanvas content (blocks only, no UI chrome)
+        var canvasClone = blockCanvas.cloneNode(true);
+        // Reset the transform on the clone so viewBox handles positioning
+        canvasClone.setAttribute('transform', 'translate(0,0)');
+        newSvg.appendChild(canvasClone);
+
+        // Also clone the bubble canvas (comments attached to blocks)
+        var bubbleCanvas = svgElement.querySelector('.blocklyBubbleCanvas');
+        if (bubbleCanvas) {
+          var bubbleClone = bubbleCanvas.cloneNode(true);
+          bubbleClone.setAttribute('transform', 'translate(0,0)');
+          newSvg.appendChild(bubbleClone);
+        }
+
+        // Collect CSS styles that Blockly needs
         var styleText = '';
         try {
           var sheets = document.styleSheets;
@@ -989,46 +1023,63 @@
               var rules = sheets[s].cssRules || sheets[s].rules;
               if (rules) {
                 for (var r = 0; r < rules.length; r++) {
-                  var ruleText = rules[r].cssText || '';
-                  if (ruleText.indexOf('blockly') !== -1 || ruleText.indexOf('.blocklySvg') !== -1) {
-                    styleText += ruleText + '\n';
+                  var rt = rules[r].cssText || '';
+                  if (rt.indexOf('blockly') !== -1 || rt.indexOf('.blocklySvg') !== -1) {
+                    styleText += rt + '\n';
                   }
                 }
               }
-            } catch(e) { /* cross-origin stylesheet, skip */ }
+            } catch(e) { /* cross-origin, skip */ }
           }
         } catch(e) {}
 
-        // Inject Blockly inline styles
-        var styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-        styleElement.textContent = styleText + '\n' +
-          '.blocklyText { font-family: sans-serif; font-size: 11pt; fill: #fff; }\n' +
-          '.blocklyNonEditableText > text, .blocklyEditableText > text { fill: #fff; }\n' +
-          '.blocklyDropdownText { fill: #fff !important; }\n';
-        svgClone.insertBefore(styleElement, svgClone.firstChild);
+        // Also grab Blockly's own injected <style> elements
+        var blocklyStyles = svgElement.querySelectorAll('style');
+        blocklyStyles.forEach(function(st) {
+          styleText += st.textContent + '\n';
+        });
 
-        // Serialize to SVG string
+        // Add essential font and fill styles
+        styleText += '\n' +
+          '.blocklyText { font-family: sans-serif; font-size: 11pt; }' + '\n' +
+          '.blocklyHtmlInput { display: none; }' + '\n' +
+          '.blocklyEditableText > .blocklyText { fill: #fff; }' + '\n';
+
+        var styleEl = document.createElementNS(ns, 'style');
+        styleEl.textContent = styleText;
+        newSvg.insertBefore(styleEl, newSvg.firstChild);
+
+        // Also copy <defs> (filters, patterns, markers used by Blockly)
+        var defsElements = svgElement.querySelectorAll('defs');
+        defsElements.forEach(function(defs) {
+          var defsClone = defs.cloneNode(true);
+          newSvg.insertBefore(defsClone, newSvg.firstChild);
+        });
+
+        // Serialize the clean SVG
         var serializer = new XMLSerializer();
-        var svgString = serializer.serializeToString(svgClone);
-        svgString = '<?xml version="1.0" standalone="no"?>\n' + svgString;
+        var svgString = serializer.serializeToString(newSvg);
 
-        // Create image from SVG
+        // Create canvas and render
         var canvas = document.createElement('canvas');
-        canvas.width = width * 2;
-        canvas.height = height * 2;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         var ctx = canvas.getContext('2d');
 
         var img = new Image();
         img.onload = function() {
-          // White background for JPEG compatibility
+          // White background
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          // Download as PNG
+          URL.revokeObjectURL(img.src);
+
+          // Download PNG
           canvas.toBlob(function(blob) {
             if (!blob) {
-              alert('Gagal membuat gambar.');
+              alert('Gagal membuat gambar. Mencoba download SVG...');
+              downloadSvgFallback(svgString);
               return;
             }
             var url = URL.createObjectURL(blob);
@@ -1043,16 +1094,8 @@
         };
 
         img.onerror = function() {
-          // Fallback: download SVG directly
-          var svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-          var url = URL.createObjectURL(svgBlob);
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = getCleanProjectName() + '_blocks.svg';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(img.src);
+          downloadSvgFallback(svgString);
         };
 
         var svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
@@ -1061,6 +1104,18 @@
       } catch (err) {
         alert('Gagal export gambar: ' + err.message);
       }
+    }
+
+    function downloadSvgFallback(svgString) {
+      var svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      var url = URL.createObjectURL(svgBlob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = getCleanProjectName() + '_blocks.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     var btnExportImage = document.getElementById('btnExportImage');
