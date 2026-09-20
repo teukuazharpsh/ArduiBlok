@@ -378,6 +378,21 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── TEXT JOIN SIMPLE ───────────────────────────────────────
+  {
+    "type": "text_join_simple",
+    "message0": "join %1 %2",
+    "args0": [
+      { "type": "input_value", "name": "A" },
+      { "type": "input_value", "name": "B" }
+    ],
+    "inputsInline": true,
+    "output": "String",
+    "colour": 160,
+    "tooltip": "Menggabungkan dua teks atau variabel menjadi satu teks.",
+    "helpUrl": ""
+  },
+
   // ── COMPARISON OPERATOR ───────────────────────────────────
   {
     "type": "compare_op",

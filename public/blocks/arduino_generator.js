@@ -253,6 +253,41 @@ arduinoGenerator.forBlock['char_character'] = function(block, generator) {
   return ["'" + c + "'", generator.ORDER_ATOMIC];
 };
 
+arduinoGenerator.forBlock['text_join_simple'] = function(block, generator) {
+  var a = generator.valueToCode(block, 'A', generator.ORDER_NONE);
+  var b = generator.valueToCode(block, 'B', generator.ORDER_NONE);
+
+  if (!a && !b) {
+    return ['String("")', generator.ORDER_ATOMIC];
+  }
+  if (!a) {
+    return ['String(' + b + ')', generator.ORDER_ATOMIC];
+  }
+  if (!b) {
+    return ['String(' + a + ')', generator.ORDER_ATOMIC];
+  }
+  return ['(String(' + a + ') + String(' + b + '))', generator.ORDER_ADDITIVE];
+};
+
+arduinoGenerator.forBlock['text_join'] = function(block, generator) {
+  var elements = [];
+  var itemCount = (typeof block.itemCount_ === 'number') ? block.itemCount_ : 2;
+  for (var i = 0; i < itemCount; i++) {
+    var element = generator.valueToCode(block, 'ADD' + i, generator.ORDER_NONE);
+    if (element) {
+      elements.push('String(' + element + ')');
+    }
+  }
+  if (elements.length === 0) {
+    return ['String("")', generator.ORDER_ATOMIC];
+  }
+  if (elements.length === 1) {
+    return [elements[0], generator.ORDER_ATOMIC];
+  }
+  var code = elements.join(' + ');
+  return ['(' + code + ')', generator.ORDER_ADDITIVE];
+};
+
 arduinoGenerator.forBlock['compare_op'] = function(block, generator) {
   var a = generator.valueToCode(block, 'A', generator.ORDER_RELATIONAL) || '0';
   var op = block.getFieldValue('OP');
