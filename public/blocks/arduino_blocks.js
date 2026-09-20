@@ -911,3 +911,16 @@ Blockly.Blocks['variables_set_simple'] = {
     this.setHelpUrl('');
   }
 };
+
+// ── MUTATOR LABELS (CONTROLS_IF & TEXT_JOIN) ──────────────────
+if (typeof Blockly !== 'undefined' && Blockly.Msg) {
+  Blockly.Msg['TEXT_JOIN_TITLE_CREATEWITH'] = 'join';
+  Blockly.Msg['TEXT_JOIN_TOOLTIP'] = 'Menggabungkan beberapa teks atau variabel (klik gigi/gear untuk menambah slot).';
+  Blockly.Msg['CONTROLS_IF_MSG_IF'] = 'if';
+  Blockly.Msg['CONTROLS_IF_MSG_ELSEIF'] = 'else if';
+  Blockly.Msg['CONTROLS_IF_MSG_ELSE'] = 'else';
+  Blockly.Msg['CONTROLS_IF_IF_TOOLTIP'] = 'Tambah atau atur ulang cabang if.';
+  Blockly.Msg['CONTROLS_IF_ELSEIF_TOOLTIP'] = 'Tambah cabang else-if.';
+  Blockly.Msg['CONTROLS_IF_ELSE_TOOLTIP'] = 'Tambah cabang else terakhir.';
+}
+

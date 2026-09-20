@@ -325,6 +325,26 @@ arduinoGenerator.forBlock['comment_group_block'] = function(block, generator) {
   return '  // ' + comment + '\n' + branch;
 };
 
+arduinoGenerator.forBlock['controls_if'] = function(block, generator) {
+  var n = 0;
+  var code = '';
+  var branchCode, conditionCode;
+
+  do {
+    conditionCode = generator.valueToCode(block, 'IF' + n, generator.ORDER_NONE) || 'false';
+    branchCode = generator.statementToCode(block, 'DO' + n);
+    code += (n === 0 ? '  if (' : ' else if (') + conditionCode + ') {\n' + branchCode + '  }';
+    n++;
+  } while (block.getInput('IF' + n));
+
+  if (block.getInput('ELSE')) {
+    branchCode = generator.statementToCode(block, 'ELSE');
+    code += ' else {\n' + branchCode + '  }';
+  }
+
+  return code + '\n';
+};
+
 arduinoGenerator.forBlock['controls_if_arduino'] = function(block, generator) {
   var condition = generator.valueToCode(block, 'CONDITION', generator.ORDER_NONE) || 'false';
   var doCode = generator.statementToCode(block, 'DO');

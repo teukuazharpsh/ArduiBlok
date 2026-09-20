@@ -343,8 +343,13 @@
 
     <!-- Category: Control -->
     <category name="Control" colour="120">
-      <block type="controls_if_arduino"></block>
-      <block type="controls_if_only"></block>
+      <block type="controls_if"></block>
+      <block type="controls_if">
+        <mutation else="1"></mutation>
+      </block>
+      <block type="controls_if">
+        <mutation elseif="1" else="1"></mutation>
+      </block>
       <block type="controls_repeat_arduino">
         <field name="TIMES">10</field>
       </block>
@@ -385,14 +390,27 @@
       <block type="serial_print_inline"></block>
       <block type="text_string"></block>
       <block type="char_character"></block>
-      <block type="text_join_simple">
-        <value name="A">
+      <block type="text_join">
+        <mutation items="2"></mutation>
+        <value name="ADD0">
           <shadow type="text_string">
             <field name="TEXT">Nilai: </field>
           </shadow>
         </value>
       </block>
-      <block type="text_join"></block>
+      <block type="text_join">
+        <mutation items="3"></mutation>
+        <value name="ADD0">
+          <shadow type="text_string">
+            <field name="TEXT">Suhu: </field>
+          </shadow>
+        </value>
+        <value name="ADD2">
+          <shadow type="text_string">
+            <field name="TEXT"> °C</field>
+          </shadow>
+        </value>
+      </block>
     </category>
 
     <!-- Category: Variables -->
