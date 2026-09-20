@@ -33,8 +33,18 @@
   var elBtnSerialSend = null;
   var elSerialStatusBadge = null;
 
+  function getSerialAPI() {
+    if ('serial' in navigator && navigator.serial) {
+      return navigator.serial;
+    }
+    if (window.WebSerialPolyfill && window.WebSerialPolyfill.serial && 'usb' in navigator) {
+      return window.WebSerialPolyfill.serial;
+    }
+    return null;
+  }
+
   function isSupported() {
-    return 'serial' in navigator;
+    return !!getSerialAPI();
   }
 
   function sleep(ms) {
@@ -133,14 +143,15 @@
   }
 
   async function requestAndConnect() {
-    if (!isSupported()) {
-      alert('Browser Anda belum mendukung Web Serial API.\nGunakan browser Google Chrome / Microsoft Edge.');
+    var serial = getSerialAPI();
+    if (!serial) {
+      alert('Browser Anda belum mendukung Web Serial API maupun WebUSB.\nGunakan Google Chrome atau Microsoft Edge di PC, atau Chrome di Android dengan OTG.');
       return false;
     }
 
     try {
-      // Selalu tampilkan dialog pemilihan port dari browser agar user bebas memilih port COM
-      var port = await navigator.serial.requestPort();
+      // Selalu tampilkan dialog pemilihan port dari browser (Web Serial / WebUSB Polyfill)
+      var port = await serial.requestPort();
       if (isConnected) {
         await disconnectPort();
       }
@@ -298,9 +309,10 @@
   }
 
   async function checkExistingPorts() {
-    if (!isSupported()) return;
+    var api = getSerialAPI();
+    if (!api) return;
     try {
-      var ports = await navigator.serial.getPorts();
+      var ports = await api.getPorts();
       if (ports && ports.length > 0) {
         currentPort = ports[0];
         updateBadgeUI();
@@ -422,6 +434,7 @@
   // Export API
   root.ArduiBlokSerial = {
     isSupported: isSupported,
+    getSerialAPI: getSerialAPI,
     getCurrentPort: function() { return currentPort; },
     isConnected: function() { return isConnected; },
     connectPort: connectPort,
