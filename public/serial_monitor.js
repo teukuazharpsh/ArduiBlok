@@ -14,7 +14,7 @@
   var keepReading = false;
   var isPausedForUpload = false;
 
-  // DOM elements (initialized on DOM ready)
+  // DOM elements
   var elPortDot = null;
   var elPortLabel = null;
   var elBtnOpenPortModal = null;
@@ -24,6 +24,7 @@
   var elSerialTerminal = null;
   var elSelectBaud = null;
   var elBtnToggleConnect = null;
+  var elBtnResetBoard = null;
   var elBtnClearTerminal = null;
   var elCheckAutoscroll = null;
   var elCheckTimestamp = null;
@@ -34,6 +35,10 @@
 
   function isSupported() {
     return 'serial' in navigator;
+  }
+
+  function sleep(ms) {
+    return new Promise(function(r) { setTimeout(r, ms); });
   }
 
   function formatTime() {
@@ -80,7 +85,7 @@
       }
     } else {
       elPortDot.className = 'board-badge-dot port-dot';
-      elPortLabel.textContent = 'Pilih Port';
+      elPortLabel.textContent = currentPort ? 'Port Siap' : 'Pilih Port';
       if (elSerialStatusBadge) {
         elSerialStatusBadge.textContent = 'Terputus';
         elSerialStatusBadge.className = 'info-badge disconnected';
@@ -106,12 +111,17 @@
         await port.open({ baudRate: currentBaudRate });
       }
 
+      // Assert DTR & RTS to enable active serial transmission
+      try {
+        await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+      } catch (e) {}
+
       currentPort = port;
       isConnected = true;
       keepReading = true;
       updateBadgeUI();
 
-      appendTerminal('\n--- Port Serial Terhubung pada ' + currentBaudRate + ' bps ---\n');
+      appendTerminal('\n--- Port Serial Terhubung (' + currentBaudRate + ' bps) ---\n');
       startReadingLoop();
       return true;
     } catch (err) {
@@ -129,8 +139,17 @@
     }
 
     try {
-      var port = await navigator.serial.requestPort();
-      return await connectPort(port);
+      // First check if a port was already granted
+      var existingPorts = await navigator.serial.getPorts();
+      var portToUse = null;
+
+      if (existingPorts && existingPorts.length > 0) {
+        portToUse = existingPorts[0];
+      } else {
+        portToUse = await navigator.serial.requestPort();
+      }
+
+      return await connectPort(portToUse);
     } catch (err) {
       if (err.name !== 'NotFoundError') {
         appendTerminal('Peringatan: ' + err.message + '\n', true);
@@ -142,31 +161,40 @@
   async function disconnectPort() {
     keepReading = false;
     if (reader) {
-      try {
-        await reader.cancel();
-      } catch (e) {}
-      try {
-        reader.releaseLock();
-      } catch (e) {}
+      try { await reader.cancel(); } catch (e) {}
+      try { reader.releaseLock(); } catch (e) {}
       reader = null;
     }
 
     if (writer) {
-      try {
-        writer.releaseLock();
-      } catch (e) {}
+      try { writer.releaseLock(); } catch (e) {}
       writer = null;
     }
 
     if (currentPort) {
-      try {
-        await currentPort.close();
-      } catch (e) {}
+      try { await currentPort.close(); } catch (e) {}
     }
 
     isConnected = false;
     updateBadgeUI();
     appendTerminal('\n--- Port Serial Diputus ---\n');
+  }
+
+  // Reset board using DTR toggle so setup() runs again
+  async function resetBoard() {
+    if (!currentPort || !isConnected) {
+      alert('Port serial belum terhubung.');
+      return;
+    }
+    try {
+      appendTerminal('\n--- Mereset Board Arduino (DTR Toggle) ---\n');
+      await currentPort.setSignals({ dataTerminalReady: false });
+      await sleep(150);
+      await currentPort.setSignals({ dataTerminalReady: true });
+      await sleep(100);
+    } catch (e) {
+      appendTerminal('Gagal reset board: ' + e.message + '\n', true);
+    }
   }
 
   async function startReadingLoop() {
@@ -246,17 +274,18 @@
     if (currentPort) {
       try { await currentPort.close(); } catch (e) {}
     }
-    await new Promise(function(r) { setTimeout(r, 150); });
+    await sleep(350); // Allow Windows kernel to release handle
   }
 
   // Resumes Serial Monitor after upload finishes
   async function resumeAfterUpload() {
     isPausedForUpload = false;
+    await sleep(400); // Give bootloader time to restart sketch
     if (currentPort) {
       try {
         await connectPort(currentPort, currentBaudRate);
       } catch (e) {
-        // Can be reconnected manually by user
+        // User can manually reconnect
       }
     }
   }
@@ -273,6 +302,17 @@
     }
   }
 
+  async function checkExistingPorts() {
+    if (!isSupported()) return;
+    try {
+      var ports = await navigator.serial.getPorts();
+      if (ports && ports.length > 0) {
+        currentPort = ports[0];
+        updateBadgeUI();
+      }
+    } catch (e) {}
+  }
+
   function initUI() {
     elPortDot = document.getElementById('portStatusDot');
     elPortLabel = document.getElementById('currentPortLabel');
@@ -283,6 +323,7 @@
     elSerialTerminal = document.getElementById('serialTerminalBody');
     elSelectBaud = document.getElementById('selectSerialBaud');
     elBtnToggleConnect = document.getElementById('btnToggleSerialConnect');
+    elBtnResetBoard = document.getElementById('btnResetSerialBoard');
     elBtnClearTerminal = document.getElementById('btnClearSerialTerminal');
     elCheckAutoscroll = document.getElementById('checkSerialAutoscroll');
     elCheckTimestamp = document.getElementById('checkSerialTimestamp');
@@ -304,6 +345,9 @@
     if (elBtnOpenSerialMonitor) {
       elBtnOpenSerialMonitor.addEventListener('click', function() {
         openSerialModal();
+        if (!isConnected && currentPort) {
+          connectPort(currentPort);
+        }
       });
     }
 
@@ -319,6 +363,10 @@
           requestAndConnect();
         }
       });
+    }
+
+    if (elBtnResetBoard) {
+      elBtnResetBoard.addEventListener('click', resetBoard);
     }
 
     if (elBtnClearTerminal && elSerialTerminal) {
@@ -363,6 +411,7 @@
       });
     }
 
+    checkExistingPorts();
     updateBadgeUI();
   }
 
@@ -381,6 +430,7 @@
     connectPort: connectPort,
     requestAndConnect: requestAndConnect,
     disconnectPort: disconnectPort,
+    resetBoard: resetBoard,
     sendSerialText: sendSerialText,
     prepareForUpload: prepareForUpload,
     resumeAfterUpload: resumeAfterUpload,

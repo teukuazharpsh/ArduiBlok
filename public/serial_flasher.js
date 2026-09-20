@@ -8,10 +8,26 @@
 
   // ── Intel HEX Parser ─────────────────────────────────────────
   function parseIntelHex(hexString) {
-    var lines = hexString.split(/\r?\n/);
+    if (!hexString) throw new Error('Data HEX kosong.');
+
+    // Auto-decode if the string is Base64 encoded
+    var cleanStr = hexString.trim();
+    if (cleanStr.charAt(0) !== ':') {
+      try {
+        var decoded = atob(cleanStr);
+        if (decoded.indexOf(':') !== -1) {
+          cleanStr = decoded;
+        }
+      } catch (e) {
+        // Not base64, proceed as raw
+      }
+    }
+
+    var lines = cleanStr.split(/\r?\n/);
     var flashData = [];
     var maxAddress = 0;
     var extendedAddress = 0;
+    var recordCount = 0;
 
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
@@ -22,6 +38,7 @@
       var recordType = parseInt(line.substr(7, 2), 16);
 
       if (recordType === 0) { // Data record
+        recordCount++;
         for (var b = 0; b < byteCount; b++) {
           var val = parseInt(line.substr(9 + b * 2, 2), 16);
           flashData[address + b] = val;
@@ -36,6 +53,10 @@
       } else if (recordType === 4) { // Extended Linear Address
         extendedAddress = parseInt(line.substr(9, 4), 16) << 16;
       }
+    }
+
+    if (recordCount === 0) {
+      throw new Error('Format Intel HEX tidak valid: tidak ada baris data biner.');
     }
 
     var totalBytes = maxAddress + 1;
@@ -107,7 +128,7 @@
       baudRate: 115200,
       pageSize: 128,
       timeoutMs: 1500,
-      maxSyncAttempts: 15,
+      maxSyncAttempts: 25,
       onProgress: function(percent, message) {},
       onLog: function(msg) {}
     }, options || {});
@@ -125,7 +146,7 @@
     if (this.options.onProgress) this.options.onProgress(percent, msg);
   };
 
-  // Pulse DTR to reset ATmega328P into bootloader mode
+  // Pulse DTR to reset ATmega328P into bootloader mode (matching avrdude timing)
   ArduinoFlasher.prototype.resetTarget = async function() {
     this.log('Mereset board Arduino via pulsa DTR...');
     try {
@@ -134,13 +155,13 @@
       await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
       await sleep(250);
       await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
-      await sleep(150);
+      await sleep(50);
     } catch (e) {
       this.log('Peringatan: Reset sinyal DTR gagal (' + e.message + '), melanjutkan...');
     }
   };
 
-  // Read loop to accumulate bytes
+  // Read loop to accumulate incoming bytes
   ArduinoFlasher.prototype.startReading = function() {
     var self = this;
     var readable = this.port.readable;
@@ -159,7 +180,7 @@
           }
         }
       } catch (e) {
-        // Reader closed or cancelled
+        // Reader cancelled or closed
       }
     })();
   };
@@ -173,26 +194,25 @@
     await this.writer.write(data);
   };
 
-  // Read N bytes from internal rx buffer with timeout
+  // Read N bytes from rx buffer with timeout
   ArduinoFlasher.prototype.readBytes = async function(count, timeoutMs) {
     var timeout = timeoutMs || this.options.timeoutMs;
     var startTime = Date.now();
 
     while (this.rxBuffer.length < count) {
       if (Date.now() - startTime > timeout) {
-        throw new Error('Timeout menunggu respons dari Arduino bootloader (' + count + ' byte)');
+        throw new Error('Timeout menunggu respons STK500 (' + count + ' byte)');
       }
-      await sleep(10);
+      await sleep(5);
     }
 
-    var result = this.rxBuffer.splice(0, count);
-    return result;
+    return this.rxBuffer.splice(0, count);
   };
 
   // Send command and verify STK_INSYNC and STK_OK
   ArduinoFlasher.prototype.executeCommand = async function(cmdBytes, extraResponseLen) {
     extraResponseLen = extraResponseLen || 0;
-    this.rxBuffer = []; // Clear leftover
+    this.rxBuffer = []; // Clear previous leftover
     await this.write(cmdBytes);
 
     var totalExpected = 2 + extraResponseLen; // INSYNC + data + OK
@@ -205,27 +225,44 @@
       throw new Error('STK500 status error: diterima 0x' + resp[resp.length - 1].toString(16));
     }
 
-    // Return extra bytes between INSYNC and OK
     return resp.slice(1, resp.length - 1);
   };
 
-  // Attempt sync with Optiboot
+  // Attempt sync with Optiboot bootloader
   ArduinoFlasher.prototype.sync = async function() {
     this.log('Menghubungkan ke STK500 bootloader...');
     var synced = false;
 
+    // Drain any initial garbage
+    await sleep(40);
+    this.rxBuffer = [];
+
     for (var attempt = 1; attempt <= this.options.maxSyncAttempts; attempt++) {
       try {
-        this.rxBuffer = [];
         await this.write([STK.GET_SYNC, STK.CRC_EOP]);
-        var resp = await this.readBytes(2, 250);
-        if (resp[0] === STK.INSYNC && resp[1] === STK.OK) {
-          synced = true;
+
+        var startTime = Date.now();
+        while (Date.now() - startTime < 250) {
+          if (this.rxBuffer.length >= 2) {
+            // Find 0x14 followed by 0x10 in stream
+            for (var idx = 0; idx < this.rxBuffer.length - 1; idx++) {
+              if (this.rxBuffer[idx] === STK.INSYNC && this.rxBuffer[idx + 1] === STK.OK) {
+                this.rxBuffer.splice(0, idx + 2);
+                synced = true;
+                break;
+              }
+            }
+            if (synced) break;
+          }
+          await sleep(10);
+        }
+
+        if (synced) {
           this.log('Tersambung ke bootloader pada percobaan ke-' + attempt);
           break;
         }
       } catch (e) {
-        await sleep(50);
+        await sleep(30);
       }
     }
 
@@ -235,8 +272,8 @@
   };
 
   // Main upload routine
-  ArduinoFlasher.prototype.flashHex = async function(hexString) {
-    var parsed = parseIntelHex(hexString);
+  ArduinoFlasher.prototype.flashHex = async function(hexInput) {
+    var parsed = parseIntelHex(hexInput);
     this.log('Ukuran binary: ' + parsed.totalLength + ' bytes (' + parsed.pageCount + ' halaman flash)');
 
     // 1. Open port if not already open
@@ -320,6 +357,8 @@
       }
       if (portOpenedByFlasher) {
         try { await this.port.close(); } catch (e) {}
+        // Give Windows OS time to release serial handle
+        await sleep(300);
       }
     }
   };
