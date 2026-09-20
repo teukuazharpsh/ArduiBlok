@@ -991,11 +991,9 @@
                              'text-anchor', 'dominant-baseline', 'visibility', 'display', 'transform'];
 
         function inlineComputedStyles(sourceRoot, clonedRoot) {
-          // Process the root elements themselves
           var sourceEls = sourceRoot.querySelectorAll(svgTags.join(','));
           var clonedEls = clonedRoot.querySelectorAll(svgTags.join(','));
 
-          // Walk both trees in parallel
           var len = Math.min(sourceEls.length, clonedEls.length);
           for (var i = 0; i < len; i++) {
             try {
@@ -1005,21 +1003,24 @@
               for (var p = 0; p < propsToInline.length; p++) {
                 var prop = propsToInline[p];
                 var val = computed.getPropertyValue(prop);
-                if (val && val !== '' && val !== 'none' && val !== 'auto') {
-                  // For SVG, set as attribute (more reliable than style for export)
-                  if (prop === 'font-family' || prop === 'font-size' || prop === 'font-weight' || prop === 'font-style') {
-                    clonedEls[i].style.setProperty(prop, val);
-                  } else if (prop === 'display' || prop === 'visibility') {
-                    clonedEls[i].style.setProperty(prop, val);
-                  } else if (prop === 'transform') {
-                    // Don't override transform - keep the original
-                  } else {
-                    clonedEls[i].setAttribute(prop, val);
-                  }
+                if (!val || val === '' || val === 'auto') continue;
+
+                // For fill and stroke: ALWAYS set the value, including 'none'.
+                // In SVG, 'none' means transparent — skipping it causes default black fill.
+                if (prop === 'fill' || prop === 'stroke' || prop === 'stroke-width' ||
+                    prop === 'fill-opacity' || prop === 'stroke-opacity' || prop === 'opacity') {
+                  clonedEls[i].setAttribute(prop, val);
+                } else if (prop === 'font-family' || prop === 'font-size' || prop === 'font-weight' || prop === 'font-style') {
+                  clonedEls[i].style.setProperty(prop, val);
+                } else if (prop === 'display' || prop === 'visibility') {
+                  clonedEls[i].style.setProperty(prop, val);
+                } else if (prop === 'text-anchor' || prop === 'dominant-baseline') {
+                  if (val !== 'none') clonedEls[i].setAttribute(prop, val);
                 }
+                // transform: don't override — keep the original attribute
               }
 
-              // Special: ensure text elements have their fill set correctly
+              // Ensure text fill is always set
               if (tag === 'text' || tag === 'tspan') {
                 var textFill = computed.getPropertyValue('fill');
                 if (textFill) {
