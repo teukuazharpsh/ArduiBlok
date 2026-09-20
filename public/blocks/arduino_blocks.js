@@ -66,7 +66,7 @@ Blockly.defineBlocksWithJsonArray([
     "type": "digital_write",
     "message0": "digital write pin %1 to %2",
     "args0": [
-      { "type": "field_number", "name": "PIN", "value": 13, "min": 0, "max": 13 },
+      { "type": "input_value", "name": "PIN", "check": ["int", "Number"] },
       {
         "type": "field_dropdown",
         "name": "VALUE",
@@ -76,6 +76,7 @@ Blockly.defineBlocksWithJsonArray([
         ]
       }
     ],
+    "inputsInline": true,
     "previousStatement": null,
     "nextStatement": null,
     "colour": 30,
@@ -88,8 +89,9 @@ Blockly.defineBlocksWithJsonArray([
     "type": "digital_read",
     "message0": "digital read pin %1",
     "args0": [
-      { "type": "field_number", "name": "PIN", "value": 2, "min": 0, "max": 13 }
+      { "type": "input_value", "name": "PIN", "check": ["int", "Number"] }
     ],
+    "inputsInline": true,
     "output": "Number",
     "colour": 60,
     "tooltip": "Read the value from a digital pin (HIGH or LOW).",
@@ -182,7 +184,7 @@ Blockly.defineBlocksWithJsonArray([
     "type": "pin_mode",
     "message0": "set pin %1 mode to %2",
     "args0": [
-      { "type": "field_number", "name": "PIN", "value": 13, "min": 0, "max": 13 },
+      { "type": "input_value", "name": "PIN", "check": ["int", "Number"] },
       {
         "type": "field_dropdown",
         "name": "MODE",
@@ -193,6 +195,7 @@ Blockly.defineBlocksWithJsonArray([
         ]
       }
     ],
+    "inputsInline": true,
     "previousStatement": null,
     "nextStatement": null,
     "colour": 180,
@@ -331,7 +334,7 @@ Blockly.defineBlocksWithJsonArray([
     "args0": [
       { "type": "field_input", "name": "CHAR", "text": "A" }
     ],
-    "output": null,
+    "output": "char",
     "colour": 160,
     "tooltip": "A single character literal.",
     "helpUrl": ""
@@ -765,15 +768,79 @@ function handleVariableDropdownValidator(newValue) {
   return undefined; // Terima nilai yang dipilih
 }
 
+function getArduinoVariableType(varName, ws) {
+  if (!ws && typeof Blockly !== 'undefined' && Blockly.getMainWorkspace) {
+    ws = Blockly.getMainWorkspace();
+  }
+  if (!ws || !varName) return 'int';
+
+  if (ws && typeof ws.getAllBlocks === 'function') {
+    var blocks = ws.getAllBlocks(false);
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      if (b.type === 'variables_declare_arduino' || b.type === 'variables_set_arduino') {
+        var vName = b.getFieldValue('VAR_NAME');
+        if (vName && vName.trim() === varName.trim()) {
+          var type = b.getFieldValue('TYPE');
+          if (type) return type;
+        }
+      }
+    }
+  }
+  return 'int';
+}
+
+function getBlocklyCheckForType(arduinoType) {
+  switch (arduinoType) {
+    case 'int':
+    case 'byte':
+    case 'long':
+      return ['int', 'Number'];
+    case 'float':
+    case 'double':
+      return 'float';
+    case 'char':
+      return 'char';
+    case 'String':
+      return 'String';
+    case 'bool':
+    case 'boolean':
+      return 'Boolean';
+    default:
+      return ['int', 'Number'];
+  }
+}
+
 // ── VARIABLE GET (CALL / READ WITH DROPDOWN) ──────────────────
 Blockly.Blocks['variables_get_arduino'] = {
   init: function() {
     this.appendDummyInput()
         .appendField(new Blockly.FieldDropdown(getArduinoVariableOptions, handleVariableDropdownValidator), 'VAR_NAME');
-    this.setOutput(true, null);
+    this.setOutput(true, ['int', 'Number']);
     this.setColour(330);
     this.setTooltip('Memanggil nilai variabel yang dipilih dari dropdown.');
     this.setHelpUrl('');
+  },
+  onchange: function(e) {
+    if (!this.workspace) return;
+    var varName = this.getFieldValue('VAR_NAME');
+    if (!varName) return;
+
+    var ws = this.workspace;
+    if (ws.isFlyout && ws.targetWorkspace) {
+      ws = ws.targetWorkspace;
+    }
+    var type = getArduinoVariableType(varName, ws);
+    var check = getBlocklyCheckForType(type);
+
+    if (this.outputConnection) {
+      this.setOutput(true, check);
+      if (this.outputConnection.targetConnection) {
+        if (!this.outputConnection.targetConnection.checkType_(this.outputConnection)) {
+          this.outputConnection.disconnect();
+        }
+      }
+    }
   }
 };
 

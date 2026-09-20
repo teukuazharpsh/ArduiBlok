@@ -117,14 +117,14 @@ arduinoGenerator.forBlock['motor_dc'] = function(block, generator) {
 };
 
 arduinoGenerator.forBlock['digital_write'] = function(block, generator) {
-  var pin = block.getFieldValue('PIN');
-  var value = block.getFieldValue('VALUE');
+  var pin = generator.valueToCode(block, 'PIN', generator.ORDER_ATOMIC) || block.getFieldValue('PIN') || '13';
+  var value = block.getFieldValue('VALUE') || 'HIGH';
   generator.setups_['pin_' + pin] = 'pinMode(' + pin + ', OUTPUT);';
   return '  digitalWrite(' + pin + ', ' + value + ');\n';
 };
 
 arduinoGenerator.forBlock['digital_read'] = function(block, generator) {
-  var pin = block.getFieldValue('PIN');
+  var pin = generator.valueToCode(block, 'PIN', generator.ORDER_ATOMIC) || block.getFieldValue('PIN') || '2';
   generator.setups_['pin_input_' + pin] = 'pinMode(' + pin + ', INPUT);';
   return ['digitalRead(' + pin + ')', generator.ORDER_ATOMIC];
 };
@@ -172,8 +172,8 @@ arduinoGenerator.forBlock['delay_ms'] = function(block, generator) {
 };
 
 arduinoGenerator.forBlock['pin_mode'] = function(block, generator) {
-  var pin = block.getFieldValue('PIN');
-  var mode = block.getFieldValue('MODE');
+  var pin = generator.valueToCode(block, 'PIN', generator.ORDER_ATOMIC) || block.getFieldValue('PIN') || '13';
+  var mode = block.getFieldValue('MODE') || 'OUTPUT';
   return '  pinMode(' + pin + ', ' + mode + ');\n';
 };
 
