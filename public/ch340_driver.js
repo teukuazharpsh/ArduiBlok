@@ -228,7 +228,8 @@
         { vendorId: 0x2a03 }, // Arduino.org
         { vendorId: 0x10c4 }, // Silicon Labs CP210x
         { vendorId: 0x0403 }, // FTDI
-        {}                    // Filter kosong agar semua perangkat USB yang dicolokkan ke OTG ditampilkan
+        { classCode: 2 },     // USB CDC
+        { classCode: 0xFF }   // Vendor-specific USB serial (CH340)
       ];
 
       var device = await navigator.usb.requestDevice({ filters: filters });

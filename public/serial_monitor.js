@@ -33,7 +33,16 @@
   var elBtnSerialSend = null;
   var elSerialStatusBadge = null;
 
+  function isAndroidDevice() {
+    return /Android|Mobile/i.test(navigator.userAgent);
+  }
+
   function getSerialAPI() {
+    // Pada HP Android, Chrome 'navigator.serial' hanya mendeteksi Bluetooth RFCOMM,
+    // bukan kabel fisik USB OTG! Oleh karena itu, di Android wajib memprioritaskan WebUSB UniversalSerial (CH340 & CDC).
+    if (isAndroidDevice() && window.ArduiBlokUniversalSerial && 'usb' in navigator) {
+      return window.ArduiBlokUniversalSerial;
+    }
     if ('serial' in navigator && navigator.serial) {
       return navigator.serial;
     }
@@ -184,13 +193,8 @@
       return await connectPort(port);
     } catch (err) {
       if (err.name !== 'NotFoundError') {
+        alert('Gagal memilih/membuka port USB: ' + err.message);
         appendTerminal('Peringatan: ' + err.message + '\n', true);
-      } else {
-        // Jika pembatalan terjadi saat Web Serial native belum aktif (sedang menggunakan WebUSB polyfill)
-        // Besar kemungkinan board adalah Arduino Uno Clone (CH340) yang membutuhkan flag Web Serial Android
-        if (!('serial' in navigator && navigator.serial)) {
-          showAndroidHelp();
-        }
       }
       return false;
     }
