@@ -139,17 +139,12 @@
     }
 
     try {
-      // First check if a port was already granted
-      var existingPorts = await navigator.serial.getPorts();
-      var portToUse = null;
-
-      if (existingPorts && existingPorts.length > 0) {
-        portToUse = existingPorts[0];
-      } else {
-        portToUse = await navigator.serial.requestPort();
+      // Selalu tampilkan dialog pemilihan port dari browser agar user bebas memilih port COM
+      var port = await navigator.serial.requestPort();
+      if (isConnected) {
+        await disconnectPort();
       }
-
-      return await connectPort(portToUse);
+      return await connectPort(port);
     } catch (err) {
       if (err.name !== 'NotFoundError') {
         appendTerminal('Peringatan: ' + err.message + '\n', true);
@@ -331,14 +326,17 @@
     elSelectLineEnding = document.getElementById('selectSerialLineEnding');
     elBtnSerialSend = document.getElementById('btnSerialSend');
     elSerialStatusBadge = document.getElementById('serialStatusBadge');
+    var elBtnSelectNewPort = document.getElementById('btnSelectNewPort');
 
     if (elBtnOpenPortModal) {
-      elBtnOpenPortModal.addEventListener('click', function() {
-        if (!isConnected) {
-          requestAndConnect();
-        } else {
-          openSerialModal();
-        }
+      elBtnOpenPortModal.addEventListener('click', async function() {
+        await requestAndConnect();
+      });
+    }
+
+    if (elBtnSelectNewPort) {
+      elBtnSelectNewPort.addEventListener('click', async function() {
+        await requestAndConnect();
       });
     }
 
@@ -411,7 +409,6 @@
       });
     }
 
-    checkExistingPorts();
     updateBadgeUI();
   }
 
