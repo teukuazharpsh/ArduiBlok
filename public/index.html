@@ -944,7 +944,6 @@
       }
 
       try {
-        // Get the main workspace SVG
         var svgElement = workspace.getParentSvg();
         var blockCanvas = svgElement.querySelector('.blocklyBlockCanvas');
         if (!blockCanvas) {
@@ -952,23 +951,19 @@
           return;
         }
 
-        // Calculate true bounding box by examining each top-level block position
+        // Calculate bounding box from each top-level block
         var topBlocks = workspace.getTopBlocks(false);
         var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         topBlocks.forEach(function(block) {
           var blockSvg = block.getSvgRoot();
           if (!blockSvg) return;
-
-          // Get the block's position in workspace coordinates
           var xy = block.getRelativeToSurfaceXY();
           var blockBBox = blockSvg.getBBox();
-
           var bx = xy.x;
           var by = xy.y;
           var bRight = bx + blockBBox.width;
           var bBottom = by + blockBBox.height;
-
           if (bx < minX) minX = bx;
           if (by < minY) minY = by;
           if (bRight > maxX) maxX = bRight;
@@ -983,13 +978,66 @@
         var padding = 30;
         var exportWidth = (maxX - minX) + padding * 2;
         var exportHeight = (maxY - minY) + padding * 2;
-
-        // Scale factor for high-res output
         var scale = 2;
         var canvasWidth = exportWidth * scale;
         var canvasHeight = exportHeight * scale;
 
-        // Create a new standalone SVG with only the block content
+        // ── Inline all computed styles from live DOM to elements ──
+        // This is the key: Blockly sets fill/stroke dynamically via JS,
+        // so we must copy computed styles before cloning.
+        var svgTags = ['rect', 'path', 'polygon', 'circle', 'ellipse', 'line', 'polyline', 'text', 'tspan', 'g', 'image'];
+        var propsToInline = ['fill', 'stroke', 'stroke-width', 'fill-opacity', 'stroke-opacity', 'opacity',
+                             'font-family', 'font-size', 'font-weight', 'font-style',
+                             'text-anchor', 'dominant-baseline', 'visibility', 'display', 'transform'];
+
+        function inlineComputedStyles(sourceRoot, clonedRoot) {
+          // Process the root elements themselves
+          var sourceEls = sourceRoot.querySelectorAll(svgTags.join(','));
+          var clonedEls = clonedRoot.querySelectorAll(svgTags.join(','));
+
+          // Walk both trees in parallel
+          var len = Math.min(sourceEls.length, clonedEls.length);
+          for (var i = 0; i < len; i++) {
+            try {
+              var computed = window.getComputedStyle(sourceEls[i]);
+              var tag = sourceEls[i].tagName.toLowerCase();
+
+              for (var p = 0; p < propsToInline.length; p++) {
+                var prop = propsToInline[p];
+                var val = computed.getPropertyValue(prop);
+                if (val && val !== '' && val !== 'none' && val !== 'auto') {
+                  // For SVG, set as attribute (more reliable than style for export)
+                  if (prop === 'font-family' || prop === 'font-size' || prop === 'font-weight' || prop === 'font-style') {
+                    clonedEls[i].style.setProperty(prop, val);
+                  } else if (prop === 'display' || prop === 'visibility') {
+                    clonedEls[i].style.setProperty(prop, val);
+                  } else if (prop === 'transform') {
+                    // Don't override transform - keep the original
+                  } else {
+                    clonedEls[i].setAttribute(prop, val);
+                  }
+                }
+              }
+
+              // Special: ensure text elements have their fill set correctly
+              if (tag === 'text' || tag === 'tspan') {
+                var textFill = computed.getPropertyValue('fill');
+                if (textFill) {
+                  clonedEls[i].setAttribute('fill', textFill);
+                }
+              }
+            } catch(e) { /* skip inaccessible elements */ }
+          }
+        }
+
+        // Clone the block canvas
+        var canvasClone = blockCanvas.cloneNode(true);
+        canvasClone.setAttribute('transform', 'translate(0,0)');
+
+        // Inline computed styles from live DOM to clone
+        inlineComputedStyles(blockCanvas, canvasClone);
+
+        // Build new SVG
         var ns = 'http://www.w3.org/2000/svg';
         var newSvg = document.createElementNS(ns, 'svg');
         newSvg.setAttribute('xmlns', ns);
@@ -1000,67 +1048,37 @@
           (minX - padding) + ' ' + (minY - padding) + ' ' + exportWidth + ' ' + exportHeight
         );
 
-        // Clone blockCanvas content (blocks only, no UI chrome)
-        var canvasClone = blockCanvas.cloneNode(true);
-        // Reset the transform on the clone so viewBox handles positioning
-        canvasClone.setAttribute('transform', 'translate(0,0)');
+        // Copy <defs> first (filters, shadows, clip-paths)
+        var defsElements = svgElement.querySelectorAll('defs');
+        defsElements.forEach(function(defs) {
+          newSvg.appendChild(defs.cloneNode(true));
+        });
+
+        // Append the styled block canvas clone
         newSvg.appendChild(canvasClone);
 
-        // Also clone the bubble canvas (comments attached to blocks)
+        // Also clone bubble canvas (comments)
         var bubbleCanvas = svgElement.querySelector('.blocklyBubbleCanvas');
         if (bubbleCanvas) {
           var bubbleClone = bubbleCanvas.cloneNode(true);
           bubbleClone.setAttribute('transform', 'translate(0,0)');
+          inlineComputedStyles(bubbleCanvas, bubbleClone);
           newSvg.appendChild(bubbleClone);
         }
 
-        // Collect CSS styles that Blockly needs
-        var styleText = '';
-        try {
-          var sheets = document.styleSheets;
-          for (var s = 0; s < sheets.length; s++) {
-            try {
-              var rules = sheets[s].cssRules || sheets[s].rules;
-              if (rules) {
-                for (var r = 0; r < rules.length; r++) {
-                  var rt = rules[r].cssText || '';
-                  if (rt.indexOf('blockly') !== -1 || rt.indexOf('.blocklySvg') !== -1) {
-                    styleText += rt + '\n';
-                  }
-                }
-              }
-            } catch(e) { /* cross-origin, skip */ }
-          }
-        } catch(e) {}
-
-        // Also grab Blockly's own injected <style> elements
-        var blocklyStyles = svgElement.querySelectorAll('style');
-        blocklyStyles.forEach(function(st) {
-          styleText += st.textContent + '\n';
-        });
-
-        // Add essential font and fill styles
-        styleText += '\n' +
-          '.blocklyText { font-family: sans-serif; font-size: 11pt; }' + '\n' +
-          '.blocklyHtmlInput { display: none; }' + '\n' +
-          '.blocklyEditableText > .blocklyText { fill: #fff; }' + '\n';
-
+        // Add minimal CSS for font rendering
         var styleEl = document.createElementNS(ns, 'style');
-        styleEl.textContent = styleText;
+        styleEl.textContent =
+          '.blocklyText { font-family: sans-serif; font-size: 11pt; }\n' +
+          '.blocklyHtmlInput { display: none; }\n' +
+          '.blocklyDraggable { cursor: default; }\n';
         newSvg.insertBefore(styleEl, newSvg.firstChild);
 
-        // Also copy <defs> (filters, patterns, markers used by Blockly)
-        var defsElements = svgElement.querySelectorAll('defs');
-        defsElements.forEach(function(defs) {
-          var defsClone = defs.cloneNode(true);
-          newSvg.insertBefore(defsClone, newSvg.firstChild);
-        });
-
-        // Serialize the clean SVG
+        // Serialize
         var serializer = new XMLSerializer();
         var svgString = serializer.serializeToString(newSvg);
 
-        // Create canvas and render
+        // Render to canvas
         var canvas = document.createElement('canvas');
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
@@ -1068,14 +1086,11 @@
 
         var img = new Image();
         img.onload = function() {
-          // White background
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
           URL.revokeObjectURL(img.src);
 
-          // Download PNG
           canvas.toBlob(function(blob) {
             if (!blob) {
               alert('Gagal membuat gambar. Mencoba download SVG...');
