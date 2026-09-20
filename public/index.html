@@ -180,6 +180,15 @@
           <span class="btn-text btn-text-mobile-hide" id="themeText">Gelap</span>
         </button>
 
+        <!-- Tombol Suara Sambungan Blok -->
+        <button class="btn btn-secondary" id="btnSoundToggle" title="Efek Suara Sambungan Blok (Aktif / Mute)">
+          <svg class="svg-icon sound-icon" viewBox="0 0 24 24">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide" id="soundText">Suara</span>
+        </button>
+
         <!-- Tombol Unduh Kode .INO -->
         <button class="btn btn-secondary" id="btnDownloadInoHeader" title="Unduh source code .INO">
           <svg class="svg-icon" viewBox="0 0 24 24">
@@ -1098,7 +1107,118 @@
       blockCount.textContent = count + ' blok';
     }
 
+    // ── Efek Suara Sambungan Blok (Snap Sound seperti Kodular / Scratch) ──
+    let soundEnabled = localStorage.getItem('arduiblok_sound_enabled') !== 'false';
+    let audioCtx = null;
+    let isWorkspaceReadyForAudio = false;
+
+    function playSnapSound() {
+      if (!soundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        if (!audioCtx) {
+          audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+
+        // Click / Snap Utama (Transient snap berfrekuensi tinggi meluncur ke rendah)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(850, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.042);
+
+        gain.gain.setValueAtTime(0.32, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.042);
+
+        // Lowpass filter untuk memberi karakter plastik puzzle Kodular yang renyah & hangat
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1600, now);
+
+        osc.connect(gain);
+        gain.connect(filter);
+        filter.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.045);
+
+        // Body pop halus untuk memberi feedback mekanis "klik/klak" yang mantap
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(160, now);
+        osc2.frequency.exponentialRampToValueAtTime(45, now + 0.032);
+
+        gain2.gain.setValueAtTime(0.22, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.032);
+
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+
+        osc2.start(now);
+        osc2.stop(now + 0.035);
+      } catch (e) {}
+    }
+
+    const btnSoundToggle = document.getElementById('btnSoundToggle');
+    function updateSoundButtonUI() {
+      if (!btnSoundToggle) return;
+      const iconSvg = btnSoundToggle.querySelector('.sound-icon');
+      const textSpan = btnSoundToggle.querySelector('#soundText');
+      if (soundEnabled) {
+        btnSoundToggle.classList.add('active');
+        btnSoundToggle.title = 'Efek Suara Sambungan Blok: Aktif (Klik untuk mute)';
+        if (iconSvg) {
+          iconSvg.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+        }
+        if (textSpan) textSpan.textContent = 'Suara';
+      } else {
+        btnSoundToggle.classList.remove('active');
+        btnSoundToggle.title = 'Efek Suara Sambungan Blok: Mute (Klik untuk aktifkan)';
+        if (iconSvg) {
+          iconSvg.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
+        }
+        if (textSpan) textSpan.textContent = 'Mute';
+      }
+    }
+    updateSoundButtonUI();
+
+    if (btnSoundToggle) {
+      btnSoundToggle.addEventListener('click', function() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('arduiblok_sound_enabled', soundEnabled ? 'true' : 'false');
+        updateSoundButtonUI();
+        if (soundEnabled) {
+          playSnapSound();
+        }
+      });
+    }
+
+    document.addEventListener('click', function unlockAudio() {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      document.removeEventListener('click', unlockAudio);
+    }, { once: true });
+
     workspace.addChangeListener(function(event) {
+      // Mainkan suara snap jika blok tersambung ke blok lain atau soket input
+      if (isWorkspaceReadyForAudio && (event.type === Blockly.Events.BLOCK_MOVE || event.type === 'move')) {
+        const connectedToParent = event.newParentId && event.newParentId !== event.oldParentId;
+        const connectedToInput = event.newInputName && event.newInputName !== event.oldInputName;
+        if (connectedToParent || connectedToInput) {
+          playSnapSound();
+        }
+      }
+
       if (event.type === Blockly.Events.BLOCK_MOVE ||
           event.type === Blockly.Events.BLOCK_CHANGE ||
           event.type === Blockly.Events.BLOCK_CREATE ||
@@ -1112,6 +1232,10 @@
         } catch (e) {}
       }
     });
+
+    setTimeout(function() {
+      isWorkspaceReadyForAudio = true;
+    }, 450);
 
     generateCode();
 
