@@ -136,6 +136,26 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── DIGITAL LEVEL (HIGH / LOW) ────────────────────────────
+  {
+    "type": "digital_level",
+    "message0": "%1",
+    "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "VALUE",
+        "options": [
+          ["HIGH", "HIGH"],
+          ["LOW", "LOW"]
+        ]
+      }
+    ],
+    "output": ["Number", "Boolean", "int"],
+    "colour": 60,
+    "tooltip": "Konstanta status pin digital: HIGH (1 / Aktif) atau LOW (0 / Mati). Dapat digunakan pada blok logika pembanding.",
+    "helpUrl": ""
+  },
+
   // ── ANALOG READ ───────────────────────────────────────────
   {
     "type": "analog_read",

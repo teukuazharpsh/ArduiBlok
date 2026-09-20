@@ -134,6 +134,11 @@ arduinoGenerator.forBlock['pin_digital'] = function(block, generator) {
   return [pin, generator.ORDER_ATOMIC];
 };
 
+arduinoGenerator.forBlock['digital_level'] = function(block, generator) {
+  var value = block.getFieldValue('VALUE') || 'HIGH';
+  return [value, generator.ORDER_ATOMIC];
+};
+
 arduinoGenerator.forBlock['analog_read'] = function(block, generator) {
   var pin = String(block.getFieldValue('PIN') || 'A0').trim();
   if (!pin.toUpperCase().startsWith('A')) {
