@@ -182,6 +182,12 @@
     } catch (err) {
       if (err.name !== 'NotFoundError') {
         appendTerminal('Peringatan: ' + err.message + '\n', true);
+      } else {
+        // Jika pembatalan terjadi saat Web Serial native belum aktif (sedang menggunakan WebUSB polyfill)
+        // Besar kemungkinan board adalah Arduino Uno Clone (CH340) yang membutuhkan flag Web Serial Android
+        if (!('serial' in navigator && navigator.serial)) {
+          showAndroidHelp();
+        }
       }
       return false;
     }
