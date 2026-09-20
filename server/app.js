@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { execFile } = require('child_process');
+const { execFile, execSync } = require('child_process');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
@@ -145,13 +146,41 @@ app.post('/compile', async (req, res) => {
   }
 });
 
-// ── Start Server ───────────────────────────────────────────
+// ── Start HTTP Server ──────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('  ╔══════════════════════════════════════════╗');
   console.log('  ║   🤖 ArduiBlok Server is running!       ║');
-  console.log(`  ║   📡 http://localhost:${PORT}              ║`);
-  console.log('  ║   Press Ctrl+C to stop                  ║');
+  console.log(`  ║   📡 HTTP:  http://localhost:${PORT}        ║`);
   console.log('  ╚══════════════════════════════════════════╝');
-  console.log('');
 });
+
+// ── Start HTTPS Server (for Android WebUSB/WebSerial Secure Context) ──
+const certPath = path.join(__dirname, 'cert.pem');
+const keyPath = path.join(__dirname, 'key.pem');
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+
+if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+  try {
+    console.log('[HTTPS] Menghasilkan sertifikat SSL mandiri (self-signed)...');
+    execSync(`openssl req -x509 -newkey rsa:2048 -keyout "${keyPath}" -out "${certPath}" -days 365 -nodes -subj "/CN=ArduiBlok"`, { stdio: 'ignore' });
+  } catch (e) {
+    console.warn('[HTTPS] OpenSSL tidak tersedia untuk auto-generate SSL cert.');
+  }
+}
+
+if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+  try {
+    const sslOptions = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath)
+    };
+    https.createServer(sslOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
+      console.log(`  🔒 HTTPS: https://localhost:${HTTPS_PORT}`);
+      console.log(`  📱 Android HTTPS (Secure Context): https://[IP-Komputer]:${HTTPS_PORT}`);
+      console.log('');
+    });
+  } catch (sslErr) {
+    console.warn(`[HTTPS] Gagal mengaktifkan HTTPS: ${sslErr.message}`);
+  }
+}

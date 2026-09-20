@@ -189,6 +189,84 @@
     </div>
   </div>
 
+  <!-- Modal Panduan Aktivasi OTG / Web Serial Android -->
+  <div class="modal-overlay hidden" id="androidOtgModal">
+    <div class="modal-container" style="max-width: 560px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="color: #f59e0b; width: 22px; height: 22px;">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+          <h2>Aktivasi Akses USB OTG di Android</h2>
+        </div>
+        <button class="modal-close-btn" id="btnCloseAndroidOtgModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="line-height: 1.6; font-size: 0.92rem; padding: 18px 20px;">
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+          <div style="font-weight: 600; color: #f59e0b; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>⚠️</span> Kenapa Muncul Pesan Ini di Ponsel?
+          </div>
+          <p style="margin: 0; color: var(--text-secondary, #94a3b8); font-size: 0.85rem;">
+            Google Chrome di Android <strong>secara sengaja memblokir</strong> akses USB &amp; Serial jika situs dibuka melalui alamat IP lokal biasa (<code>http://...</code>) karena bukan koneksi aman (<em>Secure Context</em>).
+          </p>
+        </div>
+
+        <div id="otgModalHttpsBox" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+          <div style="font-weight: 600; color: #10b981; margin-bottom: 4px;">✅ Cara Tercepat: Buka Versi HTTPS Aman</div>
+          <p style="margin: 0 0 8px 0; color: var(--text-secondary, #94a3b8); font-size: 0.85rem;">
+            Server ArduiBlok kini telah menyediakan port HTTPS (Secure Context) otomatis di port 3443:
+          </p>
+          <a id="otgModalHttpsLink" href="#" class="btn btn-compile" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 6px 14px; font-size: 0.85rem;">
+            <span>🔒</span> Buka Versi HTTPS di HP Ini
+          </a>
+          <span style="display: block; margin-top: 6px; font-size: 0.75rem; color: #94a3b8;">*(Jika muncul peringatan sertifikat mandiri, klik "Lanjutan" lalu "Lanjutkan ke situs")*</span>
+        </div>
+
+        <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-primary, #f8fafc);">
+          🔧 Atau Aktifkan Flag di Google Chrome HP (1 Menit):
+        </div>
+        <ol style="margin: 0 0 14px 18px; padding: 0; font-size: 0.86rem; color: var(--text-primary, #f8fafc);">
+          <li style="margin-bottom: 6px;">
+            Buka tab baru di Chrome HP, ketik:
+            <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #38bdf8;">chrome://flags</code>
+          </li>
+          <li style="margin-bottom: 6px;">
+            Cari <strong>Insecure origins treated as secure</strong>, pilih <strong>Enabled</strong>, dan masukkan URL ArduiBlok:
+            <div style="display: flex; gap: 6px; align-items: center; margin: 4px 0;">
+              <code id="otgModalCurrentOrigin" style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #38bdf8; font-size: 0.8rem; word-break: break-all;">http://...</code>
+              <button class="btn btn-secondary btn-sm" id="btnCopyOriginUrl" style="padding: 2px 8px; font-size: 11px; white-space: nowrap;">Salin URL</button>
+            </div>
+          </li>
+          <li style="margin-bottom: 6px;">
+            Cari juga <strong>Web Serial API on Android</strong>, pilih <strong>Enabled</strong> <em>(wajib untuk Uno clone chip CH340 / CP2102)</em>.
+          </li>
+          <li style="margin-bottom: 6px;">
+            Klik tombol biru <strong>Relaunch</strong> di kanan bawah Chrome.
+          </li>
+        </ol>
+
+        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.82rem;">
+          <div style="font-weight: 600; color: #818cf8; margin-bottom: 4px;">📱 Pengaturan Ponsel Xiaomi / Redmi (MIUI):</div>
+          <ul style="margin: 0 0 0 16px; padding: 0; color: var(--text-secondary, #94a3b8);">
+            <li>Pastikan lampu LED <strong>ON</strong> pada board Arduino menyala saat disambung kabel OTG.</li>
+            <li>Jika tidak menyala, buka <strong>Setelan (Settings) HP &gt; Setelan Tambahan &gt; OTG</strong>, lalu aktifkan saklar OTG.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end;">
+        <button class="btn btn-compile" id="btnGotItAndroidOtg">Mengerti</button>
+      </div>
+    </div>
+  </div>
+
   <!-- App Container -->
   <div id="app">
 
@@ -1908,7 +1986,11 @@
           if (btnUploadHexDirect) {
             btnUploadHexDirect.addEventListener('click', async function() {
               if (!window.ArduiBlokSerial || !window.ArduiBlokSerial.isSupported()) {
-                alert('Browser Anda belum mendukung Web Serial API.\nGunakan Google Chrome atau Microsoft Edge di PC, atau Chrome di Android dengan OTG.');
+                if (window.ArduiBlokSerial && window.ArduiBlokSerial.showAndroidHelp) {
+                  window.ArduiBlokSerial.showAndroidHelp();
+                } else {
+                  alert('Browser Anda belum mendukung Web Serial API.\nGunakan Google Chrome atau Microsoft Edge di PC, atau Chrome di Android dengan OTG.');
+                }
                 return;
               }
 

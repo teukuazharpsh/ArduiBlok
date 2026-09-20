@@ -142,10 +142,33 @@
     }
   }
 
+  function showAndroidHelp() {
+    var modal = document.getElementById('androidOtgModal');
+    if (!modal) {
+      alert('Perhatian Keamanan Browser:\n\nAkses USB & Serial dimatikan oleh Google Chrome jika website diakses lewat HTTP (bukan HTTPS).\nSilakan buka lewat HTTPS port 3443 atau aktifkan flag di chrome://flags pada Chrome HP Anda.');
+      return;
+    }
+    var originEl = document.getElementById('otgModalCurrentOrigin');
+    if (originEl) {
+      originEl.textContent = window.location.origin;
+    }
+    var httpsLink = document.getElementById('otgModalHttpsLink');
+    if (httpsLink) {
+      var hostname = window.location.hostname || 'localhost';
+      httpsLink.href = 'https://' + hostname + ':3443';
+    }
+    modal.classList.remove('hidden');
+  }
+
+  function closeAndroidHelp() {
+    var modal = document.getElementById('androidOtgModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
   async function requestAndConnect() {
     var serial = getSerialAPI();
     if (!serial) {
-      alert('Browser Anda belum mendukung Web Serial API maupun WebUSB.\nGunakan Google Chrome atau Microsoft Edge di PC, atau Chrome di Android dengan OTG.');
+      showAndroidHelp();
       return false;
     }
 
@@ -421,6 +444,29 @@
       });
     }
 
+    // Android OTG modal events
+    var elBtnCloseOtg = document.getElementById('btnCloseAndroidOtgModal');
+    var elBtnGotItOtg = document.getElementById('btnGotItAndroidOtg');
+    var elBtnCopyOrigin = document.getElementById('btnCopyOriginUrl');
+
+    if (elBtnCloseOtg) elBtnCloseOtg.addEventListener('click', closeAndroidHelp);
+    if (elBtnGotItOtg) elBtnGotItOtg.addEventListener('click', closeAndroidHelp);
+    if (elBtnCopyOrigin) {
+      elBtnCopyOrigin.addEventListener('click', function() {
+        var origin = window.location.origin;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(origin).then(function() {
+            elBtnCopyOrigin.textContent = 'Tersalin!';
+            setTimeout(function() { elBtnCopyOrigin.textContent = 'Salin URL'; }, 2000);
+          }).catch(function() {
+            prompt('Salin URL ini secara manual:', origin);
+          });
+        } else {
+          prompt('Salin URL ini secara manual:', origin);
+        }
+      });
+    }
+
     updateBadgeUI();
   }
 
@@ -435,6 +481,8 @@
   root.ArduiBlokSerial = {
     isSupported: isSupported,
     getSerialAPI: getSerialAPI,
+    showAndroidHelp: showAndroidHelp,
+    closeAndroidHelp: closeAndroidHelp,
     getCurrentPort: function() { return currentPort; },
     isConnected: function() { return isConnected; },
     connectPort: connectPort,
