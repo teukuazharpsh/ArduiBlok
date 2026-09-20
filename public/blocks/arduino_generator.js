@@ -385,6 +385,15 @@ arduinoGenerator.forBlock['variables_set_arduino'] = function(block, generator) 
   return '  ' + varName + ' = ' + value + ';\n';
 };
 
+arduinoGenerator.forBlock['variables_set_simple'] = function(block, generator) {
+  var varName = block.getFieldValue('VAR_NAME') || 'item';
+  varName = varName.replace(/[^a-zA-Z0-9_]/g, '');
+  if (!varName) varName = 'item';
+
+  var value = generator.valueToCode(block, 'VALUE', generator.ORDER_ASSIGNMENT) || '0';
+  return '  ' + varName + ' = ' + value + ';\n';
+};
+
 arduinoGenerator.forBlock['variables_get_arduino'] = function(block, generator) {
   var varName = block.getFieldValue('VAR_NAME') || 'item';
   varName = varName.replace(/[^a-zA-Z0-9_]/g, '');

@@ -641,19 +641,6 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
-  // ── VARIABLE GET ──────────────────────────────────────────
-  {
-    "type": "variables_get_arduino",
-    "message0": "%1",
-    "args0": [
-      { "type": "field_input", "name": "VAR_NAME", "text": "item" }
-    ],
-    "output": null,
-    "colour": 330,
-    "tooltip": "Returns the value of this variable.",
-    "helpUrl": ""
-  },
-
   // ── MOTOR SHIELD L293D ─────────────────────────────────────
   {
     "type": "motor_driver_shield",
@@ -695,3 +682,112 @@ Blockly.defineBlocksWithJsonArray([
   }
 
 ]);
+
+// ── DYNAMIC VARIABLE DROPDOWN HELPER ─────────────────────────
+function getArduinoVariableOptions() {
+  var options = [];
+  var currentVal = (this && typeof this.getValue === 'function') ? this.getValue() : null;
+  var vars = new Set();
+
+  var ws = null;
+  if (this && typeof this.getSourceBlock === 'function' && this.getSourceBlock()) {
+    var block = this.getSourceBlock();
+    ws = block.workspace;
+    if (ws && ws.isFlyout && ws.targetWorkspace) {
+      ws = ws.targetWorkspace;
+    }
+  }
+  if (!ws && typeof Blockly !== 'undefined' && Blockly.getMainWorkspace) {
+    ws = Blockly.getMainWorkspace();
+  }
+
+  if (ws && typeof ws.getAllBlocks === 'function') {
+    var blocks = ws.getAllBlocks(false);
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      // Ambil nama variabel dari declare, set, dan get
+      var vName = b.getFieldValue('VAR_NAME');
+      if (vName && typeof vName === 'string') {
+        vName = vName.trim().replace(/[^a-zA-Z0-9_]/g, '');
+        if (vName && vName !== '__NEW_VAR__') {
+          vars.add(vName);
+        }
+      }
+      var vName2 = b.getFieldValue('VAR');
+      if (vName2 && typeof vName2 === 'string') {
+        vName2 = vName2.trim().replace(/[^a-zA-Z0-9_]/g, '');
+        if (vName2 && vName2 !== '__NEW_VAR__') {
+          vars.add(vName2);
+        }
+      }
+    }
+  }
+
+  // Jika blok saat ini sudah memiliki nilai tersimpan, pastikan tetap ada dalam opsi
+  if (currentVal && typeof currentVal === 'string') {
+    var cleanCurrent = currentVal.trim().replace(/[^a-zA-Z0-9_]/g, '');
+    if (cleanCurrent && cleanCurrent !== '__NEW_VAR__') {
+      vars.add(cleanCurrent);
+    }
+  }
+
+  vars.forEach(function(v) {
+    options.push([v, v]);
+  });
+
+  if (options.length === 0) {
+    options.push(['item', 'item']);
+  }
+
+  // Opsi cepat untuk menambah variabel baru via prompt
+  options.push(['+ Buat Variabel Baru...', '__NEW_VAR__']);
+
+  return options;
+}
+
+function handleVariableDropdownValidator(newValue) {
+  if (newValue === '__NEW_VAR__') {
+    var field = this;
+    setTimeout(function() {
+      var name = window.prompt('Masukkan nama variabel baru (hanya huruf, angka, underscore):');
+      if (name) {
+        name = name.trim().replace(/[^a-zA-Z0-9_]/g, '');
+        if (/^[0-9]/.test(name)) {
+          name = '_' + name;
+        }
+        if (name) {
+          field.setValue(name);
+        }
+      }
+    }, 10);
+    return null; // Pertahankan nilai sebelumnya sampai user input nama baru
+  }
+  return undefined; // Terima nilai yang dipilih
+}
+
+// ── VARIABLE GET (CALL / READ WITH DROPDOWN) ──────────────────
+Blockly.Blocks['variables_get_arduino'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown(getArduinoVariableOptions, handleVariableDropdownValidator), 'VAR_NAME');
+    this.setOutput(true, null);
+    this.setColour(330);
+    this.setTooltip('Memanggil nilai variabel yang dipilih dari dropdown.');
+    this.setHelpUrl('');
+  }
+};
+
+// ── VARIABLE SET (SET EXISTING VARIABLE WITH DROPDOWN) ────────
+Blockly.Blocks['variables_set_simple'] = {
+  init: function() {
+    this.appendValueInput('VALUE')
+        .appendField('set')
+        .appendField(new Blockly.FieldDropdown(getArduinoVariableOptions, handleVariableDropdownValidator), 'VAR_NAME')
+        .appendField('to');
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(330);
+    this.setTooltip('Mengubah nilai variabel yang dipilih dari dropdown.');
+    this.setHelpUrl('');
+  }
+};
