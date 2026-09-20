@@ -37,6 +37,9 @@
     if ('serial' in navigator && navigator.serial) {
       return navigator.serial;
     }
+    if (window.ArduiBlokUniversalSerial && 'usb' in navigator) {
+      return window.ArduiBlokUniversalSerial;
+    }
     if (window.WebSerialPolyfill && window.WebSerialPolyfill.serial && 'usb' in navigator) {
       return window.WebSerialPolyfill.serial;
     }
