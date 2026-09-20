@@ -100,6 +100,93 @@
     </div>
   </div>
 
+  <!-- Modal Mengambang Serial Monitor -->
+  <div class="modal-overlay hidden" id="serialMonitorModal">
+    <div class="modal-container serial-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px; color: var(--accent-primary);">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+          <h2>Serial Monitor</h2>
+          <span class="info-badge disconnected" id="serialStatusBadge">Terputus</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseSerialModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body serial-modal-body">
+        <!-- Toolbar Kontrol Serial -->
+        <div class="serial-controls-bar">
+          <div class="serial-control-item">
+            <label for="selectSerialBaud" class="form-label-compact">Baud Rate:</label>
+            <select id="selectSerialBaud" class="form-select serial-baud-select">
+              <option value="300">300 baud</option>
+              <option value="1200">1200 baud</option>
+              <option value="2400">2400 baud</option>
+              <option value="4800">4800 baud</option>
+              <option value="9600" selected>9600 baud</option>
+              <option value="19200">19200 baud</option>
+              <option value="38400">38400 baud</option>
+              <option value="57600">57600 baud</option>
+              <option value="115200">115200 baud</option>
+            </select>
+          </div>
+
+          <div class="serial-actions-group">
+            <button class="btn btn-compile" id="btnToggleSerialConnect">Hubungkan Port</button>
+            <button class="btn btn-secondary" id="btnClearSerialTerminal" title="Bersihkan riwayat tampilan">Bersihkan</button>
+          </div>
+
+          <div class="serial-options-group">
+            <label class="serial-checkbox-label">
+              <input type="checkbox" id="checkSerialAutoscroll" checked> Auto-scroll
+            </label>
+            <label class="serial-checkbox-label">
+              <input type="checkbox" id="checkSerialTimestamp"> Waktu
+            </label>
+          </div>
+        </div>
+
+        <!-- Layar Terminal Serial -->
+        <div class="serial-terminal-wrapper">
+          <div class="serial-terminal-header">
+            <div class="terminal-controls">
+              <span class="t-dot t-red"></span>
+              <span class="t-dot t-yellow"></span>
+              <span class="t-dot t-green"></span>
+            </div>
+            <span class="terminal-title">arduino serial communication &bull; rx/tx stream</span>
+          </div>
+          <pre class="serial-terminal-body" id="serialTerminalBody">Menunggu data serial dari Arduino Uno...</pre>
+        </div>
+
+        <!-- Baris Kirim Serial -->
+        <div class="serial-send-bar">
+          <input type="text" id="inputSerialSend" class="serial-send-input" placeholder="Ketik pesan / perintah untuk dikirim ke Arduino (Tekan Enter)..." autocomplete="off">
+          <select id="selectSerialLineEnding" class="form-select serial-ending-select" title="Akhiran baris pengiriman">
+            <option value="nl" selected>Baris Baru (NL)</option>
+            <option value="none">Tanpa Akhiran</option>
+            <option value="cr">Carriage Return (CR)</option>
+            <option value="both">Keduanya (NL &amp; CR)</option>
+          </select>
+          <button class="btn btn-compile" id="btnSerialSend" title="Kirim data serial">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            <span class="btn-text">Kirim</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- App Container -->
   <div id="app">
 
@@ -128,6 +215,22 @@
             <svg class="svg-icon badge-chevron" viewBox="0 0 24 24">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
+          </button>
+          <!-- Badge Port Serial (Web Serial COM) -->
+          <button class="board-selector-badge port-selector-badge" id="btnOpenPortModal" title="Pilih dan hubungkan Port Serial (COM / USB)">
+            <span class="board-badge-dot port-dot" id="portStatusDot"></span>
+            <span id="currentPortLabel">Pilih Port</span>
+            <svg class="svg-icon badge-chevron" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <!-- Badge Floating Serial Monitor -->
+          <button class="board-selector-badge serial-monitor-badge" id="btnOpenSerialMonitor" title="Buka Floating Serial Monitor">
+            <svg class="svg-icon badge-icon" viewBox="0 0 24 24" style="width:13px;height:13px;stroke-width:2.2;">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+            <span class="badge-text-mobile-hide">Serial Monitor</span>
           </button>
         </div>
       </div>
@@ -465,6 +568,10 @@
 
   <!-- Custom Arduino Code Generator -->
   <script src="blocks/arduino_generator.js"></script>
+
+  <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor -->
+  <script src="serial_flasher.js"></script>
+  <script src="serial_monitor.js"></script>
 
   <!-- Application Logic -->
   <script>
@@ -1747,6 +1854,10 @@
               '</div>' +
               memoryGaugesHtml +
               '<div class="output-actions">' +
+                '<button class="btn btn-compile btn-upload-direct" id="btnUploadHexDirect" title="Upload program langsung ke board Arduino via Port USB/COM">' +
+                  '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff; width:15px; height:15px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>' +
+                  '<span id="btnUploadHexLabel">Upload ke Arduino</span>' +
+                '</button>' +
                 '<button class="btn btn-download-hex" id="btnDownloadHex">' +
                   '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
                   'Unduh File .HEX' +
@@ -1755,6 +1866,15 @@
                   '<svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>' +
                   'Unduh Source .INO' +
                 '</button>' +
+              '</div>' +
+              '<div class="upload-progress-box hidden" id="uploadProgressBox">' +
+                '<div class="upload-progress-header">' +
+                  '<span class="upload-status-text" id="uploadStatusText">Mempersiapkan flashing...</span>' +
+                  '<span class="upload-percent-text" id="uploadPercentText">0%</span>' +
+                '</div>' +
+                '<div class="upload-progress-track">' +
+                  '<div class="upload-progress-bar" id="uploadProgressBar" style="width: 0%;"></div>' +
+                '</div>' +
               '</div>' +
             '</div>' +
             '<div class="compiler-terminal" id="terminalBox">' +
@@ -1775,6 +1895,66 @@
               '</div>' +
               '<pre class="terminal-body" id="terminalBody">' + highlightedLog + '</pre>' +
             '</div>';
+
+          var btnUploadHexDirect = document.getElementById('btnUploadHexDirect');
+          var uploadProgressBox = document.getElementById('uploadProgressBox');
+          var uploadStatusText = document.getElementById('uploadStatusText');
+          var uploadPercentText = document.getElementById('uploadPercentText');
+          var uploadProgressBar = document.getElementById('uploadProgressBar');
+
+          if (btnUploadHexDirect) {
+            btnUploadHexDirect.addEventListener('click', async function() {
+              if (!window.ArduiBlokSerial || !window.ArduiBlokSerial.isSupported()) {
+                alert('Browser Anda belum mendukung Web Serial API.\nGunakan Google Chrome atau Microsoft Edge di PC, atau Chrome di Android dengan OTG.');
+                return;
+              }
+
+              var port = window.ArduiBlokSerial.getCurrentPort();
+              if (!port) {
+                var connected = await window.ArduiBlokSerial.requestAndConnect();
+                if (!connected) return;
+                port = window.ArduiBlokSerial.getCurrentPort();
+              }
+              if (!port) return;
+
+              uploadProgressBox.classList.remove('hidden');
+              uploadProgressBar.style.width = '0%';
+              uploadStatusText.textContent = 'Mempersiapkan port untuk upload...';
+              uploadPercentText.textContent = '0%';
+              btnUploadHexDirect.disabled = true;
+
+              try {
+                await window.ArduiBlokSerial.prepareForUpload();
+
+                var uploadBaud = currentBoardConfig.baud || 115200;
+                var flasher = new window.ArduiBlokFlasher.ArduinoFlasher(port, {
+                  baudRate: uploadBaud,
+                  onProgress: function(percent, msg) {
+                    uploadProgressBar.style.width = percent + '%';
+                    uploadPercentText.textContent = percent + '%';
+                    uploadStatusText.textContent = msg;
+                  },
+                  onLog: function(logMsg) {
+                    if (window.ArduiBlokSerial && window.ArduiBlokSerial.appendTerminal) {
+                      window.ArduiBlokSerial.appendTerminal('[Upload] ' + logMsg + '\n');
+                    }
+                  }
+                });
+
+                await flasher.flashHex(lastCompiledHex);
+                uploadStatusText.innerHTML = '<b style="color:#10b981;">✓ Program Berhasil Diupload ke Arduino Uno!</b>';
+                playSnapSound();
+
+              } catch (uploadErr) {
+                uploadProgressBar.style.backgroundColor = '#ef4444';
+                uploadStatusText.innerHTML = '<b style="color:#ef4444;">Upload Gagal: ' + escapeHtml(uploadErr.message) + '</b>';
+                alert('Upload gagal: ' + uploadErr.message + '\n\nTips: Periksa apakah kabel USB tersambung dengan baik dan board Arduino tidak sedang digunakan aplikasi lain.');
+              } finally {
+                btnUploadHexDirect.disabled = false;
+                await window.ArduiBlokSerial.resumeAfterUpload();
+              }
+            });
+          }
 
           document.getElementById('btnDownloadHex').addEventListener('click', function() {
             var hexFilename = getCleanProjectName() + '.hex';

@@ -1235,12 +1235,19 @@ html, body {
   .header-brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .header-brand::-webkit-scrollbar {
+    display: none;
   }
 
   .header-brand h1 {
-    font-size: 15px;
+    font-size: 14px;
     white-space: nowrap;
   }
 
@@ -1253,6 +1260,11 @@ html, body {
     display: inline-block;
     font-size: 9.5px;
     padding: 2px 6px;
+  }
+
+  .port-selector-badge, .serial-monitor-badge {
+    padding: 3px 6px;
+    font-size: 10.5px;
   }
 
   /* Baris 2: Tombol Aksi (Buka, Simpan, Reset, Tema, Sound, Export, .INO) dibuat ke bawah di atas nama project & compile */
@@ -1279,7 +1291,7 @@ html, body {
     box-sizing: border-box;
   }
 
-  .btn-text-mobile-hide {
+  .btn-text-mobile-hide, .badge-text-mobile-hide {
     display: none !important;
   }
 
@@ -1781,4 +1793,285 @@ html, body {
   padding: 12px 18px;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
+}
+
+/* ── Port Selector & Serial Monitor Badges ─────────────────── */
+.port-selector-badge, .serial-monitor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.port-selector-badge:hover, .serial-monitor-badge:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.port-dot {
+  background: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.port-dot.connected {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.serial-monitor-badge .badge-icon {
+  stroke: var(--accent-primary);
+}
+
+/* ── Floating Serial Monitor Modal ─────────────────────────── */
+.serial-modal-container {
+  max-width: 760px;
+  width: 95vw;
+}
+
+.serial-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-primary);
+}
+
+.serial-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--bg-secondary);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.serial-control-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-label-compact {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.serial-baud-select, .serial-ending-select {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+.serial-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.serial-actions-group .btn {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 12px;
+}
+
+.btn-disconnect {
+  background: #fef2f2 !important;
+  color: #ef4444 !important;
+  border-color: #fca5a5 !important;
+}
+
+.btn-disconnect:hover {
+  background: #fee2e2 !important;
+}
+
+.serial-options-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.serial-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.serial-checkbox-label input {
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+.info-badge.connected {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.info-badge.disconnected {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-muted);
+}
+
+/* ── Serial Terminal Screen ────────────────────────────────── */
+.serial-terminal-wrapper {
+  background: #090d16;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.serial-terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+}
+
+.serial-terminal-body {
+  height: 280px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #38bdf8;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+}
+
+/* ── Serial Send Input Bar ─────────────────────────────────── */
+.serial-send-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.serial-send-input {
+  flex: 1;
+  height: 36px;
+  padding: 0 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.serial-send-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(0, 135, 138, 0.2);
+  background: var(--bg-primary);
+}
+
+.serial-send-bar .btn-compile {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  gap: 6px;
+}
+
+/* ── Upload Direct Button & Progress Bar ─────────────────────── */
+.btn-upload-direct {
+  background: linear-gradient(135deg, #00878a 0%, #0284c7 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(0, 135, 138, 0.3) !important;
+  gap: 7px !important;
+}
+
+.btn-upload-direct:hover {
+  background: linear-gradient(135deg, #007376 0%, #0369a1 100%) !important;
+  transform: translateY(-1px);
+}
+
+.btn-upload-direct:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.upload-progress-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-progress-box.hidden {
+  display: none !important;
+}
+
+.upload-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.upload-percent-text {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-primary);
+}
+
+.upload-progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-card);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.upload-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00878a, #0284c7);
+  border-radius: var(--radius-pill);
+  transition: width 0.15s ease-out;
 }
