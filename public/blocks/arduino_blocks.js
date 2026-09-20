@@ -98,6 +98,44 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── PIN SELECT (DIGITAL 0-13 & ANALOG A0-A5) ──────────────
+  {
+    "type": "pin_digital",
+    "message0": "%1",
+    "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "PIN",
+        "options": [
+          ["0", "0"],
+          ["1", "1"],
+          ["2", "2"],
+          ["3", "3"],
+          ["4", "4"],
+          ["5", "5"],
+          ["6", "6"],
+          ["7", "7"],
+          ["8", "8"],
+          ["9", "9"],
+          ["10", "10"],
+          ["11", "11"],
+          ["12", "12"],
+          ["13", "13"],
+          ["A0", "A0"],
+          ["A1", "A1"],
+          ["A2", "A2"],
+          ["A3", "A3"],
+          ["A4", "A4"],
+          ["A5", "A5"]
+        ]
+      }
+    ],
+    "output": ["int", "Number"],
+    "colour": 60,
+    "tooltip": "Pilih pin Arduino (Pin digital 0-13 atau pin analog A0-A5 sebagai digital I/O).",
+    "helpUrl": ""
+  },
+
   // ── ANALOG READ ───────────────────────────────────────────
   {
     "type": "analog_read",

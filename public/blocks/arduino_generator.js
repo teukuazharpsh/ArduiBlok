@@ -129,6 +129,11 @@ arduinoGenerator.forBlock['digital_read'] = function(block, generator) {
   return ['digitalRead(' + pin + ')', generator.ORDER_ATOMIC];
 };
 
+arduinoGenerator.forBlock['pin_digital'] = function(block, generator) {
+  var pin = block.getFieldValue('PIN') || '13';
+  return [pin, generator.ORDER_ATOMIC];
+};
+
 arduinoGenerator.forBlock['analog_read'] = function(block, generator) {
   var pin = String(block.getFieldValue('PIN') || 'A0').trim();
   if (!pin.toUpperCase().startsWith('A')) {
