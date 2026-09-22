@@ -856,12 +856,12 @@
                 <span class="floating-text">Tutup Toolbox</span>
               </button>
 
-              <button class="floating-code-btn" id="btnFloatingToggleCode" title="Tampilkan / Sembunyikan Kode Arduino (.ino)">
+              <button class="floating-code-btn" id="btnFloatingToggleCode" title="Tampilkan / Sembunyikan Panel Status &amp; Output Kode">
                 <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
                   <polyline points="16 18 22 12 16 6"></polyline>
                   <polyline points="8 6 2 12 8 18"></polyline>
                 </svg>
-                <span class="floating-text">Kode Arduino</span>
+                <span class="floating-text">Status &amp; Output Kode</span>
               </button>
 
               <button class="floating-examples-btn" id="btnFloatingExamples" title="Buka Galeri Contoh Proyek Bawaan">
@@ -2580,12 +2580,12 @@
       btnFloatingToolbox.addEventListener('click', toggleToolbox);
     }
 
-    // ── Bottom Panel Kode Arduino (.ino) Visibility (Toggle) ──
+    // ── Bottom Panel Status & Output Kode Visibility (Toggle) ──
     function updateCodeButtonUI(visible) {
       if (btnFloatingToggleCode) {
         btnFloatingToggleCode.classList.toggle('code-open', visible);
         const floatText = btnFloatingToggleCode.querySelector('.floating-text');
-        if (floatText) floatText.textContent = visible ? 'Tutup Kode' : 'Kode Arduino';
+        if (floatText) floatText.textContent = visible ? 'Tutup Output Kode' : 'Status & Output Kode';
       }
     }
 

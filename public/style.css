@@ -3163,7 +3163,7 @@ body.mode-text #tabCode {
     position: absolute;
     top: calc(100% + 6px);
     right: 0;
-    min-width: 175px;
+    min-width: 195px;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -3202,6 +3202,7 @@ body.mode-text #tabCode {
   }
 
   .floating-toolbox-btn,
+  .floating-code-btn,
   .floating-examples-btn,
   .floating-mode-switch-btn,
   .floating-library-btn,
@@ -3217,6 +3218,7 @@ body.mode-text #tabCode {
   }
 
   .floating-toolbox-btn:hover,
+  .floating-code-btn:hover,
   .floating-examples-btn:hover,
   .floating-mode-switch-btn:hover,
   .floating-library-btn:hover,
