@@ -99,22 +99,32 @@
      */
     renderList: async function() {
       var grid = document.getElementById('librariesGrid');
+      var loadingState = document.getElementById('librariesLoadingState');
       var emptyState = document.getElementById('librariesEmptyState');
       var countInfo = document.getElementById('librariesCountInfo');
       if (!grid) return;
 
-      grid.innerHTML = '<div class="library-loading"><div class="loading-spinner"></div><span>Mencari di seluruh katalog resmi Arduino...</span></div>';
+      // Sembunyikan grid & empty state, tampilkan loading state terpusat di tengah modal
+      grid.innerHTML = '';
+      grid.classList.add('hidden');
       if (emptyState) emptyState.classList.add('hidden');
+      if (loadingState) loadingState.classList.remove('hidden');
+      if (countInfo) countInfo.textContent = 'Mencari di katalog resmi Arduino...';
 
       var libraries = await this.searchLibraries(currentSearchQuery, currentCategory);
 
+      // Sembunyikan loading state setelah data diterima
+      if (loadingState) loadingState.classList.add('hidden');
+
       if (libraries.length === 0) {
         grid.innerHTML = '';
+        grid.classList.add('hidden');
         if (emptyState) emptyState.classList.remove('hidden');
         if (countInfo) countInfo.textContent = 'Tidak ada library ditemukan';
         return;
       }
 
+      grid.classList.remove('hidden');
       if (emptyState) emptyState.classList.add('hidden');
       if (countInfo) countInfo.textContent = 'Menampilkan ' + libraries.length + ' library resmi Arduino';
 
