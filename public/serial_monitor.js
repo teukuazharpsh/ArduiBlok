@@ -460,6 +460,122 @@
     elBtnSerialSend = document.getElementById('btnSerialSend');
     elSerialStatusBadge = document.getElementById('serialStatusBadge');
     var elBtnSelectNewPort = document.getElementById('btnSelectNewPort');
+    var elBtnSerialExportDropdown = document.getElementById('btnSerialExportDropdown');
+    var elSerialExportMenu = document.getElementById('serialExportMenu');
+    var elBtnCopySerialData = document.getElementById('btnCopySerialData');
+    var elBtnDownloadSerialTxt = document.getElementById('btnDownloadSerialTxt');
+    var elSerialExportBtnText = document.getElementById('serialExportBtnText');
+
+    // Helper untuk mengambil teks serial yang bersih
+    function getTerminalText() {
+      if (!elSerialTerminal) return '';
+      var text = elSerialTerminal.textContent || '';
+      if (text.trim() === 'Menunggu data serial dari Arduino Uno...') {
+        return '';
+      }
+      return text;
+    }
+
+    function showExportFeedback(msg) {
+      if (!elSerialExportBtnText) return;
+      var original = 'Salin / Unduh';
+      elSerialExportBtnText.textContent = msg;
+      setTimeout(function() {
+        if (elSerialExportBtnText) elSerialExportBtnText.textContent = original;
+      }, 2000);
+    }
+
+    function fallbackCopyText(text) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showExportFeedback('Tersalin!');
+      } catch (e) {
+        prompt('Salin data serial berikut secara manual:', text);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // Toggle Dropdown Salin / Unduh
+    if (elBtnSerialExportDropdown && elSerialExportMenu) {
+      elBtnSerialExportDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+        elSerialExportMenu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', function(e) {
+        if (!elBtnSerialExportDropdown.contains(e.target) && !elSerialExportMenu.contains(e.target)) {
+          elSerialExportMenu.classList.add('hidden');
+        }
+      });
+    }
+
+    // Opsi 1: Salin ke Clipboard
+    if (elBtnCopySerialData) {
+      elBtnCopySerialData.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (elSerialExportMenu) elSerialExportMenu.classList.add('hidden');
+        var text = getTerminalText();
+        if (!text || text.trim().length === 0) {
+          alert('Belum ada data serial di terminal untuk disalin.');
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            showExportFeedback('Tersalin!');
+          }).catch(function() {
+            fallbackCopyText(text);
+          });
+        } else {
+          fallbackCopyText(text);
+        }
+      });
+    }
+
+    // Opsi 2: Download sebagai .TXT
+    if (elBtnDownloadSerialTxt) {
+      elBtnDownloadSerialTxt.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (elSerialExportMenu) elSerialExportMenu.classList.add('hidden');
+        var text = getTerminalText();
+        if (!text || text.trim().length === 0) {
+          alert('Belum ada data serial di terminal untuk diunduh.');
+          return;
+        }
+        var projectName = 'arduiblok';
+        var projInput = document.getElementById('projectNameInput');
+        if (projInput && projInput.value.trim()) {
+          projectName = projInput.value.trim().replace(/[^a-zA-Z0-9_\-]/g, '_');
+        }
+        var now = new Date();
+        var dateStr = now.getFullYear() + '-' +
+          String(now.getMonth() + 1).padStart(2, '0') + '-' +
+          String(now.getDate()).padStart(2, '0') + '_' +
+          String(now.getHours()).padStart(2, '0') +
+          String(now.getMinutes()).padStart(2, '0') +
+          String(now.getSeconds()).padStart(2, '0');
+        var filename = projectName + '_serial_' + dateStr + '.txt';
+
+        try {
+          var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showExportFeedback('Terunduh!');
+        } catch (err) {
+          alert('Gagal mengunduh file .txt: ' + err.message);
+        }
+      });
+    }
 
     // Klik tombol "Pilih Port": hanya memilih port, tidak membuka port & tidak menerima/mengirim data serial
     if (elBtnOpenPortModal) {

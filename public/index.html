@@ -155,6 +155,23 @@
               <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               <span>Bersihkan</span>
             </button>
+            <div class="serial-dropdown-wrapper">
+              <button class="btn btn-secondary btn-serial-action" id="btnSerialExportDropdown" title="Salin atau Unduh data Serial Monitor">
+                <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span id="serialExportBtnText">Salin / Unduh</span>
+                <svg class="svg-icon dropdown-chevron" viewBox="0 0 24 24" style="width:10px;height:10px;margin-left:2px;stroke:currentColor;fill:none;stroke-width:2.5;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="serial-dropdown-menu hidden" id="serialExportMenu">
+                <button type="button" class="serial-dropdown-item" id="btnCopySerialData" title="Salin seluruh isi log terminal ke clipboard">
+                  <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Salin ke Clipboard</span>
+                </button>
+                <button type="button" class="serial-dropdown-item" id="btnDownloadSerialTxt" title="Unduh log terminal sebagai file .txt">
+                  <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Download .txt</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="serial-options-group">

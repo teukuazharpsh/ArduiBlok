@@ -1953,6 +1953,61 @@ html, body {
   color: #ffffff !important;
 }
 
+/* ── Serial Export Dropdown ───────────────────────────────── */
+.serial-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.serial-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  backdrop-filter: blur(8px);
+}
+
+.serial-dropdown-menu.hidden {
+  display: none !important;
+}
+
+.serial-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.serial-dropdown-item:hover {
+  background: var(--bg-hover);
+  color: var(--accent-primary);
+}
+
+.serial-dropdown-item svg {
+  flex-shrink: 0;
+}
+
 .serial-options-group {
   display: flex;
   align-items: center;
@@ -2218,6 +2273,21 @@ html, body {
     border-radius: var(--radius-sm) !important;
     line-height: normal !important;
     gap: 5px !important;
+  }
+
+  .serial-dropdown-wrapper {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .serial-dropdown-wrapper .btn {
+    width: 100% !important;
+  }
+
+  .serial-dropdown-wrapper .serial-dropdown-menu {
+    left: 0;
+    right: 0;
+    min-width: 100%;
   }
 
   .serial-options-group {
