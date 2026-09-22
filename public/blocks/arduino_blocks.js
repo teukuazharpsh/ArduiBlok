@@ -606,6 +606,67 @@ Blockly.defineBlocksWithJsonArray([
     "helpUrl": ""
   },
 
+  // ── BREAK (FLOW CONTROL) ──────────────────────────────────
+  {
+    "type": "controls_break",
+    "message0": "break",
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 120,
+    "tooltip": "Keluar dari switch-case atau perulangan loop (repeat / while).",
+    "helpUrl": ""
+  },
+
+  // ── MUTATOR HELPER BLOCKS FOR SWITCH CASE ─────────────────
+  {
+    "type": "controls_switch_container",
+    "message0": "switch",
+    "nextStatement": null,
+    "enableContextMenu": false,
+    "colour": 120,
+    "tooltip": "Wadah utama switch case."
+  },
+  {
+    "type": "controls_switch_case",
+    "message0": "case",
+    "previousStatement": null,
+    "nextStatement": null,
+    "enableContextMenu": false,
+    "colour": 120,
+    "tooltip": "Tambah cabang case baru."
+  },
+  {
+    "type": "controls_switch_default",
+    "message0": "default",
+    "previousStatement": null,
+    "enableContextMenu": false,
+    "colour": 120,
+    "tooltip": "Tambah cabang default terakhir."
+  },
+
+  // ── SWITCH CASE STATEMENT WITH GEAR MUTATOR ───────────────
+  {
+    "type": "controls_switch",
+    "message0": "switch %1",
+    "args0": [
+      { "type": "input_value", "name": "SWITCH_VALUE" }
+    ],
+    "message1": "case %1",
+    "args1": [
+      { "type": "input_value", "name": "CASE0" }
+    ],
+    "message2": "do %1",
+    "args2": [
+      { "type": "input_statement", "name": "DO0" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 120,
+    "tooltip": "Mengevaluasi nilai atau variabel dan menjalankan cabang case yang cocok (klik ikon gear untuk menambah case atau default).",
+    "helpUrl": "",
+    "mutator": "controls_switch_mutator"
+  },
+
   // ── NOT (LOGIC) ───────────────────────────────────────────
   {
     "type": "logic_not",
@@ -909,8 +970,10 @@ Blockly.Blocks['variables_get_arduino'] = {
     if (this.outputConnection) {
       this.setOutput(true, check);
       if (this.outputConnection.targetConnection) {
-        if (!this.outputConnection.targetConnection.checkType_(this.outputConnection)) {
-          this.outputConnection.disconnect();
+        if (typeof this.outputConnection.targetConnection.checkType_ === 'function') {
+          if (!this.outputConnection.targetConnection.checkType_(this.outputConnection)) {
+            this.outputConnection.disconnect();
+          }
         }
       }
     }
@@ -932,7 +995,7 @@ Blockly.Blocks['variables_set_simple'] = {
   }
 };
 
-// ── MUTATOR LABELS (CONTROLS_IF & TEXT_JOIN) ──────────────────
+// ── MUTATOR LABELS (CONTROLS_IF, TEXT_JOIN & SWITCH) ──────────
 if (typeof Blockly !== 'undefined' && Blockly.Msg) {
   Blockly.Msg['TEXT_JOIN_TITLE_CREATEWITH'] = 'join';
   Blockly.Msg['TEXT_JOIN_TOOLTIP'] = 'Menggabungkan beberapa teks atau variabel (klik gigi/gear untuk menambah slot).';
@@ -942,5 +1005,200 @@ if (typeof Blockly !== 'undefined' && Blockly.Msg) {
   Blockly.Msg['CONTROLS_IF_IF_TOOLTIP'] = 'Tambah atau atur ulang cabang if.';
   Blockly.Msg['CONTROLS_IF_ELSEIF_TOOLTIP'] = 'Tambah cabang else-if.';
   Blockly.Msg['CONTROLS_IF_ELSE_TOOLTIP'] = 'Tambah cabang else terakhir.';
+  Blockly.Msg['CONTROLS_SWITCH_TOOLTIP'] = 'Mengevaluasi nilai atau variabel dan menjalankan cabang case yang cocok.';
+}
+
+// ── REGISTER SWITCH CASE MUTATOR EXTENSION ────────────────────
+if (typeof Blockly !== 'undefined' && Blockly.Extensions && typeof Blockly.Extensions.registerMutator === 'function') {
+  if (Blockly.Extensions.isRegistered('controls_switch_mutator')) {
+    Blockly.Extensions.unregister('controls_switch_mutator');
+  }
+
+  Blockly.Extensions.registerMutator(
+    'controls_switch_mutator',
+    {
+      caseCount_: 1,
+      defaultCount_: 0,
+
+      mutationToDom: function() {
+        if (this.caseCount_ <= 1 && !this.defaultCount_) {
+          return null;
+        }
+        var container = Blockly.utils.xml.createElement('mutation');
+        if (this.caseCount_ > 1) {
+          container.setAttribute('cases', String(this.caseCount_));
+        }
+        if (this.defaultCount_) {
+          container.setAttribute('default', '1');
+        }
+        return container;
+      },
+
+      domToMutation: function(xmlElement) {
+        this.caseCount_ = parseInt(xmlElement.getAttribute('cases'), 10) || 1;
+        this.defaultCount_ = parseInt(xmlElement.getAttribute('default'), 10) || 0;
+        this.rebuildShape_();
+      },
+
+      saveExtraState: function() {
+        if (this.caseCount_ <= 1 && !this.defaultCount_) {
+          return null;
+        }
+        var state = Object.create(null);
+        if (this.caseCount_ > 1) {
+          state.caseCount = this.caseCount_;
+        }
+        if (this.defaultCount_) {
+          state.hasDefault = true;
+        }
+        return state;
+      },
+
+      loadExtraState: function(state) {
+        this.caseCount_ = state.caseCount || 1;
+        this.defaultCount_ = state.hasDefault ? 1 : 0;
+        this.updateShape_();
+      },
+
+      decompose: function(workspace) {
+        var containerBlock = workspace.newBlock('controls_switch_container');
+        containerBlock.initSvg();
+        var connection = containerBlock.nextConnection;
+        for (var i = 1; i <= this.caseCount_; i++) {
+          var caseBlock = workspace.newBlock('controls_switch_case');
+          caseBlock.initSvg();
+          connection.connect(caseBlock.previousConnection);
+          connection = caseBlock.nextConnection;
+        }
+        if (this.defaultCount_) {
+          var defaultBlock = workspace.newBlock('controls_switch_default');
+          defaultBlock.initSvg();
+          connection.connect(defaultBlock.previousConnection);
+        }
+        return containerBlock;
+      },
+
+      compose: function(containerBlock) {
+        var clauseBlock = containerBlock.nextConnection ? containerBlock.nextConnection.targetBlock() : null;
+        this.caseCount_ = 0;
+        this.defaultCount_ = 0;
+        var valueConnections = [];
+        var statementConnections = [];
+        var defaultConnection = null;
+
+        while (clauseBlock) {
+          if (!clauseBlock.isInsertionMarker()) {
+            switch (clauseBlock.type) {
+              case 'controls_switch_case':
+                this.caseCount_++;
+                valueConnections.push(clauseBlock.valueConnection_);
+                statementConnections.push(clauseBlock.statementConnection_);
+                break;
+              case 'controls_switch_default':
+                this.defaultCount_++;
+                defaultConnection = clauseBlock.statementConnection_;
+                break;
+              default:
+                throw TypeError('Unknown block type: ' + clauseBlock.type);
+            }
+          }
+          clauseBlock = clauseBlock.getNextBlock();
+        }
+        if (this.caseCount_ === 0) {
+          this.caseCount_ = 1;
+        }
+        this.updateShape_();
+        this.reconnectChildBlocks_(valueConnections, statementConnections, defaultConnection);
+      },
+
+      saveConnections: function(containerBlock) {
+        var clauseBlock = containerBlock.nextConnection ? containerBlock.nextConnection.targetBlock() : null;
+        var i = 0;
+        while (clauseBlock) {
+          if (!clauseBlock.isInsertionMarker()) {
+            switch (clauseBlock.type) {
+              case 'controls_switch_case':
+                var cInput = this.getInput('CASE' + i);
+                var dInput = this.getInput('DO' + i);
+                clauseBlock.valueConnection_ = cInput && cInput.connection && cInput.connection.targetConnection;
+                clauseBlock.statementConnection_ = dInput && dInput.connection && dInput.connection.targetConnection;
+                i++;
+                break;
+              case 'controls_switch_default':
+                var defInput = this.getInput('DEFAULT');
+                clauseBlock.statementConnection_ = defInput && defInput.connection && defInput.connection.targetConnection;
+                break;
+              default:
+                throw TypeError('Unknown block type: ' + clauseBlock.type);
+            }
+          }
+          clauseBlock = clauseBlock.getNextBlock();
+        }
+      },
+
+      rebuildShape_: function() {
+        var valueConnections = [];
+        var statementConnections = [];
+        var defaultConnection = null;
+        if (this.getInput('DEFAULT')) {
+          defaultConnection = this.getInput('DEFAULT').connection && this.getInput('DEFAULT').connection.targetConnection;
+        }
+        for (var i = 0; this.getInput('CASE' + i); i++) {
+          var cInput = this.getInput('CASE' + i);
+          var dInput = this.getInput('DO' + i);
+          valueConnections.push(cInput && cInput.connection && cInput.connection.targetConnection);
+          statementConnections.push(dInput && dInput.connection && dInput.connection.targetConnection);
+        }
+        this.updateShape_();
+        this.reconnectChildBlocks_(valueConnections, statementConnections, defaultConnection);
+      },
+
+      updateShape_: function() {
+        if (this.getInput('DEFAULT')) {
+          this.removeInput('DEFAULT');
+        }
+        var i = this.caseCount_;
+        while (this.getInput('CASE' + i)) {
+          this.removeInput('CASE' + i);
+          this.removeInput('DO' + i);
+          i++;
+        }
+        for (var j = 0; j < this.caseCount_; j++) {
+          if (!this.getInput('CASE' + j)) {
+            this.appendValueInput('CASE' + j).appendField('case');
+            this.appendStatementInput('DO' + j).appendField('do');
+          }
+        }
+        if (this.defaultCount_) {
+          this.appendStatementInput('DEFAULT').appendField('default');
+        }
+      },
+
+      reconnectChildBlocks_: function(valueConnections, statementConnections, defaultConnection) {
+        for (var i = 0; i < this.caseCount_; i++) {
+          if (valueConnections[i]) {
+            var cInput = this.getInput('CASE' + i);
+            if (cInput && cInput.connection) {
+              cInput.connection.connect(valueConnections[i]);
+            }
+          }
+          if (statementConnections[i]) {
+            var dInput = this.getInput('DO' + i);
+            if (dInput && dInput.connection) {
+              dInput.connection.connect(statementConnections[i]);
+            }
+          }
+        }
+        if (this.defaultCount_ && defaultConnection) {
+          var defInput = this.getInput('DEFAULT');
+          if (defInput && defInput.connection) {
+            defInput.connection.connect(defaultConnection);
+          }
+        }
+      }
+    },
+    undefined,
+    ['controls_switch_case', 'controls_switch_default']
+  );
 }
 

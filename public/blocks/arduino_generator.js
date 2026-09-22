@@ -381,6 +381,63 @@ arduinoGenerator.forBlock['controls_while_arduino'] = function(block, generator)
   return '  while (' + condition + ') {\n' + doCode + '  }\n';
 };
 
+arduinoGenerator.forBlock['controls_switch'] = function(block, generator) {
+  var switchValue = generator.valueToCode(block, 'SWITCH_VALUE', generator.ORDER_NONE) || '0';
+  var code = '  switch (' + switchValue + ') {\n';
+
+  var i = 0;
+  while (block.getInput('CASE' + i)) {
+    var caseValue = generator.valueToCode(block, 'CASE' + i, generator.ORDER_NONE);
+    if (!caseValue || caseValue === '') {
+      caseValue = i + 1;
+    }
+    // Konversi string 1-karakter "A" menjadi char literal 'A'
+    if (/^"[^"]"$/.test(caseValue)) {
+      caseValue = "'" + caseValue[1] + "'";
+    }
+
+    var branch = generator.statementToCode(block, 'DO' + i);
+    code += '    case ' + caseValue + ':\n';
+    if (branch && branch.trim()) {
+      var lines = branch.split('\n');
+      for (var l = 0; l < lines.length; l++) {
+        var line = lines[l];
+        if (line.trim()) {
+          code += '    ' + line.trimStart() + '\n';
+        }
+      }
+    }
+    if (!branch.includes('break;') && !branch.includes('return;')) {
+      code += '      break;\n';
+    }
+    i++;
+  }
+
+  if (block.getInput('DEFAULT')) {
+    var defaultBranch = generator.statementToCode(block, 'DEFAULT');
+    code += '    default:\n';
+    if (defaultBranch && defaultBranch.trim()) {
+      var dLines = defaultBranch.split('\n');
+      for (var dl = 0; dl < dLines.length; dl++) {
+        var dLine = dLines[dl];
+        if (dLine.trim()) {
+          code += '    ' + dLine.trimStart() + '\n';
+        }
+      }
+    }
+    if (!defaultBranch.includes('break;') && !defaultBranch.includes('return;')) {
+      code += '      break;\n';
+    }
+  }
+
+  code += '  }\n';
+  return code;
+};
+
+arduinoGenerator.forBlock['controls_break'] = function(block, generator) {
+  return '  break;\n';
+};
+
 arduinoGenerator.forBlock['logic_not'] = function(block, generator) {
   var bool = generator.valueToCode(block, 'BOOL', generator.ORDER_UNARY) || 'false';
   return ['!(' + bool + ')', generator.ORDER_UNARY];
