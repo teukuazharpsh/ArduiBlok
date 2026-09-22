@@ -195,10 +195,12 @@ app.get('/health', (req, res) => {
 
 // ── GET /api/libraries/search ──────────────────────────────
 app.get('/api/libraries/search', (req, res) => {
-  const query = (req.query.q || '').trim().toLowerCase();
+  const rawQuery = (req.query.q || '').trim();
+  const query = rawQuery.toLowerCase();
   const installedList = getInstalledLibraries();
 
-  let results = POPULAR_LIBRARIES.filter(lib => {
+  // 1. Ambil kecocokan awal dari katalog cepat bawaan
+  let localResults = POPULAR_LIBRARIES.filter(lib => {
     if (!query) return true;
     return lib.name.toLowerCase().includes(query) ||
            lib.author.toLowerCase().includes(query) ||
@@ -207,23 +209,77 @@ app.get('/api/libraries/search', (req, res) => {
            lib.header.toLowerCase().includes(query);
   });
 
-  // Tandai status installed
-  results = results.map(lib => {
-    const isInstalled = installedList.some(inst => 
-      inst.toLowerCase() === lib.name.toLowerCase() ||
-      inst.toLowerCase().replace(/_/g, ' ') === lib.name.toLowerCase()
-    );
-    return {
+  // Jika tidak ada query atau query kurang dari 2 karakter, kirim katalog cepat
+  if (!rawQuery || rawQuery.length < 2) {
+    const formatted = localResults.map(lib => ({
       ...lib,
-      installed: isInstalled
-    };
-  });
+      installed: installedList.some(inst =>
+        inst.toLowerCase() === lib.name.toLowerCase() ||
+        inst.toLowerCase().replace(/_/g, ' ') === lib.name.toLowerCase()
+      )
+    }));
+    return res.json({
+      success: true,
+      count: formatted.length,
+      libraries: formatted
+    });
+  }
 
-  res.json({
-    success: true,
-    count: results.length,
-    libraries: results
-  });
+  // 2. Lakukan live search via arduino-cli lib search ke registry resmi Arduino
+  execFile(
+    'arduino-cli',
+    ['lib', 'search', rawQuery, '--format', 'json'],
+    { timeout: 8000 },
+    (error, stdout, stderr) => {
+      let combined = [...localResults];
+      const seenNames = new Set(localResults.map(l => l.name.toLowerCase()));
+
+      if (!error && stdout) {
+        try {
+          const cliData = JSON.parse(stdout);
+          if (cliData && Array.isArray(cliData.libraries)) {
+            cliData.libraries.forEach(item => {
+              const name = item.name || '';
+              if (!name || seenNames.has(name.toLowerCase())) return;
+              seenNames.add(name.toLowerCase());
+
+              const rel = item.latest || (item.releases ? Object.values(item.releases)[0] : null) || {};
+              const header = (rel.provides_includes && rel.provides_includes.length > 0)
+                ? rel.provides_includes[0]
+                : (name.replace(/\s+/g, '') + '.h');
+
+              combined.push({
+                name: name,
+                author: rel.author || rel.maintainer || 'Arduino Contributor',
+                version: rel.version || '1.0.0',
+                sentence: rel.sentence || rel.paragraph || `Library ${name} untuk Arduino.`,
+                category: rel.category || 'General',
+                header: header,
+                exampleInclude: `#include <${header}>`
+              });
+            });
+          }
+        } catch (parseErr) {
+          console.warn('[library] Parse error from CLI search:', parseErr.message);
+        }
+      }
+
+      // Tandai status installed
+      const finalResults = combined.map(lib => ({
+        ...lib,
+        installed: installedList.some(inst =>
+          inst.toLowerCase() === lib.name.toLowerCase() ||
+          inst.toLowerCase().replace(/_/g, ' ') === lib.name.toLowerCase()
+        )
+      }));
+
+      res.json({
+        success: true,
+        count: finalResults.length,
+        libraries: finalResults
+      });
+    }
+  );
 });
 
 // ── GET /api/libraries/installed ───────────────────────────

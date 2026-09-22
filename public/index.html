@@ -272,6 +272,59 @@
     </div>
   </div>
 
+  <!-- Modal Peringatan Switch dari Mode Teks ke Mode Blok (Library Tidak Didukung Blok) -->
+  <div class="modal-overlay hidden" id="unsupportedBlockSwitchModal">
+    <div class="modal-container" style="max-width: 490px;">
+      <div class="modal-header" style="background: rgba(245, 158, 11, 0.08);">
+        <div class="modal-title-group">
+          <span style="font-size: 20px;">⚠️</span>
+          <h2>Peringatan Beralih ke Mode Blok</h2>
+        </div>
+        <button class="modal-close-btn" id="btnCloseUnsupportedModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 18px 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+        <p style="margin: 0 0 8px 0; color: var(--text-primary); font-weight: 600;">
+          Kode teks C++ Anda saat ini memuat library eksternal yang belum/tidak didukung oleh blok visual:
+        </p>
+
+        <div id="unsupportedLibsDetectedList" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #f59e0b; max-height: 90px; overflow-y: auto;">
+          // #include &lt;Library.h&gt;
+        </div>
+
+        <p style="margin: 0 0 14px 0;">
+          Sistem pemrograman visual blok tidak dapat mengonversi library teks khusus ini menjadi puzzle blok. Silakan pilih opsi berikut:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Opsi 1: Tetap di Mode Teks -->
+          <button class="switch-option-card" id="btnStayInTextMode">
+            <div class="switch-opt-icon">⌨️</div>
+            <div class="switch-opt-text">
+              <strong>Tetap di Mode Teks C++ (Disarankan)</strong>
+              <span>Batalkan perpindahan dan lanjutkan mengedit program dengan library Anda di editor teks.</span>
+            </div>
+          </button>
+
+          <!-- Opsi 2: Beralih ke Mode Blok Polosan / Terakhir -->
+          <button class="switch-option-card" id="btnResetToCleanBlockMode" style="border-color: rgba(239, 68, 68, 0.35);">
+            <div class="switch-opt-icon">🧩</div>
+            <div class="switch-opt-text">
+              <strong style="color: #ef4444;">Beralih ke Mode Blok (Diagram Terpisah)</strong>
+              <span>Buka workspace blok visual polosan/tersimpan sebelumnya. (Kode teks C++ Anda tetap aman tersimpan).</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelUnsupportedModal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Pengelola Library Eksternal (Library Manager) -->
   <div class="modal-overlay hidden" id="libraryModal">
     <div class="modal-container library-modal-container">
@@ -1760,9 +1813,85 @@
       });
     }
 
+    // ── Deteksi Library Eksternal / Custom Code di Mode Teks ──
+    function detectUnsupportedCodeInText() {
+      if (!window.ArduiBlokEditor) return { hasUnsupported: false, includes: [] };
+      const code = window.ArduiBlokEditor.getValue() || '';
+
+      const includeMatches = code.match(/#include\s+[<"][^>"]+[>"]/g) || [];
+      const supportedNativeHeaders = [
+        'Arduino.h', 'Servo.h', 'Wire.h', 'SPI.h', 'SoftwareSerial.h', 'EEPROM.h', 'HID.h'
+      ];
+
+      const customIncludes = [];
+      includeMatches.forEach(function(inc) {
+        const cleanHeader = inc.replace(/#include\s+[<"]/, '').replace(/[>"]/, '').trim();
+        if (!supportedNativeHeaders.includes(cleanHeader)) {
+          customIncludes.push(inc);
+        }
+      });
+
+      return {
+        hasUnsupported: customIncludes.length > 0,
+        includes: customIncludes
+      };
+    }
+
+    const unsupportedBlockSwitchModal = document.getElementById('unsupportedBlockSwitchModal');
+    const unsupportedLibsDetectedList = document.getElementById('unsupportedLibsDetectedList');
+    const btnStayInTextMode = document.getElementById('btnStayInTextMode');
+    const btnResetToCleanBlockMode = document.getElementById('btnResetToCleanBlockMode');
+    const btnCloseUnsupportedModal = document.getElementById('btnCloseUnsupportedModal');
+    const btnCancelUnsupportedModal = document.getElementById('btnCancelUnsupportedModal');
+
     if (btnFloatingSwitchToBlock) {
       btnFloatingSwitchToBlock.addEventListener('click', function() {
+        const check = detectUnsupportedCodeInText();
+        if (check.hasUnsupported) {
+          if (unsupportedLibsDetectedList) {
+            unsupportedLibsDetectedList.innerHTML = check.includes.map(function(inc) {
+              return '<div>' + escapeHtml(inc) + '</div>';
+            }).join('');
+          }
+          if (unsupportedBlockSwitchModal) {
+            unsupportedBlockSwitchModal.classList.remove('hidden');
+          }
+        } else {
+          setAppMode('block');
+        }
+      });
+    }
+
+    if (btnStayInTextMode) {
+      btnStayInTextMode.addEventListener('click', function() {
+        if (unsupportedBlockSwitchModal) unsupportedBlockSwitchModal.classList.add('hidden');
+      });
+    }
+
+    if (btnResetToCleanBlockMode) {
+      btnResetToCleanBlockMode.addEventListener('click', function() {
+        if (unsupportedBlockSwitchModal) unsupportedBlockSwitchModal.classList.add('hidden');
         setAppMode('block');
+      });
+    }
+
+    if (btnCloseUnsupportedModal) {
+      btnCloseUnsupportedModal.addEventListener('click', function() {
+        if (unsupportedBlockSwitchModal) unsupportedBlockSwitchModal.classList.add('hidden');
+      });
+    }
+
+    if (btnCancelUnsupportedModal) {
+      btnCancelUnsupportedModal.addEventListener('click', function() {
+        if (unsupportedBlockSwitchModal) unsupportedBlockSwitchModal.classList.add('hidden');
+      });
+    }
+
+    if (unsupportedBlockSwitchModal) {
+      unsupportedBlockSwitchModal.addEventListener('click', function(e) {
+        if (e.target === unsupportedBlockSwitchModal) {
+          unsupportedBlockSwitchModal.classList.add('hidden');
+        }
       });
     }
 
