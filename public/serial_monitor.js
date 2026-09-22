@@ -72,8 +72,51 @@
     return '[' + h + ':' + m + ':' + s + '.' + ms + '] ';
   }
 
+  var pendingTerminalBuffer = '';
+  var terminalFrameRequested = false;
+  var maxTerminalChars = 40000;
+
+  function flushTerminalBuffer() {
+    terminalFrameRequested = false;
+    if (!elSerialTerminal || !pendingTerminalBuffer) return;
+
+    var chunk = pendingTerminalBuffer;
+    pendingTerminalBuffer = '';
+
+    // Gunakan TextNode untuk performa DOM rendering maksimal tanpa freeze
+    var textNode = document.createTextNode(chunk);
+    elSerialTerminal.appendChild(textNode);
+
+    // Batasi jumlah child node dan karakter agar tidak boros RAM & bebas freeze
+    if (elSerialTerminal.childNodes.length > 150) {
+      while (elSerialTerminal.childNodes.length > 80) {
+        elSerialTerminal.removeChild(elSerialTerminal.firstChild);
+      }
+    }
+    if (elSerialTerminal.textContent.length > maxTerminalChars) {
+      elSerialTerminal.textContent = elSerialTerminal.textContent.slice(-25000);
+    }
+
+    if (elCheckAutoscroll && elCheckAutoscroll.checked) {
+      elSerialTerminal.scrollTop = elSerialTerminal.scrollHeight;
+    }
+  }
+
   function appendTerminal(text, isError) {
     if (!elSerialTerminal) return;
+
+    if (isError) {
+      if (pendingTerminalBuffer) flushTerminalBuffer();
+      var span = document.createElement('span');
+      span.style.color = '#f87171';
+      span.textContent = text;
+      elSerialTerminal.appendChild(span);
+      if (elCheckAutoscroll && elCheckAutoscroll.checked) {
+        elSerialTerminal.scrollTop = elSerialTerminal.scrollHeight;
+      }
+      return;
+    }
+
     var showTimestamp = elCheckTimestamp && elCheckTimestamp.checked;
     var line = text;
 
@@ -81,38 +124,43 @@
       line = formatTime() + line;
     }
 
-    var span = document.createElement('span');
-    if (isError) span.style.color = '#f87171';
-    span.textContent = line;
-    elSerialTerminal.appendChild(span);
+    pendingTerminalBuffer += line;
+    if (pendingTerminalBuffer.length > maxTerminalChars) {
+      pendingTerminalBuffer = pendingTerminalBuffer.slice(-maxTerminalChars);
+    }
 
-    if (elCheckAutoscroll && elCheckAutoscroll.checked) {
-      elSerialTerminal.scrollTop = elSerialTerminal.scrollHeight;
+    if (!terminalFrameRequested) {
+      terminalFrameRequested = true;
+      requestAnimationFrame(flushTerminalBuffer);
     }
   }
 
   function updateBadgeUI() {
     if (!elPortDot || !elPortLabel) return;
 
-    if (isConnected) {
+    if (currentPort) {
       elPortDot.className = 'board-badge-dot port-dot connected';
-      elPortLabel.textContent = 'Port Terhubung';
-      if (elSerialStatusBadge) {
-        elSerialStatusBadge.textContent = 'Terhubung (' + currentBaudRate + ' bps)';
-        elSerialStatusBadge.className = 'info-badge connected';
-      }
-      if (elBtnToggleConnect) {
-        elBtnToggleConnect.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Putuskan</span>';
-        elBtnToggleConnect.className = 'btn btn-disconnect btn-serial-action';
-      }
+      elPortLabel.textContent = isConnected ? 'Port Terhubung' : 'Port Terhubung';
     } else {
       elPortDot.className = 'board-badge-dot port-dot';
-      elPortLabel.textContent = currentPort ? 'Port Siap' : 'Pilih Port';
-      if (elSerialStatusBadge) {
-        elSerialStatusBadge.textContent = 'Terputus';
+      elPortLabel.textContent = 'Pilih Port';
+    }
+
+    if (elSerialStatusBadge) {
+      if (isConnected) {
+        elSerialStatusBadge.textContent = 'Terhubung (' + currentBaudRate + ' bps)';
+        elSerialStatusBadge.className = 'info-badge connected';
+      } else {
+        elSerialStatusBadge.textContent = currentPort ? 'Port Siap (Terputus)' : 'Terputus';
         elSerialStatusBadge.className = 'info-badge disconnected';
       }
-      if (elBtnToggleConnect) {
+    }
+
+    if (elBtnToggleConnect) {
+      if (isConnected) {
+        elBtnToggleConnect.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Putuskan</span>';
+        elBtnToggleConnect.className = 'btn btn-disconnect btn-serial-action';
+      } else {
         elBtnToggleConnect.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Hubungkan</span>';
         elBtnToggleConnect.className = 'btn btn-compile btn-serial-action';
       }
@@ -177,7 +225,8 @@
     if (modal) modal.classList.add('hidden');
   }
 
-  async function requestAndConnect() {
+  // Memilih port TANPA membuka port dan TANPA mengirim/menerima data
+  async function selectPort() {
     var serial = getSerialAPI();
     if (!serial) {
       showAndroidHelp();
@@ -185,12 +234,14 @@
     }
 
     try {
-      // Selalu tampilkan dialog pemilihan port dari browser (Web Serial / WebUSB Polyfill)
-      var port = await serial.requestPort();
       if (isConnected) {
         await disconnectPort();
       }
-      return await connectPort(port);
+      var port = await serial.requestPort();
+      currentPort = port;
+      isConnected = false;
+      updateBadgeUI();
+      return true;
     } catch (err) {
       if (err.name !== 'NotFoundError') {
         alert('Gagal memilih/membuka port USB: ' + err.message);
@@ -250,7 +301,7 @@
           var res = await reader.read();
           if (res.done) break;
           if (res.value) {
-            var text = decoder.decode(res.value);
+            var text = decoder.decode(res.value, { stream: true });
             appendTerminal(text);
           }
         }
@@ -319,28 +370,40 @@
     await sleep(350); // Allow Windows kernel to release handle
   }
 
-  // Resumes Serial Monitor after upload finishes
+  // Resumes Serial Monitor after upload finishes (hanya jika modal monitor sedang terbuka)
   async function resumeAfterUpload() {
     isPausedForUpload = false;
-    await sleep(400); // Give bootloader time to restart sketch
-    if (currentPort) {
+    if (elSerialModal && !elSerialModal.classList.contains('hidden') && currentPort) {
+      await sleep(350);
       try {
         await connectPort(currentPort, currentBaudRate);
-      } catch (e) {
-        // User can manually reconnect
+      } catch (e) {}
+    }
+  }
+
+  async function openSerialModal() {
+    if (elSerialModal) {
+      elSerialModal.classList.remove('hidden');
+    }
+    if (!isConnected) {
+      if (currentPort) {
+        await connectPort(currentPort);
+      } else {
+        var ok = await selectPort();
+        if (ok && currentPort) {
+          await connectPort(currentPort);
+        }
       }
     }
   }
 
-  function openSerialModal() {
-    if (elSerialModal) {
-      elSerialModal.classList.remove('hidden');
-    }
-  }
-
-  function closeSerialModal() {
+  async function closeSerialModal() {
     if (elSerialModal) {
       elSerialModal.classList.add('hidden');
+    }
+    // Putuskan koneksi saat modal ditutup agar data serial tidak membanjiri di latar belakang & port siap untuk upload
+    if (isConnected) {
+      await disconnectPort();
     }
   }
 
@@ -376,37 +439,48 @@
     elSerialStatusBadge = document.getElementById('serialStatusBadge');
     var elBtnSelectNewPort = document.getElementById('btnSelectNewPort');
 
+    // Klik tombol "Pilih Port": hanya memilih port, tidak membuka port & tidak menerima/mengirim data serial
     if (elBtnOpenPortModal) {
       elBtnOpenPortModal.addEventListener('click', async function() {
-        await requestAndConnect();
+        await selectPort();
       });
     }
 
     if (elBtnSelectNewPort) {
       elBtnSelectNewPort.addEventListener('click', async function() {
-        await requestAndConnect();
-      });
-    }
-
-    if (elBtnOpenSerialMonitor) {
-      elBtnOpenSerialMonitor.addEventListener('click', function() {
-        openSerialModal();
-        if (!isConnected && currentPort) {
-          connectPort(currentPort);
+        var ok = await selectPort();
+        if (ok && currentPort && elSerialModal && !elSerialModal.classList.contains('hidden')) {
+          await connectPort(currentPort);
         }
       });
     }
 
+    // Klik tombol "Serial Monitor": baru membuka port dan menerima/mengirim data
+    if (elBtnOpenSerialMonitor) {
+      elBtnOpenSerialMonitor.addEventListener('click', async function() {
+        await openSerialModal();
+      });
+    }
+
     if (elBtnCloseSerialModal) {
-      elBtnCloseSerialModal.addEventListener('click', closeSerialModal);
+      elBtnCloseSerialModal.addEventListener('click', async function() {
+        await closeSerialModal();
+      });
     }
 
     if (elBtnToggleConnect) {
-      elBtnToggleConnect.addEventListener('click', function() {
+      elBtnToggleConnect.addEventListener('click', async function() {
         if (isConnected) {
-          disconnectPort();
+          await disconnectPort();
         } else {
-          requestAndConnect();
+          if (currentPort) {
+            await connectPort(currentPort);
+          } else {
+            var ok = await selectPort();
+            if (ok && currentPort) {
+              await connectPort(currentPort);
+            }
+          }
         }
       });
     }
@@ -418,6 +492,7 @@
     if (elBtnClearTerminal && elSerialTerminal) {
       elBtnClearTerminal.addEventListener('click', function() {
         elSerialTerminal.innerHTML = '';
+        pendingTerminalBuffer = '';
       });
     }
 
@@ -498,8 +573,9 @@
     closeAndroidHelp: closeAndroidHelp,
     getCurrentPort: function() { return currentPort; },
     isConnected: function() { return isConnected; },
+    selectPort: selectPort,
+    requestAndConnect: selectPort,
     connectPort: connectPort,
-    requestAndConnect: requestAndConnect,
     disconnectPort: disconnectPort,
     resetBoard: resetBoard,
     sendSerialText: sendSerialText,

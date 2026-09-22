@@ -1993,8 +1993,8 @@
 
               var port = window.ArduiBlokSerial.getCurrentPort();
               if (!port) {
-                var connected = await window.ArduiBlokSerial.requestAndConnect();
-                if (!connected) return;
+                var selected = await window.ArduiBlokSerial.selectPort();
+                if (!selected) return;
                 port = window.ArduiBlokSerial.getCurrentPort();
               }
               if (!port) return;
