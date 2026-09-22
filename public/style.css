@@ -2999,6 +2999,16 @@ html, body {
   pointer-events: auto;
 }
 
+/* Mobile Trigger Button: disembunyikan di desktop */
+.floating-mobile-trigger {
+  display: none;
+}
+
+.floating-groups-wrapper {
+  display: flex;
+  align-items: center;
+}
+
 .floating-group {
   display: flex;
   align-items: center;
@@ -3078,27 +3088,133 @@ html, body {
   border-color: var(--border-color);
 }
 
-/* Mobile adjustments */
+/* ── Mobile Viewport (<= 768px): Single Floating Hub ────────── */
 @media (max-width: 768px) {
   .workspace-floating-toolbar {
-    top: 8px;
-    right: 8px;
-    gap: 4px;
+    top: 10px;
+    right: 10px;
+    flex-direction: column;
+    align-items: flex-end;
   }
-  
+
+  /* Tampilkan Trigger Tunggal di Mobile */
+  .floating-mobile-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.18s ease;
+  }
+
+  .floating-mobile-trigger:hover,
+  .workspace-floating-toolbar.mobile-menu-open .floating-mobile-trigger {
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+    color: var(--accent-primary);
+  }
+
+  .mobile-trigger-icon {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+  }
+
+  .mobile-trigger-chevron {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    fill: none;
+    transition: transform 0.2s ease;
+  }
+
+  .workspace-floating-toolbar.mobile-menu-open .mobile-trigger-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Popover Vertikal Turun ke Bawah-Kiri */
+  .floating-groups-wrapper {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 175px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    padding: 6px;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    animation: popoverSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .workspace-floating-toolbar.mobile-menu-open .floating-groups-wrapper {
+    display: flex !important;
+  }
+
+  @keyframes popoverSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .floating-group {
-    padding: 3px 4px;
+    display: flex;
+    flex-direction: column;
     gap: 3px;
+    background: transparent;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    width: 100%;
   }
-  
+
   .floating-toolbox-btn,
   .floating-examples-btn,
   .floating-mode-switch-btn,
   .floating-library-btn,
   .floating-format-btn {
-    height: 28px;
-    padding: 0 7px;
-    font-size: 11px;
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    justify-content: flex-start;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+
+  .floating-toolbox-btn:hover,
+  .floating-examples-btn:hover,
+  .floating-mode-switch-btn:hover,
+  .floating-library-btn:hover,
+  .floating-format-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-color);
+  }
+
+  .floating-mode-switch-btn {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    font-weight: 600;
   }
 }
 
