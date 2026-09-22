@@ -6,4 +6,5 @@ temp/*
 Thumbs.db
 library_arduino/
 server/*.pem
+soul.md
 
