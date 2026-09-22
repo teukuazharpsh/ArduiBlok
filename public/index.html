@@ -394,16 +394,6 @@
           <span class="btn-text btn-text-mobile-hide">Export</span>
         </button>
 
-        <!-- Tombol Unduh Kode .INO -->
-        <button class="btn btn-secondary" id="btnDownloadInoHeader" title="Unduh source code .INO">
-          <svg class="svg-icon" viewBox="0 0 24 24">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-          </svg>
-          <span class="btn-text btn-text-mobile-hide">.INO</span>
-        </button>
       </div>
 
       <!-- Tombol Compile -->
@@ -686,7 +676,6 @@
     const projectFileInput = document.getElementById('projectFileInput');
     const projectNameInput = document.getElementById('projectNameInput');
     const btnThemeToggle = document.getElementById('btnThemeToggle');
-    const btnDownloadInoHeader = document.getElementById('btnDownloadInoHeader');
     const btnToggleToolbox = document.getElementById('btnToggleToolbox');
     const btnFloatingToolbox = document.getElementById('btnFloatingToolbox');
     const codePreview = document.getElementById('codePreview');
@@ -1128,13 +1117,6 @@
       }
     }
 
-    if (btnDownloadInoHeader) {
-      btnDownloadInoHeader.addEventListener('click', function() {
-        var filename = getCleanProjectName() + '.ino';
-        var currentCode = arduinoGenerator.workspaceToCode(workspace);
-        downloadInoFile(currentCode, filename);
-      });
-    }
 
     // ── Export Workspace as Image ────────────────────────────
     function exportWorkspaceAsImage() {

@@ -1310,7 +1310,7 @@ html, body {
     transform: scale(0.96);
   }
 
-  /* Baris 2: Tombol Aksi (Buka, Simpan, Reset, Tema, Sound, Export, .INO) dibuat ke bawah di atas nama project & compile */
+  /* Baris 2: Tombol Aksi (Buka, Simpan, Reset, Tema, Sound, Export) dibuat ke bawah di atas nama project & compile */
   .header-actions {
     grid-column: 1 / -1;
     grid-row: 2;
