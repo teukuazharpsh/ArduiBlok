@@ -1619,9 +1619,27 @@
       localStorage.setItem('arduiblok_app_mode', mode);
 
       if (mode === 'text') {
+        document.body.classList.add('mode-text');
+        document.body.classList.remove('mode-block');
+
         // Sembunyikan kanvas Blockly, tampilkan editor teks
         if (blocklyDiv) blocklyDiv.classList.add('hidden');
         if (textEditorContainer) textEditorContainer.classList.remove('hidden');
+
+        // Tutup flyout dan sembunyikan toolbox Blockly
+        if (typeof workspace !== 'undefined' && workspace) {
+          var toolbox = workspace.getToolbox();
+          if (toolbox) {
+            if (typeof toolbox.clearSelection === 'function') toolbox.clearSelection();
+            if (typeof toolbox.setVisible === 'function') toolbox.setVisible(false);
+          }
+          if (typeof workspace.hideChaff === 'function') workspace.hideChaff();
+        }
+
+        var tbDiv = document.querySelector('.blocklyToolboxDiv');
+        if (tbDiv) tbDiv.style.display = 'none';
+        var flyoutDiv = document.querySelector('.blocklyFlyout');
+        if (flyoutDiv) flyoutDiv.style.display = 'none';
 
         // Update floating toolbar
         if (floatingGroupBlock) floatingGroupBlock.classList.add('hidden');
@@ -1656,15 +1674,22 @@
           codePreview.textContent = window.ArduiBlokEditor.getValue();
         }
 
-        // Tutup flyout Blockly jika terbuka
-        if (workspace && workspace.getToolbox()) {
-          workspace.getToolbox().clearSelection();
-        }
-
       } else {
+        document.body.classList.add('mode-block');
+        document.body.classList.remove('mode-text');
+
         // Mode Blok
         if (textEditorContainer) textEditorContainer.classList.add('hidden');
         if (blocklyDiv) blocklyDiv.classList.remove('hidden');
+
+        var tbDiv = document.querySelector('.blocklyToolboxDiv');
+        if (tbDiv) tbDiv.style.display = toolboxVisible ? '' : 'none';
+
+        if (typeof workspace !== 'undefined' && workspace && workspace.getToolbox()) {
+          if (typeof workspace.getToolbox().setVisible === 'function') {
+            workspace.getToolbox().setVisible(toolboxVisible);
+          }
+        }
 
         // Update floating toolbar
         if (floatingGroupText) floatingGroupText.classList.add('hidden');

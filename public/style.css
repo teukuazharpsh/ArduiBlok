@@ -1520,26 +1520,6 @@ html, body {
     height: 14px;
   }
 
-  /* Floating mobile toolbar: compact pills */
-  .workspace-floating-toolbar {
-    top: 8px;
-    left: 8px;
-    gap: 6px;
-  }
-
-  .floating-toolbox-btn,
-  .floating-examples-btn {
-    padding: 5px 10px;
-    font-size: 11px;
-    gap: 4px;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .floating-toolbox-btn .floating-icon,
-  .floating-examples-btn .floating-icon {
-    width: 13px;
-    height: 13px;
-  }
 
   .bottom-panel {
     height: 190px;
@@ -3131,13 +3111,26 @@ html, body {
   bottom: 0;
   width: 100%;
   height: 100%;
-  z-index: 10;
+  z-index: 20;
   background: var(--bg-primary);
   display: block;
 }
 
 .text-editor-container.hidden {
   display: none !important;
+}
+
+/* Sembunyikan seluruh komponen Blockly & Toolbox saat dalam Mode Teks */
+body.mode-text .blocklyToolboxDiv,
+body.mode-text .blocklyFlyout,
+body.mode-text .blocklyFlyoutScrollbar,
+body.mode-text .blocklyWidgetDiv,
+body.mode-text .blocklyDropDownDiv,
+body.mode-text .blocklyTooltipDiv,
+body.mode-text #blocklyDiv {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 #textEditorDiv {
