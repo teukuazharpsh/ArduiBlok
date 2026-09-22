@@ -100,6 +100,72 @@
     </div>
   </div>
 
+  <!-- Modal Galeri Contoh Proyek Bawaan -->
+  <div class="modal-overlay hidden" id="examplesModal">
+    <div class="modal-container examples-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 22px; height: 22px; color: var(--accent-primary); stroke: currentColor; fill: none;">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            <line x1="8" y1="7" x2="16" y2="7"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          <div>
+            <h2>Galeri Contoh Proyek</h2>
+            <p class="modal-subtitle">Pilih proyek siap pakai untuk langsung dimuat ke workspace ArduiBlok</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseExamplesModal" title="Tutup Galeri">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body examples-modal-body">
+        <!-- Toolbar Pencarian & Filter Kategori -->
+        <div class="examples-toolbar">
+          <div class="examples-search-wrapper">
+            <svg class="svg-icon examples-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="exampleSearchInput" class="examples-search-input" placeholder="Cari contoh proyek (misal: Blink, Servo, Sensor, LDR, Motor)...">
+            <button id="btnClearExampleSearch" class="btn-clear-search hidden" title="Hapus Pencarian">&times;</button>
+          </div>
+
+          <div class="examples-category-chips" id="exampleCategoryFilters">
+            <button class="category-chip active" data-category="all">🌟 Semua</button>
+            <button class="category-chip" data-category="basic">💡 Dasar &amp; LED</button>
+            <button class="category-chip" data-category="sensors">🕹️ Sensor &amp; Input</button>
+            <button class="category-chip" data-category="motors">⚙️ Motor &amp; Output</button>
+            <button class="category-chip" data-category="serial">📈 Serial &amp; Data</button>
+            <button class="category-chip" data-category="robotics">🤖 Robotika &amp; Shield</button>
+          </div>
+        </div>
+
+        <!-- Wadah Grid Kartu Proyek -->
+        <div class="examples-grid" id="examplesGrid">
+          <!-- Kartu dirender via JavaScript -->
+        </div>
+
+        <!-- Tampilan Kosong (Jika Pencarian Tidak Ditemukan) -->
+        <div class="examples-empty-state hidden" id="examplesEmptyState">
+          <div class="empty-icon">🔍</div>
+          <h3>Tidak ada contoh proyek yang cocok</h3>
+          <p>Coba gunakan kata kunci pencarian lain atau pilih kategori Semua.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer examples-modal-footer">
+        <span class="examples-count-info" id="examplesCountInfo">Memuat contoh proyek...</span>
+        <button class="btn btn-secondary" id="btnCancelExamplesModal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Mengambang Serial Monitor -->
   <div class="modal-overlay hidden" id="serialMonitorModal">
     <div class="modal-container serial-modal-container">
@@ -550,14 +616,26 @@
 
       <!-- Blockly Workspace Container -->
       <div class="workspace-container" id="workspaceContainer">
-        <!-- Floating Mobile Toggle Button -->
-        <button class="floating-toolbox-btn toolbox-open" id="btnFloatingToolbox" title="Buka/Tutup Menu Kategori">
-          <svg class="svg-icon floating-icon" viewBox="0 0 24 24">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-          <span class="floating-text">Tutup</span>
-        </button>
+        <!-- Floating Workspace Toolbar (Kategori & Contoh Proyek) -->
+        <div class="workspace-floating-toolbar" id="workspaceFloatingToolbar">
+          <button class="floating-toolbox-btn toolbox-open" id="btnFloatingToolbox" title="Buka/Tutup Menu Kategori">
+            <svg class="svg-icon floating-icon" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span class="floating-text">Tutup</span>
+          </button>
+
+          <button class="floating-examples-btn" id="btnFloatingExamples" title="Buka Galeri Contoh Proyek Bawaan">
+            <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              <line x1="8" y1="7" x2="16" y2="7"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <span class="floating-text">Contoh Proyek</span>
+          </button>
+        </div>
 
         <div id="blocklyDiv"></div>
       </div>
@@ -795,6 +873,7 @@
   <script src="serial_flasher.js"></script>
   <script src="serial_monitor.js"></script>
   <script src="serial_plotter.js"></script>
+  <script src="examples_data.js"></script>
 
   <!-- Application Logic -->
   <script>
@@ -815,6 +894,16 @@
     const btnThemeToggle = document.getElementById('btnThemeToggle');
     const btnToggleToolbox = document.getElementById('btnToggleToolbox');
     const btnFloatingToolbox = document.getElementById('btnFloatingToolbox');
+    const btnFloatingExamples = document.getElementById('btnFloatingExamples');
+    const examplesModal = document.getElementById('examplesModal');
+    const btnCloseExamplesModal = document.getElementById('btnCloseExamplesModal');
+    const btnCancelExamplesModal = document.getElementById('btnCancelExamplesModal');
+    const exampleSearchInput = document.getElementById('exampleSearchInput');
+    const btnClearExampleSearch = document.getElementById('btnClearExampleSearch');
+    const exampleCategoryFilters = document.getElementById('exampleCategoryFilters');
+    const examplesGrid = document.getElementById('examplesGrid');
+    const examplesEmptyState = document.getElementById('examplesEmptyState');
+    const examplesCountInfo = document.getElementById('examplesCountInfo');
     const codePreview = document.getElementById('codePreview');
     const outputContent = document.getElementById('outputContent');
     const outputIndicator = document.getElementById('outputIndicator');
@@ -1090,6 +1179,206 @@
         localStorage.setItem('arduiblok_board_config', JSON.stringify(currentBoardConfig));
         updateBoardBadgeLabel();
         closeBoardModal();
+      });
+    }
+
+    // ── Manajemen Galeri Contoh Proyek Bawaan ─────────────
+    let currentExampleCategory = 'all';
+    let currentExampleSearch = '';
+
+    function renderExampleCards() {
+      if (!examplesGrid) return;
+      const examples = window.ARDUIBLOK_EXAMPLES || [];
+      const query = currentExampleSearch.toLowerCase().trim();
+
+      const filtered = examples.filter(function(item) {
+        const matchCat = (currentExampleCategory === 'all' || item.category === currentExampleCategory);
+        const matchSearch = !query ||
+          item.title.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query) ||
+          item.categoryName.toLowerCase().includes(query) ||
+          (item.pins && item.pins.some(function(p) { return (p.name + ' ' + p.desc).toLowerCase().includes(query); }));
+        return matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        examplesGrid.innerHTML = '';
+        if (examplesEmptyState) examplesEmptyState.classList.remove('hidden');
+        if (examplesCountInfo) examplesCountInfo.textContent = 'Tidak ada contoh proyek ditemukan';
+        return;
+      }
+
+      if (examplesEmptyState) examplesEmptyState.classList.add('hidden');
+      if (examplesCountInfo) {
+        examplesCountInfo.textContent = 'Menampilkan ' + filtered.length + ' contoh proyek';
+      }
+
+      let html = '';
+      filtered.forEach(function(item) {
+        let pinsHtml = '';
+        if (item.pins && item.pins.length > 0) {
+          pinsHtml = '<div class="example-pins-box">' +
+            item.pins.map(function(p) {
+              return '<span class="pin-tag" title="' + escapeHtml(p.desc) + '">' + escapeHtml(p.name) + '</span>';
+            }).join('') +
+          '</div>';
+        }
+
+        let diffClass = 'diff-green';
+        if (item.difficultyColor === 'orange') diffClass = 'diff-orange';
+        if (item.difficultyColor === 'purple') diffClass = 'diff-purple';
+
+        html += '<div class="example-card" data-example-id="' + escapeHtml(item.id) + '">' +
+          '<div class="example-card-top">' +
+            '<div class="example-card-header">' +
+              '<div class="example-card-title-group">' +
+                '<div class="example-icon-badge">' + (item.icon || '📦') + '</div>' +
+                '<div>' +
+                  '<h3 class="example-card-title">' + escapeHtml(item.title) + '</h3>' +
+                  '<div class="example-card-category">' + escapeHtml(item.categoryName) + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<span class="example-badge-difficulty ' + diffClass + '">' + escapeHtml(item.difficulty) + '</span>' +
+            '</div>' +
+            '<p class="example-desc">' + escapeHtml(item.description) + '</p>' +
+            pinsHtml +
+          '</div>' +
+          '<button class="example-btn-load" data-example-id="' + escapeHtml(item.id) + '">' +
+            '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
+            'Gunakan Proyek Ini' +
+          '</button>' +
+        '</div>';
+      });
+
+      examplesGrid.innerHTML = html;
+
+      // Event listener tombol gunakan pada setiap kartu
+      examplesGrid.querySelectorAll('.example-btn-load').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const id = this.getAttribute('data-example-id');
+          loadExampleProject(id);
+        });
+      });
+    }
+
+    function loadExampleProject(id) {
+      if (!window.ARDUIBLOK_EXAMPLES || !workspace) return;
+      const example = window.ARDUIBLOK_EXAMPLES.find(function(ex) { return ex.id === id; });
+      if (!example) return;
+
+      const currentBlocks = workspace.getAllBlocks(false);
+      if (currentBlocks.length > 2) {
+        const confirmMsg = 'Muat contoh proyek "' + example.title + '" ke workspace?\n\nPerhatian: Blok yang ada di workspace saat ini akan digantikan.';
+        if (!confirm(confirmMsg)) return;
+      }
+
+      try {
+        workspace.clear();
+        const xmlDom = Blockly.utils.xml.textToDom(example.xml);
+        Blockly.Xml.domToWorkspace(xmlDom, workspace);
+
+        // Update nama project
+        if (projectNameInput) {
+          projectNameInput.value = example.title;
+          localStorage.setItem('arduiblok_current_project_name', example.title);
+        }
+
+        // Simpan auto-save
+        try {
+          const dom = Blockly.Xml.workspaceToDom(workspace);
+          const xmlText = Blockly.Xml.domToText(dom);
+          localStorage.setItem('arduiblok_saved_workspace', xmlText);
+        } catch (e) {}
+
+        generateCode();
+        if (typeof playSnapSound === 'function') {
+          playSnapSound();
+        }
+        closeExamplesModal();
+
+        // Fokus ke tab source code preview
+        const tabCode = document.querySelector('.panel-tab[data-tab="code"]');
+        if (tabCode) tabCode.click();
+
+      } catch (err) {
+        alert('Gagal memuat contoh proyek: ' + err.message);
+      }
+    }
+
+    function openExamplesModal() {
+      if (!examplesModal) return;
+      examplesModal.classList.remove('hidden');
+      currentExampleCategory = 'all';
+      currentExampleSearch = '';
+      if (exampleSearchInput) {
+        exampleSearchInput.value = '';
+        if (btnClearExampleSearch) btnClearExampleSearch.classList.add('hidden');
+      }
+      if (exampleCategoryFilters) {
+        exampleCategoryFilters.querySelectorAll('.category-chip').forEach(function(chip) {
+          chip.classList.toggle('active', chip.getAttribute('data-category') === 'all');
+        });
+      }
+      renderExampleCards();
+    }
+
+    function closeExamplesModal() {
+      if (examplesModal) {
+        examplesModal.classList.add('hidden');
+      }
+    }
+
+    if (btnFloatingExamples) {
+      btnFloatingExamples.addEventListener('click', openExamplesModal);
+    }
+    if (btnCloseExamplesModal) {
+      btnCloseExamplesModal.addEventListener('click', closeExamplesModal);
+    }
+    if (btnCancelExamplesModal) {
+      btnCancelExamplesModal.addEventListener('click', closeExamplesModal);
+    }
+
+    if (examplesModal) {
+      examplesModal.addEventListener('click', function(e) {
+        if (e.target === examplesModal) {
+          closeExamplesModal();
+        }
+      });
+    }
+
+    if (exampleSearchInput) {
+      exampleSearchInput.addEventListener('input', function() {
+        currentExampleSearch = this.value;
+        if (btnClearExampleSearch) {
+          btnClearExampleSearch.classList.toggle('hidden', !this.value);
+        }
+        renderExampleCards();
+      });
+    }
+
+    if (btnClearExampleSearch) {
+      btnClearExampleSearch.addEventListener('click', function() {
+        if (exampleSearchInput) {
+          exampleSearchInput.value = '';
+          currentExampleSearch = '';
+          this.classList.add('hidden');
+          exampleSearchInput.focus();
+          renderExampleCards();
+        }
+      });
+    }
+
+    if (exampleCategoryFilters) {
+      exampleCategoryFilters.querySelectorAll('.category-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          exampleCategoryFilters.querySelectorAll('.category-chip').forEach(function(c) {
+            c.classList.remove('active');
+          });
+          this.classList.add('active');
+          currentExampleCategory = this.getAttribute('data-category') || 'all';
+          renderExampleCards();
+        });
       });
     }
 
