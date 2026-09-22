@@ -647,15 +647,6 @@
     <!-- Header -->
     <header class="header">
       <div class="header-left">
-        <!-- Toggle Button untuk Navigasi Blok -->
-        <button class="btn btn-toggle-toolbox active" id="btnToggleToolbox" title="Buka / Tutup Kategori Blok">
-          <svg class="svg-icon btn-icon" viewBox="0 0 24 24">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-          <span class="btn-text btn-text-mobile-hide">Tutup Blok</span>
-        </button>
-
         <div class="header-brand">
           <!-- Clean Circuit / Microchip Vector Logo -->
           <!-- Robotika Nesklar Logo Badge -->
@@ -796,7 +787,7 @@
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-              <span class="floating-text">Tutup</span>
+              <span class="floating-text">Tutup Kategori</span>
             </button>
 
             <button class="floating-examples-btn" id="btnFloatingExamples" title="Buka Galeri Contoh Proyek Bawaan">
@@ -2339,7 +2330,7 @@
         const floatIcon = btnFloatingToolbox.querySelector('.floating-icon');
         const floatText = btnFloatingToolbox.querySelector('.floating-text');
         if (floatIcon) floatIcon.innerHTML = visible ? closeSvg : menuSvg;
-        if (floatText) floatText.textContent = visible ? 'Tutup' : 'Kategori';
+        if (floatText) floatText.textContent = visible ? 'Tutup Kategori' : 'Kategori';
       }
     }
 
