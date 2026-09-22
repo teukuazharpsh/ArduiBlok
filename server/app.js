@@ -174,17 +174,31 @@ const POPULAR_LIBRARIES = [
 // Helper: Ambil daftar folder library yang sudah terpasang
 function getInstalledLibraries() {
   const installed = new Set(['Servo', 'Wire', 'SPI', 'SoftwareSerial', 'EEPROM', 'HID']);
-  if (fs.existsSync(LIBRARIES_DIR)) {
-    try {
-      const dirs = fs.readdirSync(LIBRARIES_DIR, { withFileTypes: true });
-      dirs.forEach(d => {
-        if (d.isDirectory()) {
-          installed.add(d.name);
-          installed.add(d.name.replace(/_/g, ' '));
-        }
-      });
-    } catch (e) {}
-  }
+  
+  const possiblePaths = [
+    LIBRARIES_DIR,
+    path.join(process.env.USERPROFILE || '', 'Documents', 'Arduino', 'libraries'),
+    path.join(process.env.USERPROFILE || '', 'OneDrive', 'Documents', 'Arduino', 'libraries'),
+    path.join(process.env.HOME || '', 'Arduino', 'libraries'),
+    path.join(process.env.HOME || '', 'sketchbook', 'libraries'),
+    '/root/Arduino/libraries'
+  ];
+
+  possiblePaths.forEach(dirPath => {
+    if (dirPath && fs.existsSync(dirPath)) {
+      try {
+        const dirs = fs.readdirSync(dirPath, { withFileTypes: true });
+        dirs.forEach(d => {
+          if (d.isDirectory()) {
+            installed.add(d.name);
+            installed.add(d.name.replace(/_/g, ' '));
+            installed.add(d.name.replace(/-/g, ' '));
+          }
+        });
+      } catch (e) {}
+    }
+  });
+
   return Array.from(installed);
 }
 
@@ -301,21 +315,20 @@ app.post('/api/libraries/install', (req, res) => {
   const libName = name.trim();
   console.log(`[library] Menginstall library: "${libName}"...`);
 
-  // Pastikan direktori libraries ada
+  // Pastikan direktori libraries lokal ada jika dibutuhkan
   if (!fs.existsSync(LIBRARIES_DIR)) {
     fs.mkdirSync(LIBRARIES_DIR, { recursive: true });
   }
 
-  // Jalankan arduino-cli lib install
+  // Jalankan arduino-cli lib install tanpa flag invalid
   execFile(
     'arduino-cli',
-    ['lib', 'install', libName, '--libraries', LIBRARIES_DIR],
-    { timeout: 60000 },
+    ['lib', 'install', libName],
+    { timeout: 120000 },
     (error, stdout, stderr) => {
       const output = (stdout || '') + (stderr || '');
       if (error) {
         console.error(`[library] Error install "${libName}":`, output);
-        // Jika CLI gagal karena network atau package name, cek apakah folder sudah ada
         return res.status(500).json({
           success: false,
           error: `Gagal menginstall library "${libName}": ` + (output || error.message),
