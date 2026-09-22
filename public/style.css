@@ -2263,6 +2263,12 @@ html, body {
 
 /* ── Mobile Serial Monitor Controls Layout ─────────────────── */
 @media (max-width: 768px) {
+  .serial-modal-body {
+    padding: 10px !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+  }
+
   .serial-controls-bar {
     display: flex;
     flex-direction: column;
@@ -2345,6 +2351,41 @@ html, body {
     width: 100% !important;
     height: 36px !important;
     font-size: 12.5px !important;
+  }
+
+  /* Layout Bar Kirim Serial pada Mobile: 2 Baris agar dropdown Baris Baru (NL) tidak overflow */
+  .serial-send-bar {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    row-gap: 8px !important;
+    column-gap: 8px !important;
+    padding: 10px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .serial-send-input {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 38px !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+  }
+
+  .serial-ending-select {
+    grid-column: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 36px !important;
+    font-size: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .serial-send-bar .btn-compile {
+    grid-column: 2 !important;
+    height: 36px !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
   }
 }
 
