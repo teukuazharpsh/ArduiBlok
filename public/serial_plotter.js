@@ -382,12 +382,63 @@
     if (channels.length === 0 || !channels.some(function(c) { return c.data.length > 0; })) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = theme.text;
-      ctx.font = '13px system-ui, -apple-system, sans-serif';
-      ctx.fillText('Grafik Real-Time Siap. Kirim data numerik via Serial untuk memulai visualisasi.', padding.left + plotW / 2, padding.top + plotH / 2 - 12);
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = '12px "JetBrains Mono", monospace';
-      ctx.fillText('Contoh: Serial.println(analogRead(A0));', padding.left + plotW / 2, padding.top + plotH / 2 + 12);
+
+      var centerY = padding.top + plotH / 2;
+      var centerX = padding.left + plotW / 2;
+      var isNarrow = plotW < 450;
+
+      if (isNarrow) {
+        // Multi-line layout for mobile / compact screens
+        ctx.fillStyle = theme.textActive;
+        ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+        ctx.fillText('Grafik Real-Time Siap', centerX, centerY - 24);
+
+        ctx.fillStyle = theme.text;
+        ctx.font = '11px system-ui, -apple-system, sans-serif';
+        ctx.fillText('Kirim data numerik via Serial Arduino', centerX, centerY - 4);
+
+        // Code example pill box background
+        var codeText = 'Serial.println(analogRead(A0));';
+        ctx.font = '10.5px "JetBrains Mono", monospace';
+        var textMetrics = ctx.measureText(codeText);
+        var boxW = textMetrics.width + 16;
+        var boxH = 22;
+
+        ctx.fillStyle = theme.grid;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(centerX - boxW / 2, centerY + 10, boxW, boxH, 4);
+        } else {
+          ctx.rect(centerX - boxW / 2, centerY + 10, boxW, boxH);
+        }
+        ctx.fill();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(codeText, centerX, centerY + 21);
+      } else {
+        // Wide / Desktop layout
+        ctx.fillStyle = theme.textActive;
+        ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+        ctx.fillText('Grafik Real-Time Siap — Kirim data numerik via Serial untuk memulai visualisasi.', centerX, centerY - 14);
+
+        var codeTextDesk = 'Contoh: Serial.println(analogRead(A0));';
+        ctx.font = '12px "JetBrains Mono", monospace';
+        var textMetricsDesk = ctx.measureText(codeTextDesk);
+        var boxWDesk = textMetricsDesk.width + 20;
+        var boxHDesk = 24;
+
+        ctx.fillStyle = theme.grid;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(centerX - boxWDesk / 2, centerY + 2, boxWDesk, boxHDesk, 4);
+        } else {
+          ctx.rect(centerX - boxWDesk / 2, centerY + 2, boxWDesk, boxHDesk);
+        }
+        ctx.fill();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(codeTextDesk, centerX, centerY + 14);
+      }
       return;
     }
 
