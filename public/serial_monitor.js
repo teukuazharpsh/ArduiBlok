@@ -75,6 +75,7 @@
   var pendingTerminalBuffer = '';
   var terminalFrameRequested = false;
   var maxTerminalChars = 40000;
+  var isAtLineStart = true;
 
   function flushTerminalBuffer() {
     terminalFrameRequested = false;
@@ -102,6 +103,31 @@
     }
   }
 
+  function processTimestampText(rawText) {
+    if (!elCheckTimestamp || !elCheckTimestamp.checked) {
+      return rawText;
+    }
+
+    var result = '';
+    for (var i = 0; i < rawText.length; i++) {
+      var ch = rawText.charAt(i);
+
+      if (isAtLineStart) {
+        if (ch !== '\r' && ch !== '\n') {
+          result += formatTime();
+          isAtLineStart = false;
+        }
+      }
+
+      result += ch;
+
+      if (ch === '\n') {
+        isAtLineStart = true;
+      }
+    }
+    return result;
+  }
+
   function appendTerminal(text, isError) {
     if (!elSerialTerminal) return;
 
@@ -111,20 +137,16 @@
       span.style.color = '#f87171';
       span.textContent = text;
       elSerialTerminal.appendChild(span);
+      isAtLineStart = true;
       if (elCheckAutoscroll && elCheckAutoscroll.checked) {
         elSerialTerminal.scrollTop = elSerialTerminal.scrollHeight;
       }
       return;
     }
 
-    var showTimestamp = elCheckTimestamp && elCheckTimestamp.checked;
-    var line = text;
+    var processed = processTimestampText(text);
+    pendingTerminalBuffer += processed;
 
-    if (showTimestamp && line.trim().length > 0) {
-      line = formatTime() + line;
-    }
-
-    pendingTerminalBuffer += line;
     if (pendingTerminalBuffer.length > maxTerminalChars) {
       pendingTerminalBuffer = pendingTerminalBuffer.slice(-maxTerminalChars);
     }
@@ -493,6 +515,13 @@
       elBtnClearTerminal.addEventListener('click', function() {
         elSerialTerminal.innerHTML = '';
         pendingTerminalBuffer = '';
+        isAtLineStart = true;
+      });
+    }
+
+    if (elCheckTimestamp) {
+      elCheckTimestamp.addEventListener('change', function() {
+        isAtLineStart = true;
       });
     }
 
