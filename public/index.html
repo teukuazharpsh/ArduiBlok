@@ -172,6 +172,10 @@
                 </button>
               </div>
             </div>
+            <button class="btn btn-secondary btn-serial-action" id="btnSwitchToSerialPlotter" title="Buka grafik visualisasi data Serial Plotter">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              <span>Plotter</span>
+            </button>
           </div>
 
           <div class="serial-options-group">
@@ -213,6 +217,110 @@
             </svg>
             <span class="btn-text">Kirim</span>
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mengambang Real-Time Serial Plotter -->
+  <div class="modal-overlay hidden" id="serialPlotterModal">
+    <div class="modal-container serial-modal-container plotter-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px; color: #38bdf8;">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <h2>Real-Time Serial Plotter</h2>
+          <span class="info-badge disconnected" id="plotterStatusBadge">Terputus</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseSerialPlotterModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body serial-modal-body plotter-modal-body">
+        <!-- Toolbar Kontrol Plotter -->
+        <div class="serial-controls-bar plotter-controls-bar">
+          <div class="serial-control-item">
+            <label for="selectPlotterBaud" class="form-label-compact">Baud:</label>
+            <select id="selectPlotterBaud" class="form-select serial-baud-select">
+              <option value="300">300 baud</option>
+              <option value="1200">1200 baud</option>
+              <option value="2400">2400 baud</option>
+              <option value="4800">4800 baud</option>
+              <option value="9600" selected>9600 baud</option>
+              <option value="19200">19200 baud</option>
+              <option value="38400">38400 baud</option>
+              <option value="57600">57600 baud</option>
+              <option value="115200">115200 baud</option>
+            </select>
+          </div>
+
+          <div class="serial-actions-group">
+            <button class="btn btn-compile btn-serial-action" id="btnTogglePlotterConnect">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+              <span>Hubungkan</span>
+            </button>
+            <button class="btn btn-secondary btn-serial-action" id="btnTogglePlotPause" title="Jeda atau lanjutkan visualisasi grafik">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+              <span>Jeda</span>
+            </button>
+            <button class="btn btn-secondary btn-serial-action" id="btnClearPlotterData" title="Bersihkan seluruh titik data grafik">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Bersihkan</span>
+            </button>
+            <button class="btn btn-secondary btn-serial-action" id="btnResetPlotterBoard" title="Mereset mikrokontroler Arduino via DTR">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              <span>Reset</span>
+            </button>
+            <button class="btn btn-secondary btn-serial-action" id="btnExportPlotterCsv" title="Download rekaman data grafik ke file CSV">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>CSV</span>
+            </button>
+            <button class="btn btn-secondary btn-serial-action" id="btnExportPlotterPng" title="Export gambar grafik ke file PNG">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span>PNG</span>
+            </button>
+            <button class="btn btn-secondary btn-serial-action" id="btnSwitchToPlotterMonitor" title="Buka teks Serial Monitor">
+              <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+              <span>Terminal</span>
+            </button>
+          </div>
+
+          <div class="serial-options-group plotter-options-group">
+            <div class="serial-control-item">
+              <label for="selectPlotterWindow" class="form-label-compact">Window:</label>
+              <select id="selectPlotterWindow" class="form-select" style="padding: 3px 8px; font-size: 0.8rem; height: 28px;">
+                <option value="50">50 titik</option>
+                <option value="100" selected>100 titik</option>
+                <option value="200">200 titik</option>
+                <option value="500">500 titik</option>
+              </select>
+            </div>
+            <div class="serial-control-item">
+              <label for="selectPlotterScale" class="form-label-compact">Skala Y:</label>
+              <select id="selectPlotterScale" class="form-select" style="padding: 3px 8px; font-size: 0.8rem; height: 28px;">
+                <option value="auto" selected>Auto Scale</option>
+                <option value="0-1023">0 - 1023 (ADC)</option>
+                <option value="0-255">0 - 255 (PWM)</option>
+                <option value="0-5v">0 - 5.0 Volt</option>
+                <option value="-100-100">-100 s/d 100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Grafik Area -->
+        <div class="plotter-canvas-wrapper" id="plotterCanvasWrapper">
+          <canvas id="serialPlotterCanvas" class="serial-plotter-canvas"></canvas>
+        </div>
+
+        <!-- Legenda & Nilai Real-Time Multi-Channel -->
+        <div class="plotter-legend-bar" id="plotterLegendContainer">
+          <span class="plotter-legend-empty">Menunggu data numerik dari Arduino...</span>
         </div>
       </div>
     </div>
@@ -333,15 +441,26 @@
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </button>
-          <!-- Badge Floating Serial Monitor -->
-          <button class="board-selector-badge serial-monitor-badge" id="btnOpenSerialMonitor" title="Buka Floating Serial Monitor">
-            <svg class="svg-icon badge-icon" viewBox="0 0 24 24">
-              <polyline points="4 17 10 11 4 5"></polyline>
-              <line x1="12" y1="19" x2="20" y2="19"></line>
-            </svg>
-            <span class="badge-text-mobile-hide">Serial Monitor</span>
-          </button>
         </div>
+      </div>
+
+      <!-- Baris Tombol Serial Tools (Serial Monitor & Serial Plotter) -->
+      <div class="header-serial-tools">
+        <!-- Tombol Floating Serial Monitor -->
+        <button class="board-selector-badge serial-monitor-badge" id="btnOpenSerialMonitor" title="Buka Floating Serial Monitor">
+          <svg class="svg-icon badge-icon" viewBox="0 0 24 24">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+          <span>Serial Monitor</span>
+        </button>
+        <!-- Tombol Real-Time Serial Plotter -->
+        <button class="board-selector-badge serial-plotter-badge" id="btnOpenSerialPlotter" title="Buka Real-Time Serial Plotter">
+          <svg class="svg-icon badge-icon" viewBox="0 0 24 24">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span>Serial Plotter</span>
+        </button>
       </div>
 
       <!-- Text Box Nama Project (.tazp & .hex) -->
@@ -675,6 +794,7 @@
   <script src="ch340_driver.js"></script>
   <script src="serial_flasher.js"></script>
   <script src="serial_monitor.js"></script>
+  <script src="serial_plotter.js"></script>
 
   <!-- Application Logic -->
   <script>

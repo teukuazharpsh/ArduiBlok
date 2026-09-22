@@ -187,6 +187,28 @@
         elBtnToggleConnect.className = 'btn btn-compile btn-serial-action';
       }
     }
+
+    // Sync Serial Plotter UI badge and button if available
+    var elPlotterBadge = document.getElementById('plotterStatusBadge');
+    var elBtnTogglePlotter = document.getElementById('btnTogglePlotterConnect');
+    if (elPlotterBadge) {
+      if (isConnected) {
+        elPlotterBadge.textContent = 'Terhubung (' + currentBaudRate + ' bps)';
+        elPlotterBadge.className = 'info-badge connected';
+      } else {
+        elPlotterBadge.textContent = currentPort ? 'Port Siap (Terputus)' : 'Terputus';
+        elPlotterBadge.className = 'info-badge disconnected';
+      }
+    }
+    if (elBtnTogglePlotter) {
+      if (isConnected) {
+        elBtnTogglePlotter.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Putuskan</span>';
+        elBtnTogglePlotter.className = 'btn btn-disconnect btn-serial-action';
+      } else {
+        elBtnTogglePlotter.innerHTML = '<svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg><span>Hubungkan</span>';
+        elBtnTogglePlotter.className = 'btn btn-compile btn-serial-action';
+      }
+    }
   }
 
   async function connectPort(port, baudRate) {
@@ -325,6 +347,9 @@
           if (res.value) {
             var text = decoder.decode(res.value, { stream: true });
             appendTerminal(text);
+            if (root.ArduiBlokPlotter && root.ArduiBlokPlotter.processChunk) {
+              root.ArduiBlokPlotter.processChunk(text);
+            }
           }
         }
       } catch (err) {
@@ -392,10 +417,12 @@
     await sleep(350); // Allow Windows kernel to release handle
   }
 
-  // Resumes Serial Monitor after upload finishes (hanya jika modal monitor sedang terbuka)
+  // Resumes Serial Monitor / Plotter after upload finishes (jika modal monitor / plotter sedang terbuka)
   async function resumeAfterUpload() {
     isPausedForUpload = false;
-    if (elSerialModal && !elSerialModal.classList.contains('hidden') && currentPort) {
+    var isMonitorOpen = elSerialModal && !elSerialModal.classList.contains('hidden');
+    var isPlotterOpen = root.ArduiBlokPlotter && root.ArduiBlokPlotter.isOpen && root.ArduiBlokPlotter.isOpen();
+    if ((isMonitorOpen || isPlotterOpen) && currentPort) {
       await sleep(350);
       try {
         await connectPort(currentPort, currentBaudRate);
@@ -423,8 +450,9 @@
     if (elSerialModal) {
       elSerialModal.classList.add('hidden');
     }
-    // Putuskan koneksi saat modal ditutup agar data serial tidak membanjiri di latar belakang & port siap untuk upload
-    if (isConnected) {
+    // Putuskan koneksi hanya jika serial plotter juga tidak sedang terbuka
+    var isPlotterOpen = root.ArduiBlokPlotter && root.ArduiBlokPlotter.isOpen && root.ArduiBlokPlotter.isOpen();
+    if (isConnected && !isPlotterOpen) {
       await disconnectPort();
     }
   }

@@ -245,6 +245,13 @@ html, body {
   text-transform: uppercase;
 }
 
+/* Serial Tools Container in Navbar */
+.header-serial-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Project Name Input in Navbar */
 .project-name-wrapper {
   position: relative;
@@ -1210,7 +1217,7 @@ html, body {
   .header {
     display: grid;
     grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto;
     row-gap: 8px;
     column-gap: 8px;
     padding: 8px 10px;
@@ -1219,7 +1226,7 @@ html, body {
     box-sizing: border-box;
   }
 
-  /* Baris 1: Logo & Board Selector tetap di atas */
+  /* Baris 1: Toggle, Logo, ArduiBlok, Board, dan Port */
   .header-left {
     grid-column: 1 / -1;
     grid-row: 1;
@@ -1262,16 +1269,13 @@ html, body {
     padding: 2px 6px;
   }
 
-  .port-selector-badge, .serial-monitor-badge {
+  .port-selector-badge {
     height: 32px;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     border-radius: 8px;
     transition: var(--transition-fast);
-  }
-
-  .port-selector-badge {
     padding: 0 10px;
     font-size: 11.5px;
     font-weight: 600;
@@ -1288,32 +1292,64 @@ html, body {
     flex-shrink: 0;
   }
 
-  .serial-monitor-badge {
-    width: 36px;
-    min-width: 36px;
-    padding: 0 !important;
-    justify-content: center;
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.35);
-  }
-
-  .serial-monitor-badge .badge-icon {
-    width: 18px !important;
-    height: 18px !important;
-    stroke: #38bdf8 !important;
-    stroke-width: 2.2 !important;
-    flex-shrink: 0;
-  }
-
-  .serial-monitor-badge:active {
-    background: rgba(56, 189, 248, 0.25);
-    transform: scale(0.96);
-  }
-
-  /* Baris 2: Tombol Aksi (Buka, Simpan, Reset, Tema, Sound, Export) dibuat ke bawah di atas nama project & compile */
-  .header-actions {
+  /* Baris 2: Tombol Serial Monitor dan Serial Plotter (Di bawah Baris 1 & di atas Baris 3) */
+  .header-serial-tools {
     grid-column: 1 / -1;
     grid-row: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .header-serial-tools .board-selector-badge {
+    height: 34px;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    padding: 0 10px !important;
+    box-sizing: border-box;
+  }
+
+  .header-serial-tools .serial-monitor-badge {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+  }
+
+  .header-serial-tools .serial-monitor-badge .badge-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #38bdf8;
+    stroke-width: 2.2;
+  }
+
+  .header-serial-tools .serial-plotter-badge {
+    background: rgba(168, 85, 247, 0.12);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    color: #c084fc;
+  }
+
+  .header-serial-tools .serial-plotter-badge .badge-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #c084fc;
+    stroke-width: 2.2;
+  }
+
+  .header-serial-tools .board-selector-badge:active {
+    transform: scale(0.98);
+  }
+
+  /* Baris 3: Tombol Aksi (Buka, Simpan, Reset, Tema, Sound, Export) */
+  .header-actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
     margin-left: 0;
     justify-self: stretch;
     align-self: center;
@@ -1358,10 +1394,10 @@ html, body {
     height: 15px;
   }
 
-  /* Baris 3 Kolom 1: Text Box Nama Project */
+  /* Baris 4 Kolom 1: Text Box Nama Project */
   .project-name-wrapper {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 4;
     margin-left: 0;
     width: 100%;
     min-width: 0;
@@ -1381,10 +1417,10 @@ html, body {
     height: 13px;
   }
 
-  /* Baris 3 Kolom 2: Tombol Compile */
+  /* Baris 4 Kolom 2: Tombol Compile */
   .btn-compile {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 4;
     height: 34px;
     padding: 0 14px !important;
     font-size: 12.5px;
@@ -2311,3 +2347,148 @@ html, body {
     font-size: 12.5px !important;
   }
 }
+
+/* ── Real-Time Serial Plotter Styles ───────────────────────── */
+.serial-plotter-badge {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  color: #38bdf8 !important;
+}
+
+.serial-plotter-badge .badge-icon {
+  stroke: #38bdf8 !important;
+}
+
+.serial-plotter-badge:hover {
+  background: rgba(56, 189, 248, 0.22) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+@media (max-width: 768px) {
+  .serial-plotter-badge {
+    width: 36px;
+    min-width: 36px;
+    height: 32px;
+    padding: 0 !important;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  .serial-plotter-badge .badge-icon {
+    width: 18px !important;
+    height: 18px !important;
+    stroke: #38bdf8 !important;
+    stroke-width: 2.2 !important;
+    flex-shrink: 0;
+  }
+}
+
+.plotter-modal-container {
+  max-width: 880px !important;
+  width: 95vw;
+}
+
+.plotter-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 340px;
+  min-height: 240px;
+  background: #090d16;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  display: flex;
+}
+
+[data-theme="light"] .plotter-canvas-wrapper {
+  background: #f8fafc;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.serial-plotter-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.plotter-legend-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  min-height: 42px;
+  max-height: 90px;
+  overflow-y: auto;
+}
+
+.plotter-legend-empty {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.plotter-legend-empty code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg-card);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #38bdf8;
+  font-style: normal;
+}
+
+.plotter-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.2s ease;
+}
+
+.plotter-legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.plotter-legend-name {
+  font-weight: 600;
+}
+
+.plotter-legend-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.btn-paused {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #f59e0b !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+.btn-paused:hover {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+}
+
+.plotter-options-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
