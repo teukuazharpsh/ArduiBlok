@@ -3281,11 +3281,15 @@ body.mode-text #blocklyDiv {
 /* Ace editor custom tweaks */
 .ace_editor {
   border-radius: 0;
+  background-color: var(--bg-secondary);
 }
 .ace_gutter {
-  background: var(--bg-secondary) !important;
-  color: var(--text-tertiary) !important;
+  background: var(--bg-primary) !important;
+  color: var(--text-muted) !important;
   border-right: 1px solid var(--border-color) !important;
+}
+.ace_gutter-active-line {
+  background-color: var(--bg-hover) !important;
 }
 
 /* ── Welcome Mode Selector Modal ───────────────────────────── */

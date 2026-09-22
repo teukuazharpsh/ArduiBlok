@@ -138,11 +138,18 @@ void loop() {
      */
     syncTheme: function() {
       if (!editorInstance) return;
-      var isDark = document.body.classList.contains('dark-theme') || !document.body.classList.contains('light-theme');
+      var docTheme = document.documentElement.getAttribute('data-theme') || 
+                     document.body.getAttribute('data-theme') || 
+                     localStorage.getItem('arduiblok_theme') || 
+                     'light';
+      var isDark = (docTheme === 'dark') || 
+                   document.body.classList.contains('dark-theme') || 
+                   document.documentElement.classList.contains('dark');
+
       if (isDark) {
         editorInstance.setTheme('ace/theme/tomorrow_night');
       } else {
-        editorInstance.setTheme('ace/theme/clouds');
+        editorInstance.setTheme('ace/theme/chrome');
       }
     },
 
