@@ -1706,12 +1706,15 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .modal-title-group .modal-icon {
   width: 20px;
   height: 20px;
   color: var(--accent-primary);
+  flex-shrink: 0;
 }
 
 .modal-title-group h2 {
@@ -1719,6 +1722,7 @@ html, body {
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  white-space: nowrap;
 }
 
 .modal-close-btn {
@@ -1822,12 +1826,19 @@ html, body {
 }
 
 .info-badge {
-  font-size: 10.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 10px;
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border-radius: var(--radius-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: normal;
+  letter-spacing: 0.02em;
 }
 
 .info-grid {
@@ -2263,6 +2274,25 @@ html, body {
 
 /* ── Mobile Serial Monitor Controls Layout ─────────────────── */
 @media (max-width: 768px) {
+  .modal-header {
+    padding: 10px 14px;
+  }
+
+  .modal-title-group {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .modal-title-group h2 {
+    font-size: 14px;
+  }
+
+  .info-badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    white-space: nowrap !important;
+  }
+
   .serial-modal-body {
     padding: 10px !important;
     gap: 10px !important;
