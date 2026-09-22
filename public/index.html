@@ -17,6 +17,13 @@
   <!-- Blockly Core (CDN) -->
   <script src="https://unpkg.com/blockly/blockly.min.js"></script>
 
+  <!-- Ace Code Editor (CDN for Arduino C++ IDE) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-c_cpp.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-tomorrow_night.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-clouds.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
+
   <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -162,6 +169,170 @@
       <div class="modal-footer examples-modal-footer">
         <span class="examples-count-info" id="examplesCountInfo">Memuat contoh proyek...</span>
         <button class="btn btn-secondary" id="btnCancelExamplesModal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Layar Awal Pemilihan Mode (Welcome Mode Selector) -->
+  <div class="modal-overlay hidden" id="welcomeModeModal">
+    <div class="modal-container welcome-modal-container">
+      <div class="welcome-header">
+        <img src="logo.jpeg" alt="Logo Robotika Nesklar" class="welcome-logo-img">
+        <h1 class="welcome-title">Selamat Datang di ArduiBlok Studio</h1>
+        <p class="welcome-subtitle">Pilih metode pemrograman yang ingin Anda gunakan untuk memulai:</p>
+      </div>
+
+      <div class="welcome-cards-grid">
+        <!-- Kartu 1: Mode Visual Blok -->
+        <div class="welcome-mode-card" id="cardChooseBlockMode">
+          <div class="mode-card-icon-wrapper block-gradient">
+            <span class="mode-card-emoji">🧩</span>
+          </div>
+          <h2 class="mode-card-title">Pemrograman Visual Blok</h2>
+          <span class="mode-card-tag tag-beginner">Rekomendasi Pemula &amp; Siswa</span>
+          <p class="mode-card-desc">
+            Susun logika program dengan blok visual puzzle layaknya Scratch dan Kodular. Tanpa takut salah sintaks pengetikan, langsung siap di-compile!
+          </p>
+          <ul class="mode-card-features">
+            <li>✓ Kategori blok lengkap (Sensor, Motor, Display)</li>
+            <li>✓ Galeri contoh proyek bawaan siap pakai</li>
+            <li>✓ Auto-generate kode Arduino C++</li>
+          </ul>
+          <button class="btn btn-choose-mode btn-choose-block" id="btnChooseBlockMode">
+            Mulai Mode Blok
+          </button>
+        </div>
+
+        <!-- Kartu 2: Mode Teks C++ (IDE) -->
+        <div class="welcome-mode-card" id="cardChooseTextMode">
+          <div class="mode-card-icon-wrapper text-gradient">
+            <span class="mode-card-emoji">⌨️</span>
+          </div>
+          <h2 class="mode-card-title">Pemrograman Teks Arduino (C++)</h2>
+          <span class="mode-card-tag tag-advanced">Mahir &amp; Pengembang</span>
+          <p class="mode-card-desc">
+            Koding langsung dalam bahasa C++ standar Arduino IDE. Dilengkapi editor modern, auto-complete, dan Library Manager terintegrasi.
+          </p>
+          <ul class="mode-card-features">
+            <li>✓ Editor C++ berkecepatan tinggi dengan nomor baris</li>
+            <li>✓ Pasang library dari registry resmi (NeoPixel, LCD I2C, dll)</li>
+            <li>✓ Bebas tulis custom function &amp; pointer</li>
+          </ul>
+          <button class="btn btn-choose-mode btn-choose-text" id="btnChooseTextMode">
+            Mulai Mode Teks C++
+          </button>
+        </div>
+      </div>
+
+      <div class="welcome-footer">
+        <label class="welcome-remember-label">
+          <input type="checkbox" id="chkRememberModeChoice">
+          <span>Ingat pilihan saya (bisa beralih kapan saja lewat tombol di workspace)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Beralih ke Mode Teks -->
+  <div class="modal-overlay hidden" id="modeSwitchConfirmModal">
+    <div class="modal-container" style="max-width: 470px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span style="font-size: 20px;">🔄</span>
+          <h2>Beralih ke Mode Teks C++</h2>
+        </div>
+        <button class="modal-close-btn" id="btnCloseSwitchModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 18px 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+        <p style="margin: 0 0 14px 0;">Pilih bagaimana Anda ingin memulai kode di Mode Teks:</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="switch-option-card" id="btnSwitchConvertBlocks">
+            <div class="switch-opt-icon">📋</div>
+            <div class="switch-opt-text">
+              <strong>Salin Kode dari Blok Saat Ini</strong>
+              <span>Mengonversi susunan blok visual Anda menjadi kode C++ awal di editor.</span>
+            </div>
+          </button>
+
+          <button class="switch-option-card" id="btnSwitchKeepLastCode">
+            <div class="switch-opt-icon">📄</div>
+            <div class="switch-opt-text">
+              <strong>Buka Sketch Teks Terakhir</strong>
+              <span>Melanjutkan tulisan kode C++ yang sebelumnya Anda simpan di mode teks.</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelSwitchModal">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pengelola Library Eksternal (Library Manager) -->
+  <div class="modal-overlay hidden" id="libraryModal">
+    <div class="modal-container library-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 22px; height: 22px; color: var(--accent-primary); stroke: currentColor; fill: none;">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <div>
+            <h2>Arduino Library Manager</h2>
+            <p class="modal-subtitle">Cari dan pasang library Arduino dari registry online resmi (LiquidCrystal, NeoPixel, DHT, dll)</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseLibraryModal" title="Tutup Library Manager">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body library-modal-body">
+        <!-- Toolbar Pencarian & Filter Library -->
+        <div class="library-toolbar">
+          <div class="examples-search-wrapper">
+            <svg class="svg-icon examples-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="librarySearchInput" class="examples-search-input" placeholder="Cari library (misal: LiquidCrystal, NeoPixel, DHT, Servo, OLED, RFID, JSON)...">
+            <button id="btnClearLibrarySearch" class="btn-clear-search hidden" title="Hapus Pencarian">&times;</button>
+          </div>
+
+          <div class="examples-category-chips" id="libraryCategoryChips">
+            <button class="category-chip active" data-category="all">🌟 Semua</button>
+            <button class="category-chip" data-category="display">🖥️ Display &amp; OLED</button>
+            <button class="category-chip" data-category="sensors">🌡️ Sensor</button>
+            <button class="category-chip" data-category="device control">⚙️ Motor &amp; Device</button>
+            <button class="category-chip" data-category="communication">📡 Komunikasi &amp; IoT</button>
+            <button class="category-chip" data-category="timing">⏱️ RTC &amp; Timing</button>
+          </div>
+        </div>
+
+        <!-- Wadah Grid Kartu Library -->
+        <div class="libraries-grid" id="librariesGrid">
+          <!-- Rendered via library_manager.js -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="examples-empty-state hidden" id="librariesEmptyState">
+          <div class="empty-icon">🔍</div>
+          <h3>Library tidak ditemukan</h3>
+          <p>Coba kata kunci lain atau periksa koneksi internet server.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer library-modal-footer">
+        <span class="examples-count-info" id="librariesCountInfo">Memuat daftar library...</span>
+        <button class="btn btn-secondary" id="btnCancelLibraryModal">Tutup</button>
       </div>
     </div>
   </div>
@@ -540,10 +711,10 @@
 
       <div class="header-actions">
         <!-- Input File Tersembunyi untuk Buka Project -->
-        <input type="file" id="projectFileInput" accept=".tazp,.xml" style="display: none;">
+        <input type="file" id="projectFileInput" accept=".tazp,.xml,.ino,.cpp,.c,.txt" style="display: none;">
 
         <!-- Tombol Buka File Project -->
-        <button class="btn btn-secondary" id="btnOpenFile" title="Buka File Project (.tazp / .xml)">
+        <button class="btn btn-secondary" id="btnOpenFile" title="Buka File Project (.tazp / .ino / .xml)">
           <svg class="svg-icon" viewBox="0 0 24 24">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
@@ -614,30 +785,79 @@
     <!-- Main Content -->
     <div class="main-content">
 
-      <!-- Blockly Workspace Container -->
+      <!-- Blockly / Text Workspace Container -->
       <div class="workspace-container" id="workspaceContainer">
-        <!-- Floating Workspace Toolbar (Kategori & Contoh Proyek) -->
+        <!-- Floating Workspace Toolbar (Dinamis: Mode Blok & Mode Teks) -->
         <div class="workspace-floating-toolbar" id="workspaceFloatingToolbar">
-          <button class="floating-toolbox-btn toolbox-open" id="btnFloatingToolbox" title="Buka/Tutup Menu Kategori">
-            <svg class="svg-icon floating-icon" viewBox="0 0 24 24">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-            <span class="floating-text">Tutup</span>
-          </button>
+          <!-- Tombol-tombol Mode Blok -->
+          <div class="floating-group floating-group-block" id="floatingGroupBlock">
+            <button class="floating-toolbox-btn toolbox-open" id="btnFloatingToolbox" title="Buka/Tutup Menu Kategori">
+              <svg class="svg-icon floating-icon" viewBox="0 0 24 24">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span class="floating-text">Tutup</span>
+            </button>
 
-          <button class="floating-examples-btn" id="btnFloatingExamples" title="Buka Galeri Contoh Proyek Bawaan">
-            <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              <line x1="8" y1="7" x2="16" y2="7"></line>
-              <line x1="8" y1="11" x2="14" y2="11"></line>
-            </svg>
-            <span class="floating-text">Contoh Proyek</span>
-          </button>
+            <button class="floating-examples-btn" id="btnFloatingExamples" title="Buka Galeri Contoh Proyek Bawaan">
+              <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                <line x1="8" y1="7" x2="16" y2="7"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+              <span class="floating-text">Contoh Proyek</span>
+            </button>
+
+            <button class="floating-mode-switch-btn" id="btnFloatingSwitchToText" title="Beralih ke Pemrograman Teks (C++ IDE)">
+              <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              <span class="floating-text">Mode Teks C++</span>
+            </button>
+          </div>
+
+          <!-- Tombol-tombol Mode Teks -->
+          <div class="floating-group floating-group-text hidden" id="floatingGroupText">
+            <button class="floating-mode-switch-btn" id="btnFloatingSwitchToBlock" title="Beralih ke Pemrograman Visual Blok">
+              <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span class="floating-text">Mode Blok</span>
+            </button>
+
+            <button class="floating-library-btn" id="btnFloatingOpenLibrary" title="Buka Pengelola Library Eksternal">
+              <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span class="floating-text">Library Manager</span>
+            </button>
+
+            <button class="floating-format-btn" id="btnFloatingFormatCode" title="Format &amp; Rapikan Kode C++">
+              <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                <line x1="21" y1="10" x2="7" y2="10"></line>
+                <line x1="21" y1="6" x2="3" y2="6"></line>
+                <line x1="21" y1="14" x2="3" y2="14"></line>
+                <line x1="21" y1="18" x2="7" y2="18"></line>
+              </svg>
+              <span class="floating-text">Rapikan</span>
+            </button>
+          </div>
         </div>
 
+        <!-- Kanvas Blok Visual (Blockly) -->
         <div id="blocklyDiv"></div>
+
+        <!-- Editor Teks C++ (Ace IDE) -->
+        <div class="text-editor-container hidden" id="textEditorContainer">
+          <div id="textEditorDiv"></div>
+        </div>
       </div>
 
       <!-- Resize Handle -->
@@ -874,6 +1094,8 @@
   <script src="serial_monitor.js"></script>
   <script src="serial_plotter.js"></script>
   <script src="examples_data.js"></script>
+  <script src="code_editor.js"></script>
+  <script src="library_manager.js"></script>
 
   <!-- Application Logic -->
   <script>
@@ -895,6 +1117,22 @@
     const btnToggleToolbox = document.getElementById('btnToggleToolbox');
     const btnFloatingToolbox = document.getElementById('btnFloatingToolbox');
     const btnFloatingExamples = document.getElementById('btnFloatingExamples');
+    const floatingGroupBlock = document.getElementById('floatingGroupBlock');
+    const floatingGroupText = document.getElementById('floatingGroupText');
+    const btnFloatingSwitchToText = document.getElementById('btnFloatingSwitchToText');
+    const btnFloatingSwitchToBlock = document.getElementById('btnFloatingSwitchToBlock');
+    const btnFloatingOpenLibrary = document.getElementById('btnFloatingOpenLibrary');
+    const btnFloatingFormatCode = document.getElementById('btnFloatingFormatCode');
+    const textEditorContainer = document.getElementById('textEditorContainer');
+    const welcomeModeModal = document.getElementById('welcomeModeModal');
+    const btnChooseBlockMode = document.getElementById('btnChooseBlockMode');
+    const btnChooseTextMode = document.getElementById('btnChooseTextMode');
+    const chkRememberModeChoice = document.getElementById('chkRememberModeChoice');
+    const modeSwitchConfirmModal = document.getElementById('modeSwitchConfirmModal');
+    const btnCloseSwitchModal = document.getElementById('btnCloseSwitchModal');
+    const btnCancelSwitchModal = document.getElementById('btnCancelSwitchModal');
+    const btnSwitchConvertBlocks = document.getElementById('btnSwitchConvertBlocks');
+    const btnSwitchKeepLastCode = document.getElementById('btnSwitchKeepLastCode');
     const examplesModal = document.getElementById('examplesModal');
     const btnCloseExamplesModal = document.getElementById('btnCloseExamplesModal');
     const btnCancelExamplesModal = document.getElementById('btnCancelExamplesModal');
@@ -914,6 +1152,7 @@
     let workspace = null;
     let lastCompiledHex = null;
     let currentTheme = localStorage.getItem('arduiblok_theme') || 'light';
+    let currentAppMode = localStorage.getItem('arduiblok_app_mode') || 'block'; // 'block' | 'text'
 
     // ── Manajemen Board & Bootloader Target ───────────────
     const BOARD_CONFIGS = {
@@ -1382,6 +1621,166 @@
       });
     }
 
+    // ── Manajemen Dual-Mode (Visual Blok vs Teks Arduino C++) ──
+    function setAppMode(mode, options) {
+      options = options || {};
+      currentAppMode = mode;
+      localStorage.setItem('arduiblok_app_mode', mode);
+
+      if (mode === 'text') {
+        // Sembunyikan kanvas Blockly, tampilkan editor teks
+        if (blocklyDiv) blocklyDiv.classList.add('hidden');
+        if (textEditorContainer) textEditorContainer.classList.remove('hidden');
+
+        // Update floating toolbar
+        if (floatingGroupBlock) floatingGroupBlock.classList.add('hidden');
+        if (floatingGroupText) floatingGroupText.classList.remove('hidden');
+
+        // Inisialisasi editor teks
+        if (window.ArduiBlokEditor) {
+          window.ArduiBlokEditor.init('textEditorDiv', {
+            onChange: function(code) {
+              if (currentAppMode === 'text') {
+                codePreview.textContent = code || '// (Editor teks kosong)';
+              }
+            }
+          });
+          window.ArduiBlokEditor.syncTheme();
+
+          // Jika opsi konversi dari blok aktif
+          if (options.convertFromBlocks) {
+            try {
+              var generated = arduinoGenerator.workspaceToCode(workspace);
+              if (generated && generated.trim().length > 0) {
+                window.ArduiBlokEditor.setValue(generated);
+              }
+            } catch (e) {}
+          }
+
+          setTimeout(function() {
+            window.ArduiBlokEditor.resize();
+            window.ArduiBlokEditor.focus();
+          }, 100);
+
+          codePreview.textContent = window.ArduiBlokEditor.getValue();
+        }
+
+        // Tutup flyout Blockly jika terbuka
+        if (workspace && workspace.getToolbox()) {
+          workspace.getToolbox().clearSelection();
+        }
+
+      } else {
+        // Mode Blok
+        if (textEditorContainer) textEditorContainer.classList.add('hidden');
+        if (blocklyDiv) blocklyDiv.classList.remove('hidden');
+
+        // Update floating toolbar
+        if (floatingGroupText) floatingGroupText.classList.add('hidden');
+        if (floatingGroupBlock) floatingGroupBlock.classList.remove('hidden');
+
+        setTimeout(function() {
+          Blockly.svgResize(workspace);
+        }, 50);
+
+        generateCode();
+      }
+    }
+
+    // Event listener pergantian mode
+    if (btnFloatingSwitchToText) {
+      btnFloatingSwitchToText.addEventListener('click', function() {
+        if (modeSwitchConfirmModal) {
+          modeSwitchConfirmModal.classList.remove('hidden');
+        } else {
+          setAppMode('text', { convertFromBlocks: true });
+        }
+      });
+    }
+
+    if (btnSwitchConvertBlocks) {
+      btnSwitchConvertBlocks.addEventListener('click', function() {
+        if (modeSwitchConfirmModal) modeSwitchConfirmModal.classList.add('hidden');
+        setAppMode('text', { convertFromBlocks: true });
+      });
+    }
+
+    if (btnSwitchKeepLastCode) {
+      btnSwitchKeepLastCode.addEventListener('click', function() {
+        if (modeSwitchConfirmModal) modeSwitchConfirmModal.classList.add('hidden');
+        setAppMode('text', { convertFromBlocks: false });
+      });
+    }
+
+    if (btnCloseSwitchModal) {
+      btnCloseSwitchModal.addEventListener('click', function() {
+        if (modeSwitchConfirmModal) modeSwitchConfirmModal.classList.add('hidden');
+      });
+    }
+    if (btnCancelSwitchModal) {
+      btnCancelSwitchModal.addEventListener('click', function() {
+        if (modeSwitchConfirmModal) modeSwitchConfirmModal.classList.add('hidden');
+      });
+    }
+    if (modeSwitchConfirmModal) {
+      modeSwitchConfirmModal.addEventListener('click', function(e) {
+        if (e.target === modeSwitchConfirmModal) {
+          modeSwitchConfirmModal.classList.add('hidden');
+        }
+      });
+    }
+
+    if (btnFloatingSwitchToBlock) {
+      btnFloatingSwitchToBlock.addEventListener('click', function() {
+        setAppMode('block');
+      });
+    }
+
+    if (btnFloatingOpenLibrary) {
+      btnFloatingOpenLibrary.addEventListener('click', function() {
+        if (window.ArduiBlokLibraries) {
+          window.ArduiBlokLibraries.openModal();
+        }
+      });
+    }
+
+    if (btnFloatingFormatCode) {
+      btnFloatingFormatCode.addEventListener('click', function() {
+        if (window.ArduiBlokEditor) {
+          window.ArduiBlokEditor.formatCode();
+        }
+      });
+    }
+
+    // Event listener Welcome Mode Modal
+    if (btnChooseBlockMode) {
+      btnChooseBlockMode.addEventListener('click', function() {
+        if (chkRememberModeChoice && chkRememberModeChoice.checked) {
+          localStorage.setItem('arduiblok_welcome_dismissed', 'true');
+        }
+        if (welcomeModeModal) welcomeModeModal.classList.add('hidden');
+        setAppMode('block');
+      });
+    }
+
+    if (btnChooseTextMode) {
+      btnChooseTextMode.addEventListener('click', function() {
+        if (chkRememberModeChoice && chkRememberModeChoice.checked) {
+          localStorage.setItem('arduiblok_welcome_dismissed', 'true');
+        }
+        if (welcomeModeModal) welcomeModeModal.classList.add('hidden');
+        setAppMode('text');
+      });
+    }
+
+    if (welcomeModeModal) {
+      welcomeModeModal.addEventListener('click', function(e) {
+        if (e.target === welcomeModeModal) {
+          welcomeModeModal.classList.add('hidden');
+        }
+      });
+    }
+
     // ── Manajemen Nama Project (.tazp & .hex) ─────────────
     function getDefaultProjectBaseName() {
       const now = new Date();
@@ -1422,11 +1821,39 @@
       });
     }
 
-    // ── Save & Open Project File (.tazp / .xml) ───────────
+    // ── Save & Open Project File (.tazp / .ino / .xml) ───
     function saveProjectFile() {
+      const baseName = getCleanProjectName();
+
+      if (currentAppMode === 'text' && window.ArduiBlokEditor) {
+        try {
+          const filename = baseName + '.ino';
+          if (baseName.startsWith('project_')) {
+            let counter = parseInt(localStorage.getItem('arduiblok_project_save_counter') || '1', 10);
+            if (!isNaN(counter)) {
+              localStorage.setItem('arduiblok_project_save_counter', counter + 1);
+            }
+          }
+          localStorage.setItem('arduiblok_current_project_name', baseName);
+
+          const code = window.ArduiBlokEditor.getValue();
+          const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          alert('Gagal menyimpan sketch C++: ' + err.message);
+        }
+        return;
+      }
+
       if (!workspace) return;
       try {
-        const baseName = getCleanProjectName();
         const filename = baseName + '.tazp';
 
         // Increment counter jika menggunakan pola default project_
@@ -1455,25 +1882,34 @@
     }
 
     function openProjectFile(file) {
-      if (!file || !workspace) return;
+      if (!file) return;
       // Perbarui text box nama file dengan nama file yang baru dibuka
-      const cleanName = file.name.replace(/\.(tazp|abk|xml)$/i, '').trim();
+      const cleanName = file.name.replace(/\.(tazp|abk|xml|ino|cpp|c|txt)$/i, '').trim();
       if (cleanName && projectNameInput) {
         projectNameInput.value = cleanName;
         localStorage.setItem('arduiblok_current_project_name', cleanName);
       }
 
+      const isTextFile = /\.(ino|cpp|c|txt)$/i.test(file.name);
+
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
-          const xmlText = e.target.result;
-          const xmlDom = Blockly.utils.xml.textToDom(xmlText);
-          workspace.clear();
-          Blockly.Xml.domToWorkspace(xmlDom, workspace);
-          generateCode();
-          localStorage.setItem('arduiblok_saved_workspace', xmlText);
+          const content = e.target.result;
+          if (isTextFile || currentAppMode === 'text') {
+            if (window.ArduiBlokEditor) {
+              setAppMode('text');
+              window.ArduiBlokEditor.setValue(content);
+            }
+          } else {
+            const xmlDom = Blockly.utils.xml.textToDom(content);
+            workspace.clear();
+            Blockly.Xml.domToWorkspace(xmlDom, workspace);
+            generateCode();
+            localStorage.setItem('arduiblok_saved_workspace', content);
+          }
         } catch (err) {
-          alert('Gagal membuka file. Pastikan format file .tazp atau .xml valid: ' + err.message);
+          alert('Gagal membuka file: ' + err.message);
         }
       };
       reader.readAsText(file);
@@ -1804,6 +2240,10 @@
 
       if (typeof workspace !== 'undefined' && workspace) {
         workspace.setTheme(theme === 'dark' ? darkTheme : lightTheme);
+      }
+
+      if (window.ArduiBlokEditor && typeof window.ArduiBlokEditor.syncTheme === 'function') {
+        window.ArduiBlokEditor.syncTheme();
       }
 
       if (btnThemeToggle) {
@@ -2200,16 +2640,24 @@
       if (isCompiling) return;
 
       var code;
-      try {
-        code = arduinoGenerator.workspaceToCode(workspace);
-      } catch (e) {
-        showOutput('error', 'Gagal memproses blok: ' + e.message);
-        return;
-      }
+      if (currentAppMode === 'text' && window.ArduiBlokEditor) {
+        code = window.ArduiBlokEditor.getValue();
+        if (!code || code.trim().length === 0) {
+          showOutput('error', 'Editor teks kosong. Tulis kode program C++ sebelum melakukan compile.');
+          return;
+        }
+      } else {
+        try {
+          code = arduinoGenerator.workspaceToCode(workspace);
+        } catch (e) {
+          showOutput('error', 'Gagal memproses blok: ' + e.message);
+          return;
+        }
 
-      if (!code || code.trim().length === 0) {
-        showOutput('error', 'Workspace kosong. Pasang minimal satu blok sebelum melakukan compile.');
-        return;
+        if (!code || code.trim().length === 0) {
+          showOutput('error', 'Workspace kosong. Pasang minimal satu blok sebelum melakukan compile.');
+          return;
+        }
       }
 
       isCompiling = true;
@@ -2485,7 +2933,9 @@
           });
           document.getElementById('btnDownloadIno').addEventListener('click', function() {
             var inoFilename = getCleanProjectName() + '.ino';
-            var currentCode = arduinoGenerator.workspaceToCode(workspace);
+            var currentCode = (currentAppMode === 'text' && window.ArduiBlokEditor)
+              ? window.ArduiBlokEditor.getValue()
+              : arduinoGenerator.workspaceToCode(workspace);
             downloadInoFile(currentCode, inoFilename);
           });
 
@@ -2623,9 +3073,22 @@
       Blockly.svgResize(workspace);
     });
 
+    // ── Inisialisasi Mode Awal & Library Manager ───────────
+    if (window.ArduiBlokLibraries) {
+      window.ArduiBlokLibraries.init();
+    }
+
+    var savedAppMode = localStorage.getItem('arduiblok_app_mode') || 'block';
+    var welcomeDismissed = localStorage.getItem('arduiblok_welcome_dismissed') === 'true';
+
     // ── Remove Loading Screen ─────────────────────────────
     setTimeout(function() {
       loadingOverlay.classList.add('hidden');
+      if (!welcomeDismissed && welcomeModeModal) {
+        welcomeModeModal.classList.remove('hidden');
+      } else {
+        setAppMode(savedAppMode);
+      }
       Blockly.svgResize(workspace);
     }, 400);
 
