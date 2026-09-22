@@ -856,6 +856,14 @@
                 <span class="floating-text">Tutup Toolbox</span>
               </button>
 
+              <button class="floating-code-btn" id="btnFloatingToggleCode" title="Tampilkan / Sembunyikan Kode Arduino (.ino)">
+                <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                <span class="floating-text">Kode Arduino</span>
+              </button>
+
               <button class="floating-examples-btn" id="btnFloatingExamples" title="Buka Galeri Contoh Proyek Bawaan">
                 <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -1174,6 +1182,7 @@
     const btnThemeToggle = document.getElementById('btnThemeToggle');
     const btnToggleToolbox = document.getElementById('btnToggleToolbox');
     const btnFloatingToolbox = document.getElementById('btnFloatingToolbox');
+    const btnFloatingToggleCode = document.getElementById('btnFloatingToggleCode');
     const btnFloatingExamples = document.getElementById('btnFloatingExamples');
     const floatingGroupBlock = document.getElementById('floatingGroupBlock');
     const floatingGroupText = document.getElementById('floatingGroupText');
@@ -1211,6 +1220,7 @@
     let lastCompiledHex = null;
     let currentTheme = localStorage.getItem('arduiblok_theme') || 'light';
     let currentAppMode = localStorage.getItem('arduiblok_app_mode') || 'block'; // 'block' | 'text'
+    let codePanelVisible = false;
 
     // ── Manajemen Board & Bootloader Target ───────────────
     const BOARD_CONFIGS = {
@@ -1693,6 +1703,9 @@
         if (blocklyDiv) blocklyDiv.classList.add('hidden');
         if (textEditorContainer) textEditorContainer.classList.remove('hidden');
 
+        // Pada mode teks, sembunyikan bottom panel secara default (kecuali saat compile)
+        document.body.classList.add('bottom-panel-hidden');
+
         // Tutup flyout dan sembunyikan toolbox Blockly
         if (typeof workspace !== 'undefined' && workspace) {
           var toolbox = workspace.getToolbox();
@@ -1748,6 +1761,14 @@
         // Mode Blok
         if (textEditorContainer) textEditorContainer.classList.add('hidden');
         if (blocklyDiv) blocklyDiv.classList.remove('hidden');
+
+        // Bottom panel mengikuti status codePanelVisible
+        if (!codePanelVisible) {
+          document.body.classList.add('bottom-panel-hidden');
+        } else {
+          document.body.classList.remove('bottom-panel-hidden');
+        }
+        updateCodeButtonUI(codePanelVisible);
 
         var tbDiv = document.querySelector('.blocklyToolboxDiv');
         if (tbDiv) tbDiv.style.display = toolboxVisible ? '' : 'none';
@@ -2559,6 +2580,45 @@
       btnFloatingToolbox.addEventListener('click', toggleToolbox);
     }
 
+    // ── Bottom Panel Kode Arduino (.ino) Visibility (Toggle) ──
+    function updateCodeButtonUI(visible) {
+      if (btnFloatingToggleCode) {
+        btnFloatingToggleCode.classList.toggle('code-open', visible);
+        const floatText = btnFloatingToggleCode.querySelector('.floating-text');
+        if (floatText) floatText.textContent = visible ? 'Tutup Kode' : 'Kode Arduino';
+      }
+    }
+
+    function setCodePanelVisibility(visible) {
+      codePanelVisible = visible;
+      if (visible) {
+        document.body.classList.remove('bottom-panel-hidden');
+        const tabCode = document.getElementById('tabCode');
+        if (tabCode && !tabCode.classList.contains('active')) {
+          tabCode.click();
+        }
+      } else {
+        document.body.classList.add('bottom-panel-hidden');
+      }
+      updateCodeButtonUI(visible);
+      setTimeout(function() {
+        if (typeof workspace !== 'undefined' && workspace) {
+          Blockly.svgResize(workspace);
+        }
+        if (window.ArduiBlokEditor) {
+          window.ArduiBlokEditor.resize();
+        }
+      }, 50);
+    }
+
+    function toggleCodePanel() {
+      setCodePanelVisibility(!codePanelVisible);
+    }
+
+    if (btnFloatingToggleCode) {
+      btnFloatingToggleCode.addEventListener('click', toggleCodePanel);
+    }
+
     // ── Code Generation & Auto-Save ───────────────────────
     function generateCode() {
       try {
@@ -2849,6 +2909,7 @@
       const btnText = btnCompile.querySelector('.btn-text');
       if (btnText) btnText.textContent = 'Memproses...';
 
+      document.body.classList.remove('bottom-panel-hidden');
       document.querySelector('[data-tab="output"]').click();
       outputIndicator.className = 'tab-indicator';
 
@@ -3187,6 +3248,9 @@
     });
 
     function showOutput(type, message) {
+      document.body.classList.remove('bottom-panel-hidden');
+      const tabOutput = document.getElementById('tabOutput');
+      if (tabOutput) tabOutput.click();
       outputContent.innerHTML = '<div class="output-message ' + type + '">' + message + '</div>';
     }
 

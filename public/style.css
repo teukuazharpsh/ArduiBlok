@@ -610,6 +610,17 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Sembunyikan bottom panel dan drag handle jika class bottom-panel-hidden aktif */
+body.bottom-panel-hidden .bottom-panel,
+body.bottom-panel-hidden .resize-handle {
+  display: none !important;
+}
+
+/* Sembunyikan tab Kode Arduino (.ino) saat di Mode Teks */
+body.mode-text #tabCode {
+  display: none !important;
+}
+
 .panel-tabs {
   display: flex;
   gap: 2px;
@@ -3030,6 +3041,7 @@ html, body {
 
 /* Base floating button — Clean, solid, modern human-crafted design */
 .floating-toolbox-btn,
+.floating-code-btn,
 .floating-examples-btn,
 .floating-mode-switch-btn,
 .floating-library-btn,
@@ -3052,6 +3064,7 @@ html, body {
 }
 
 .floating-toolbox-btn:hover,
+.floating-code-btn:hover,
 .floating-examples-btn:hover,
 .floating-mode-switch-btn:hover,
 .floating-library-btn:hover,
@@ -3082,7 +3095,8 @@ html, body {
   color: var(--accent-primary);
 }
 
-.floating-toolbox-btn.toolbox-open {
+.floating-toolbox-btn.toolbox-open,
+.floating-code-btn.code-open {
   color: var(--text-primary);
   background: var(--bg-secondary);
   border-color: var(--border-color);
