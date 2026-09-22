@@ -13,6 +13,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/inst
 # Install AVR Core (Uno, Nano, Mega 2560, Pro Mini, Leonardo) and Servo
 RUN arduino-cli config init && \
     arduino-cli core update-index && \
+    arduino-cli lib update-index && \
     arduino-cli core install arduino:avr && \
     arduino-cli lib install Servo
 

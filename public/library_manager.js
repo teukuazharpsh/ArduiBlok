@@ -36,9 +36,13 @@
     /**
      * Cari library dari server / registry
      */
-    searchLibraries: async function(query) {
+    searchLibraries: async function(query, category) {
       try {
-        var url = '/api/libraries/search?q=' + encodeURIComponent(query || '');
+        var params = new URLSearchParams();
+        if (query) params.append('q', query);
+        if (category && category !== 'all') params.append('category', category);
+
+        var url = '/api/libraries/search?' + params.toString();
         var res = await fetch(url);
         var data = await res.json();
         if (data && data.success && Array.isArray(data.libraries)) {
@@ -99,17 +103,10 @@
       var countInfo = document.getElementById('librariesCountInfo');
       if (!grid) return;
 
-      grid.innerHTML = '<div class="library-loading"><div class="loading-spinner"></div><span>Mencari library...</span></div>';
+      grid.innerHTML = '<div class="library-loading"><div class="loading-spinner"></div><span>Mencari di seluruh katalog resmi Arduino...</span></div>';
       if (emptyState) emptyState.classList.add('hidden');
 
-      var libraries = await this.searchLibraries(currentSearchQuery);
-
-      // Filter kategori
-      if (currentCategory !== 'all') {
-        libraries = libraries.filter(function(lib) {
-          return (lib.category || '').toLowerCase() === currentCategory.toLowerCase();
-        });
-      }
+      var libraries = await this.searchLibraries(currentSearchQuery, currentCategory);
 
       if (libraries.length === 0) {
         grid.innerHTML = '';
@@ -119,7 +116,7 @@
       }
 
       if (emptyState) emptyState.classList.add('hidden');
-      if (countInfo) countInfo.textContent = 'Menampilkan ' + libraries.length + ' library';
+      if (countInfo) countInfo.textContent = 'Menampilkan ' + libraries.length + ' library resmi Arduino';
 
       var html = '';
       var self = this;
@@ -208,17 +205,22 @@
         });
       }
 
+      var searchDebounceTimer = null;
       if (searchInput) {
         searchInput.addEventListener('input', function() {
           currentSearchQuery = this.value;
           if (clearSearch) clearSearch.classList.toggle('hidden', !this.value);
-          self.renderList();
+          clearTimeout(searchDebounceTimer);
+          searchDebounceTimer = setTimeout(function() {
+            self.renderList();
+          }, 300);
         });
       }
 
       if (clearSearch) {
         clearSearch.addEventListener('click', function() {
           if (searchInput) {
+            clearTimeout(searchDebounceTimer);
             searchInput.value = '';
             currentSearchQuery = '';
             this.classList.add('hidden');

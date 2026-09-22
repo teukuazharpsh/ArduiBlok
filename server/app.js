@@ -202,6 +202,15 @@ function getInstalledLibraries() {
   return Array.from(installed);
 }
 
+// Sinkronisasi index katalog library resmi Arduino di background saat startup
+execFile('arduino-cli', ['lib', 'update-index'], { timeout: 60000 }, (err) => {
+  if (err) {
+    console.warn('[library] Info: sinkronisasi index library akan menggunakan cache lokal:', err.message);
+  } else {
+    console.log('[library] Sinkronisasi katalog resmi Arduino (library_index) berhasil.');
+  }
+});
+
 // ── GET /health ────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'ArduiBlok server is running' });
@@ -210,11 +219,14 @@ app.get('/health', (req, res) => {
 // ── GET /api/libraries/search ──────────────────────────────
 app.get('/api/libraries/search', (req, res) => {
   const rawQuery = (req.query.q || '').trim();
+  const category = (req.query.category || req.query.cat || '').trim();
   const query = rawQuery.toLowerCase();
   const installedList = getInstalledLibraries();
 
   // 1. Ambil kecocokan awal dari katalog cepat bawaan
   let localResults = POPULAR_LIBRARIES.filter(lib => {
+    const matchCat = !category || category.toLowerCase() === 'all' || (lib.category || '').toLowerCase() === category.toLowerCase();
+    if (!matchCat) return false;
     if (!query) return true;
     return lib.name.toLowerCase().includes(query) ||
            lib.author.toLowerCase().includes(query) ||
@@ -223,8 +235,11 @@ app.get('/api/libraries/search', (req, res) => {
            lib.header.toLowerCase().includes(query);
   });
 
-  // Jika tidak ada query atau query kurang dari 2 karakter, kirim katalog cepat
-  if (!rawQuery || rawQuery.length < 2) {
+  // Tentukan kata kunci pencarian ke arduino-cli
+  const searchTerm = rawQuery || (category && category.toLowerCase() !== 'all' ? category : '');
+
+  // Jika tidak ada query dan tidak ada filter kategori khusus, kirim katalog rekomendasi cepat
+  if (!searchTerm || (searchTerm.length < 2 && (!category || category.toLowerCase() === 'all'))) {
     const formatted = localResults.map(lib => ({
       ...lib,
       installed: installedList.some(inst =>
@@ -239,11 +254,11 @@ app.get('/api/libraries/search', (req, res) => {
     });
   }
 
-  // 2. Lakukan live search via arduino-cli lib search ke registry resmi Arduino
+  // 2. Lakukan live search via arduino-cli lib search ke seluruh katalog resmi Arduino (~6000+ library)
   execFile(
     'arduino-cli',
-    ['lib', 'search', rawQuery, '--format', 'json'],
-    { timeout: 8000 },
+    ['lib', 'search', searchTerm, '--format', 'json'],
+    { timeout: 15000, maxBuffer: 25 * 1024 * 1024 },
     (error, stdout, stderr) => {
       let combined = [...localResults];
       const seenNames = new Set(localResults.map(l => l.name.toLowerCase()));
@@ -255,9 +270,17 @@ app.get('/api/libraries/search', (req, res) => {
             cliData.libraries.forEach(item => {
               const name = item.name || '';
               if (!name || seenNames.has(name.toLowerCase())) return;
-              seenNames.add(name.toLowerCase());
 
               const rel = item.latest || (item.releases ? Object.values(item.releases)[0] : null) || {};
+              const libCat = rel.category || 'General';
+
+              // Filter kategori jika ditentukan
+              if (category && category.toLowerCase() !== 'all' && libCat.toLowerCase() !== category.toLowerCase()) {
+                return;
+              }
+
+              seenNames.add(name.toLowerCase());
+
               const header = (rel.provides_includes && rel.provides_includes.length > 0)
                 ? rel.provides_includes[0]
                 : (name.replace(/\s+/g, '') + '.h');
@@ -267,7 +290,7 @@ app.get('/api/libraries/search', (req, res) => {
                 author: rel.author || rel.maintainer || 'Arduino Contributor',
                 version: rel.version || '1.0.0',
                 sentence: rel.sentence || rel.paragraph || `Library ${name} untuk Arduino.`,
-                category: rel.category || 'General',
+                category: libCat,
                 header: header,
                 exampleInclude: `#include <${header}>`
               });
@@ -278,8 +301,8 @@ app.get('/api/libraries/search', (req, res) => {
         }
       }
 
-      // Tandai status installed
-      const finalResults = combined.map(lib => ({
+      // Tandai status installed dan batasi maksimal 200 hasil per query agar browser tetap sangat cepat
+      const limitedResults = combined.slice(0, 200).map(lib => ({
         ...lib,
         installed: installedList.some(inst =>
           inst.toLowerCase() === lib.name.toLowerCase() ||
@@ -289,8 +312,8 @@ app.get('/api/libraries/search', (req, res) => {
 
       res.json({
         success: true,
-        count: finalResults.length,
-        libraries: finalResults
+        count: limitedResults.length,
+        libraries: limitedResults
       });
     }
   );
