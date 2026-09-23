@@ -605,18 +605,27 @@
       });
     }
 
-    // Klik tombol "Pilih Port": hanya memilih port, tidak membuka port & tidak menerima/mengirim data serial
+    // Klik tombol "Pilih Port": membuka Modal Device Connection Hub
     if (elBtnOpenPortModal) {
-      elBtnOpenPortModal.addEventListener('click', async function() {
-        await selectPort();
+      elBtnOpenPortModal.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (root.ArduiBlokDeviceManager && root.ArduiBlokDeviceManager.openModal) {
+          root.ArduiBlokDeviceManager.openModal();
+        } else {
+          selectPort();
+        }
       });
     }
 
     if (elBtnSelectNewPort) {
-      elBtnSelectNewPort.addEventListener('click', async function() {
-        var ok = await selectPort();
-        if (ok && currentPort && elSerialModal && !elSerialModal.classList.contains('hidden')) {
-          await connectPort(currentPort);
+      elBtnSelectNewPort.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (root.ArduiBlokDeviceManager && root.ArduiBlokDeviceManager.openModal) {
+          root.ArduiBlokDeviceManager.openModal();
+        } else {
+          selectPort();
         }
       });
     }

@@ -3897,5 +3897,587 @@ body.mode-text #blocklyDiv {
   }
 }
 
+/* ── Device Connection Hub Modal & Smart Port Assistant ────── */
+.device-modal-container {
+  max-width: 680px;
+  width: 95vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.device-header-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.device-header-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.device-modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: calc(88vh - 120px);
+}
+
+/* Target Board Status Strip */
+.device-target-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.target-strip-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.target-board-info, .target-baud-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.target-label {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.target-val {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.info-badge-baud {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.target-strip-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-disconnect-device {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.btn-disconnect-device:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+}
+
+/* Device Section & Ports Grid */
+.device-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-desc-note {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.device-ports-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-port-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.device-port-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.device-port-card.active-connected {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.device-port-card.active-selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-light);
+}
+
+.device-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.device-icon-container {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.device-chip-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-primary);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.device-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.device-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.device-card-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.device-badge-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+}
+
+.device-badge-tag.tag-ready {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.device-badge-tag.tag-connected {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.device-badge-tag.tag-selected {
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  border: 1px solid rgba(0, 135, 138, 0.35);
+}
+
+.device-card-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.device-card-meta code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: var(--bg-secondary);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.meta-sep {
+  color: var(--text-light);
+}
+
+.device-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-device-connect {
+  height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 14px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-device-connect:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn-device-open-monitor {
+  height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 14px;
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-device-open-monitor:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* Empty State Card & Radar */
+.device-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  text-align: center;
+  gap: 8px;
+}
+
+.device-radar-scanner {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.radar-circle {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--accent-primary);
+  border-radius: 50%;
+  opacity: 0;
+  animation: radarWave 2.4s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+.radar-circle.circle-2 {
+  animation-delay: 0.8s;
+}
+
+.radar-circle.circle-3 {
+  animation-delay: 1.6s;
+}
+
+.radar-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--accent-primary);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  z-index: 2;
+}
+
+@keyframes radarWave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.device-empty-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.device-empty-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+/* Scan Banner */
+.device-scan-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(0, 135, 138, 0.08), rgba(0, 135, 138, 0.02));
+  border: 1px solid rgba(0, 135, 138, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.scan-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.scan-banner-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.scan-banner-text h4 {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.scan-banner-text p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.btn-scan-port-action {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-scan-port-action:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 135, 138, 0.25);
+}
+
+.btn-scan-port-action.scanning {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Troubleshooting Box */
+.device-troubleshoot-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.troubleshoot-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.device-troubleshoot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .device-troubleshoot-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.troubleshoot-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.troubleshoot-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.troubleshoot-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.troubleshoot-content strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.troubleshoot-content p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.troubleshoot-content code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  background: var(--bg-secondary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--accent-primary);
+}
+
+.btn-download-driver-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.btn-download-driver-link:hover {
+  text-decoration: underline;
+  color: var(--accent-hover);
+}
+
+/* Modal Footer */
+.device-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.device-footer-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.device-scan-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  animation: liveDotPulse 2s infinite;
+}
+
+@keyframes liveDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.status-live-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-right: 4px;
+  animation: liveDotPulse 1.5s infinite;
+}
+
+
 
 
