@@ -821,7 +821,7 @@
       </div>
 
       <!-- Tombol Compile -->
-      <button class="btn btn-compile" id="btnCompile" title="Compile sketch ke file biner Arduino">
+      <button class="btn btn-compile" id="btnCompile" title="Compile sketch ke file biner Arduino (Ctrl + R)">
         <svg class="svg-icon btn-compile-icon" viewBox="0 0 24 24">
           <polygon points="5 3 19 12 5 21 5 3"></polygon>
         </svg>
@@ -3326,6 +3326,16 @@
 
     window.addEventListener('resize', function() {
       Blockly.svgResize(workspace);
+    });
+
+    // ── Global Keyboard Shortcuts (Ctrl+R / Cmd+R untuk Compile) ──
+    window.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R' || e.code === 'KeyR')) {
+        e.preventDefault(); // Mencegah reload halaman browser
+        if (btnCompile && !btnCompile.disabled && !isCompiling) {
+          btnCompile.click();
+        }
+      }
     });
 
     // ── Inisialisasi Mode Awal & Library Manager ───────────

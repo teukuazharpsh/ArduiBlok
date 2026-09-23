@@ -70,6 +70,19 @@ void loop() {
         behavioursEnabled: true
       });
 
+      // Shortcut keyboard kompilasi (Ctrl+R / Cmd+R) langsung dari dalam editor
+      editorInstance.commands.addCommand({
+        name: 'compileSketch',
+        bindKey: { win: 'Ctrl-R', mac: 'Command-R' },
+        exec: function() {
+          var btnCompile = document.getElementById('btnCompile');
+          if (btnCompile && !btnCompile.disabled) {
+            btnCompile.click();
+          }
+        },
+        readOnly: true
+      });
+
       // Sinkronisasi tema visual
       this.syncTheme();
 
