@@ -4,14 +4,16 @@ FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 2. Install Arduino CLI ────────────────────────────────────
 RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin sh
 
 # ── 3. Setup Arduino AVR Core & Official Libraries ────────────
-# Install AVR Core (Uno, Nano, Mega 2560, Pro Mini, Leonardo) and Servo
+# Install AVR Core (Uno, Nano, Mega 2560, Pro Mini, Leonardo) and Servo, enable zip install
 RUN arduino-cli config init && \
+    arduino-cli config set library.enable_unsafe_install true && \
     arduino-cli core update-index && \
     arduino-cli lib update-index && \
     arduino-cli core install arduino:avr && \

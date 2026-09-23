@@ -203,6 +203,13 @@ function getInstalledLibraries() {
   return Array.from(installed);
 }
 
+// Pastikan konfigurasi arduino-cli mengizinkan instalasi library .zip / git-url
+try {
+  execSync('arduino-cli config set library.enable_unsafe_install true', { stdio: 'ignore' });
+} catch (cfgErr) {
+  console.warn('[config] Note enable_unsafe_install:', cfgErr.message);
+}
+
 // Sinkronisasi index katalog library resmi Arduino di background saat startup
 execFile('arduino-cli', ['lib', 'update-index'], { timeout: 60000 }, (err) => {
   if (err) {
@@ -375,7 +382,7 @@ app.post('/api/libraries/upload-zip', async (req, res) => {
   const { filename, base64Data } = req.body;
 
   if (!base64Data || typeof base64Data !== 'string') {
-    return res.status(400).json({ success: false, error: 'Data file .zip tidak ditemukan.' });
+    return res.status(400).json({ success: false, error: 'Data berkas .zip tidak ditemukan.' });
   }
 
   const rawFilename = (filename && typeof filename === 'string') ? filename : 'custom_library.zip';
@@ -396,6 +403,11 @@ app.post('/api/libraries/upload-zip', async (req, res) => {
 
     console.log(`[library] Upload .zip diterima (${zipBuffer.length} bytes): ${rawFilename}`);
 
+    // Pastikan unsafe_install aktif
+    try {
+      execSync('arduino-cli config set library.enable_unsafe_install true', { stdio: 'ignore' });
+    } catch (e) {}
+
     // Jalankan instalasi menggunakan arduino-cli lib install --zip-path
     execFile(
       'arduino-cli',
@@ -410,27 +422,44 @@ app.post('/api/libraries/upload-zip', async (req, res) => {
           .replace(/[-_]main$/i, '')
           .trim();
 
-        // Fallback ekstraksi manual jika arduino-cli melaporkan error / non-standard zip
-        if (error) {
-          console.warn(`[library] Catatan instalasi CLI zip:`, output);
-          try {
-            const safeDirName = detectedLibName.replace(/[^a-zA-Z0-9_\-]/g, '_');
-            const targetExtractDir = path.join(LIBRARIES_DIR, safeDirName);
-            if (!fs.existsSync(targetExtractDir)) {
-              fs.mkdirSync(targetExtractDir, { recursive: true });
-            }
+        const safeDirName = detectedLibName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+        const targetExtractDir = path.join(LIBRARIES_DIR, safeDirName);
 
-            if (process.platform === 'win32') {
+        // Ekstraksi fallback jika arduino-cli error / gagal
+        if (error) {
+          console.warn(`[library] Info: Ekstraksi fallback untuk .zip...`);
+          if (!fs.existsSync(targetExtractDir)) {
+            fs.mkdirSync(targetExtractDir, { recursive: true });
+          }
+
+          let extracted = false;
+          if (process.platform === 'win32') {
+            try {
               execSync(`powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${tempZipPath}' -DestinationPath '${targetExtractDir}' -Force"`, { timeout: 30000 });
-            } else {
-              execSync(`unzip -o "${tempZipPath}" -d "${targetExtractDir}"`, { timeout: 30000 });
+              extracted = true;
+            } catch (pErr) {
+              try {
+                execSync(`tar -xf "${tempZipPath}" -C "${targetExtractDir}"`, { timeout: 30000 });
+                extracted = true;
+              } catch (tErr) {}
             }
-          } catch (fallbackErr) {
-            // Hapus file zip sementara
+          } else {
+            try {
+              execSync(`unzip -o "${tempZipPath}" -d "${targetExtractDir}"`, { timeout: 30000 });
+              extracted = true;
+            } catch (uErr) {
+              try {
+                execSync(`tar -xf "${tempZipPath}" -C "${targetExtractDir}"`, { timeout: 30000 });
+                extracted = true;
+              } catch (tErr) {}
+            }
+          }
+
+          if (!extracted) {
             try { if (fs.existsSync(tempZipPath)) fs.unlinkSync(tempZipPath); } catch (e) {}
             return res.status(500).json({
               success: false,
-              error: `Gagal memasang library dari .zip: ` + (output || fallbackErr.message),
+              error: `Gagal mengekstrak berkas .zip library. Pastikan file zip valid dan tidak rusak.`,
               log: output
             });
           }
@@ -441,21 +470,27 @@ app.post('/api/libraries/upload-zip', async (req, res) => {
 
         // Scan direktori library untuk mendeteksi file header (.h) utama
         let detectedHeader = '';
-        const searchHeader = (dir) => {
-          if (!fs.existsSync(dir)) return;
+        const searchHeader = (dir, depth) => {
+          if (!fs.existsSync(dir) || (depth && depth > 3)) return;
           try {
             const items = fs.readdirSync(dir, { withFileTypes: true });
             for (const item of items) {
               if (item.isFile() && item.name.toLowerCase().endsWith('.h') && !detectedHeader) {
                 detectedHeader = item.name;
-              } else if (item.isDirectory() && (item.name === 'src' || item.name.toLowerCase().includes(detectedLibName.toLowerCase()))) {
-                searchHeader(path.join(dir, item.name));
+              } else if (item.isDirectory() && !item.name.startsWith('.')) {
+                searchHeader(path.join(dir, item.name), (depth || 0) + 1);
               }
             }
           } catch (e) {}
         };
 
-        searchHeader(LIBRARIES_DIR);
+        // Cari di direktori ekstraksi target terlebih dahulu
+        if (fs.existsSync(targetExtractDir)) {
+          searchHeader(targetExtractDir, 0);
+        }
+        if (!detectedHeader) {
+          searchHeader(LIBRARIES_DIR, 0);
+        }
         if (!detectedHeader) {
           detectedHeader = detectedLibName.replace(/\s+/g, '') + '.h';
         }
