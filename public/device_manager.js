@@ -475,11 +475,11 @@
             var modalBody = document.querySelector('.device-modal-body');
             if (modalBody) {
               modalBody.scrollTo({
-                top: deviceTroubleshootBox.offsetTop - 15,
+                top: modalBody.scrollHeight,
                 behavior: 'smooth'
               });
             }
-          }, 60);
+          }, 100);
         }
       });
     }

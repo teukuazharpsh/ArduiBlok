@@ -3902,10 +3902,10 @@ body.mode-text #blocklyDiv {
   max-width: 680px;
   width: 95vw;
   max-height: 88vh;
-  height: auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin: auto;
 }
 
 .device-header-icon-box {
@@ -3930,8 +3930,7 @@ body.mode-text #blocklyDiv {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1 1 auto;
-  min-height: 0;
+  max-height: calc(88vh - 125px);
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
 }
@@ -3951,6 +3950,17 @@ body.mode-text #blocklyDiv {
 
 .device-modal-body::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary);
+}
+
+@media (max-width: 680px) {
+  .device-modal-container {
+    max-height: 94vh;
+  }
+  .device-modal-body {
+    max-height: calc(94vh - 110px);
+    padding: 14px;
+    gap: 12px;
+  }
 }
 
 /* Target Board Status Strip */
