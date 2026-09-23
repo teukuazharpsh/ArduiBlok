@@ -498,50 +498,60 @@
           </button>
         </div>
 
-        <!-- Section: Troubleshooting Assistant -->
-        <div class="device-troubleshoot-box">
-          <div class="troubleshoot-box-header">
-            <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            <span>Panduan: Port Tidak Muncul atau Muncul "No compatible devices found"?</span>
-          </div>
+        <!-- Section: Troubleshooting Assistant (Collapsible Accordion) -->
+        <div class="device-troubleshoot-box" id="deviceTroubleshootBox">
+          <button type="button" class="troubleshoot-box-header" id="btnToggleTroubleshoot" title="Klik untuk membuka / menutup panduan bantuan">
+            <div class="troubleshoot-header-left">
+              <svg class="svg-icon troubleshoot-info-icon" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>Panduan: Port Tidak Muncul atau Muncul "No compatible devices found"?</span>
+            </div>
+            <div class="troubleshoot-header-right">
+              <span class="troubleshoot-hint-text" id="troubleshootHintText">Buka Panduan</span>
+              <svg class="svg-icon troubleshoot-chevron" viewBox="0 0 24 24">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </button>
           
-          <div class="device-troubleshoot-grid">
-            <div class="troubleshoot-item">
-              <div class="troubleshoot-icon">🔌</div>
-              <div class="troubleshoot-content">
-                <strong>1. Gunakan Kabel USB Data</strong>
-                <p>Kabel charger HP murah biasanya hanya memiliki 2 jalur daya tanpa jalur transfer data. Pastikan memakai kabel USB data berkualitas.</p>
+          <div class="device-troubleshoot-content hidden" id="deviceTroubleshootContent">
+            <div class="device-troubleshoot-grid">
+              <div class="troubleshoot-item">
+                <div class="troubleshoot-icon">🔌</div>
+                <div class="troubleshoot-content">
+                  <strong>1. Gunakan Kabel USB Data</strong>
+                  <p>Kabel charger HP murah biasanya hanya memiliki 2 jalur daya tanpa jalur transfer data. Pastikan memakai kabel USB data berkualitas.</p>
+                </div>
               </div>
-            </div>
-            
-            <div class="troubleshoot-item">
-              <div class="troubleshoot-icon">💡</div>
-              <div class="troubleshoot-content">
-                <strong>2. Periksa Lampu LED Daya</strong>
-                <p>Lampu LED <code>ON</code> / <code>PWR</code> pada board Arduino harus menyala terang dan stabil saat dicolokkan ke port USB komputer.</p>
+              
+              <div class="troubleshoot-item">
+                <div class="troubleshoot-icon">💡</div>
+                <div class="troubleshoot-content">
+                  <strong>2. Periksa Lampu LED Daya</strong>
+                  <p>Lampu LED <code>ON</code> / <code>PWR</code> pada board Arduino harus menyala terang dan stabil saat dicolokkan ke port USB komputer.</p>
+                </div>
               </div>
-            </div>
 
-            <div class="troubleshoot-item">
-              <div class="troubleshoot-icon">💾</div>
-              <div class="troubleshoot-content">
-                <strong>3. Pasang Driver CH340 / CP210x</strong>
-                <p>Sebagian besar board Arduino clone memakai chip CH340. Jika belum terpasang di Windows, unduh driver resminya.</p>
-                <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener noreferrer" class="btn-download-driver-link">
-                  Unduh Driver CH340 (Windows .EXE) &rarr;
-                </a>
+              <div class="troubleshoot-item">
+                <div class="troubleshoot-icon">💾</div>
+                <div class="troubleshoot-content">
+                  <strong>3. Pasang Driver CH340 / CP210x</strong>
+                  <p>Sebagian besar board Arduino clone memakai chip CH340. Jika belum terpasang di Windows, unduh driver resminya.</p>
+                  <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener noreferrer" class="btn-download-driver-link">
+                    Unduh Driver CH340 (Windows .EXE) &rarr;
+                  </a>
+                </div>
               </div>
-            </div>
 
-            <div class="troubleshoot-item">
-              <div class="troubleshoot-icon">📱</div>
-              <div class="troubleshoot-content">
-                <strong>4. Pengguna Android (Kabel OTG)</strong>
-                <p>Di HP Android, aktifkan fitur <em>USB OTG</em> di Pengaturan HP Anda sebelum menyambungkan kabel adapter.</p>
+              <div class="troubleshoot-item">
+                <div class="troubleshoot-icon">📱</div>
+                <div class="troubleshoot-content">
+                  <strong>4. Pengguna Android (Kabel OTG)</strong>
+                  <p>Di HP Android, aktifkan fitur <em>USB OTG</em> di Pengaturan HP Anda sebelum menyambungkan kabel adapter.</p>
+                </div>
               </div>
             </div>
           </div>

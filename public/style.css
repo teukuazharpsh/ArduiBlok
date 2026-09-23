@@ -4345,24 +4345,101 @@ body.mode-text #blocklyDiv {
   pointer-events: none;
 }
 
-/* Troubleshooting Box */
+/* Troubleshooting Box (Collapsible Accordion) */
 .device-troubleshoot-box {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.device-troubleshoot-box:hover {
+  border-color: var(--border-strong);
+}
+
+.device-troubleshoot-box.open {
+  border-color: rgba(0, 135, 138, 0.4);
 }
 
 .troubleshoot-box-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 10px;
+  transition: background 0.15s ease;
+}
+
+.troubleshoot-box-header:hover {
+  background: var(--bg-hover);
+}
+
+.device-troubleshoot-box.open .troubleshoot-box-header {
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(0, 135, 138, 0.04);
+}
+
+.troubleshoot-header-left {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
+  min-width: 0;
+}
+
+.troubleshoot-info-icon {
+  width: 16px;
+  height: 16px;
+  stroke: var(--accent-primary);
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.troubleshoot-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.troubleshoot-hint-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.troubleshoot-chevron {
+  width: 13px;
+  height: 13px;
+  stroke: var(--accent-primary);
+  fill: none;
+  stroke-width: 2.5;
+  transition: transform 0.25s ease;
+}
+
+.device-troubleshoot-box.open .troubleshoot-chevron {
+  transform: rotate(180deg);
+}
+
+.device-troubleshoot-content {
+  padding: 12px 14px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.2s ease;
+}
+
+.device-troubleshoot-content.hidden {
+  display: none !important;
 }
 
 .device-troubleshoot-grid {

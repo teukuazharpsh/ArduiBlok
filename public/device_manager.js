@@ -456,15 +456,22 @@
       });
     }
 
-    // Toggle Troubleshooting Accordion Items
-    document.querySelectorAll('.device-accordion-header').forEach(function(hdr) {
-      hdr.addEventListener('click', function() {
-        var item = this.closest('.device-accordion-item');
-        if (item) {
-          item.classList.toggle('open');
+    // Toggle Troubleshooting Accordion (Buka / Tutup Panduan Bantuan)
+    var btnToggleTroubleshoot = document.getElementById('btnToggleTroubleshoot');
+    var deviceTroubleshootBox = document.getElementById('deviceTroubleshootBox');
+    var deviceTroubleshootContent = document.getElementById('deviceTroubleshootContent');
+    var troubleshootHintText = document.getElementById('troubleshootHintText');
+
+    if (btnToggleTroubleshoot && deviceTroubleshootBox && deviceTroubleshootContent) {
+      btnToggleTroubleshoot.addEventListener('click', function(e) {
+        e.preventDefault();
+        var isOpen = deviceTroubleshootBox.classList.toggle('open');
+        deviceTroubleshootContent.classList.toggle('hidden', !isOpen);
+        if (troubleshootHintText) {
+          troubleshootHintText.textContent = isOpen ? 'Tutup Panduan' : 'Buka Panduan';
         }
       });
-    });
+    }
 
     // Web Serial dynamic connect/disconnect hardware event listeners
     if ('serial' in navigator && navigator.serial) {
