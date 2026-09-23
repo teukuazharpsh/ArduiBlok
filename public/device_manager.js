@@ -470,6 +470,17 @@
         if (troubleshootHintText) {
           troubleshootHintText.textContent = isOpen ? 'Tutup Panduan' : 'Buka Panduan';
         }
+        if (isOpen) {
+          setTimeout(function() {
+            var modalBody = document.querySelector('.device-modal-body');
+            if (modalBody) {
+              modalBody.scrollTo({
+                top: deviceTroubleshootBox.offsetTop - 15,
+                behavior: 'smooth'
+              });
+            }
+          }, 60);
+        }
       });
     }
 
