@@ -915,6 +915,14 @@
                 <span class="floating-text">Mode Blok</span>
               </button>
 
+              <button class="floating-code-btn" id="btnFloatingToggleOutputText" title="Tampilkan / Sembunyikan Panel Status &amp; Output">
+                <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                <span class="floating-text">Status &amp; Output</span>
+              </button>
+
               <button class="floating-library-btn" id="btnFloatingOpenLibrary" title="Buka Pengelola Library Eksternal">
                 <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -1203,6 +1211,7 @@
     const btnToggleToolbox = document.getElementById('btnToggleToolbox');
     const btnFloatingToolbox = document.getElementById('btnFloatingToolbox');
     const btnFloatingToggleCode = document.getElementById('btnFloatingToggleCode');
+    const btnFloatingToggleOutputText = document.getElementById('btnFloatingToggleOutputText');
     const btnFloatingExamples = document.getElementById('btnFloatingExamples');
     const floatingGroupBlock = document.getElementById('floatingGroupBlock');
     const floatingGroupText = document.getElementById('floatingGroupText');
@@ -1725,6 +1734,7 @@
 
         // Pada mode teks, sembunyikan bottom panel secara default (kecuali saat compile)
         document.body.classList.add('bottom-panel-hidden');
+        updateCodeButtonUI(false);
 
         // Tutup flyout dan sembunyikan toolbox Blockly
         if (typeof workspace !== 'undefined' && workspace) {
@@ -2607,15 +2617,27 @@
         const floatText = btnFloatingToggleCode.querySelector('.floating-text');
         if (floatText) floatText.textContent = visible ? 'Tutup Output Kode' : 'Status & Output Kode';
       }
+      if (btnFloatingToggleOutputText) {
+        btnFloatingToggleOutputText.classList.toggle('code-open', visible);
+        const floatText = btnFloatingToggleOutputText.querySelector('.floating-text');
+        if (floatText) floatText.textContent = visible ? 'Tutup Output' : 'Status & Output';
+      }
     }
 
     function setCodePanelVisibility(visible) {
       codePanelVisible = visible;
       if (visible) {
         document.body.classList.remove('bottom-panel-hidden');
-        const tabCode = document.getElementById('tabCode');
-        if (tabCode && !tabCode.classList.contains('active')) {
-          tabCode.click();
+        if (currentAppMode === 'text') {
+          const tabOutput = document.getElementById('tabOutput') || document.querySelector('[data-tab="output"]');
+          if (tabOutput && !tabOutput.classList.contains('active')) {
+            tabOutput.click();
+          }
+        } else {
+          const tabCode = document.getElementById('tabCode');
+          if (tabCode && !tabCode.classList.contains('active')) {
+            tabCode.click();
+          }
         }
       } else {
         document.body.classList.add('bottom-panel-hidden');
@@ -2632,11 +2654,19 @@
     }
 
     function toggleCodePanel() {
-      setCodePanelVisibility(!codePanelVisible);
+      if (currentAppMode === 'text') {
+        const isHidden = document.body.classList.contains('bottom-panel-hidden');
+        setCodePanelVisibility(isHidden);
+      } else {
+        setCodePanelVisibility(!codePanelVisible);
+      }
     }
 
     if (btnFloatingToggleCode) {
       btnFloatingToggleCode.addEventListener('click', toggleCodePanel);
+    }
+    if (btnFloatingToggleOutputText) {
+      btnFloatingToggleOutputText.addEventListener('click', toggleCodePanel);
     }
 
     // ── Code Generation & Auto-Save ───────────────────────
@@ -2930,6 +2960,7 @@
       if (btnText) btnText.textContent = 'Memproses...';
 
       document.body.classList.remove('bottom-panel-hidden');
+      updateCodeButtonUI(true);
       document.querySelector('[data-tab="output"]').click();
       outputIndicator.className = 'tab-indicator';
 
@@ -3269,6 +3300,7 @@
 
     function showOutput(type, message) {
       document.body.classList.remove('bottom-panel-hidden');
+      updateCodeButtonUI(true);
       const tabOutput = document.getElementById('tabOutput');
       if (tabOutput) tabOutput.click();
       outputContent.innerHTML = '<div class="output-message ' + type + '">' + message + '</div>';
