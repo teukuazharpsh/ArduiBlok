@@ -352,13 +352,26 @@
       <div class="modal-body library-modal-body">
         <!-- Toolbar Pencarian & Filter Library -->
         <div class="library-toolbar">
-          <div class="examples-search-wrapper">
-            <svg class="svg-icon examples-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="librarySearchInput" class="examples-search-input" placeholder="Cari library (misal: LiquidCrystal, NeoPixel, DHT, Servo, OLED, RFID, JSON)...">
-            <button id="btnClearLibrarySearch" class="btn-clear-search hidden" title="Hapus Pencarian">&times;</button>
+          <div class="library-toolbar-top">
+            <div class="examples-search-wrapper">
+              <svg class="svg-icon examples-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="librarySearchInput" class="examples-search-input" placeholder="Cari library (misal: LiquidCrystal, NeoPixel, DHT, Servo, OLED, RFID, JSON)...">
+              <button id="btnClearLibrarySearch" class="btn-clear-search hidden" title="Hapus Pencarian">&times;</button>
+            </div>
+
+            <!-- Tombol Pasang Library dari .ZIP (Arduino IDE Style) -->
+            <button class="btn btn-upload-zip-lib" id="btnUploadZipLib" title="Unggah dan pasang file library .ZIP kustom (Add .ZIP Library)">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>+ Pasang .ZIP Library</span>
+            </button>
+            <input type="file" id="inputZipLib" accept=".zip" style="display: none;">
           </div>
 
           <div class="examples-category-chips" id="libraryCategoryChips">

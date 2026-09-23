@@ -95,6 +95,80 @@
     },
 
     /**
+     * Upload dan pasang library kustom dari berkas .ZIP (Arduino IDE Style)
+     */
+    uploadZipLibrary: async function(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        alert('Berkas yang dipilih harus berformat .zip (contoh: NamaLibrary.zip)');
+        return;
+      }
+
+      var btnUpload = document.getElementById('btnUploadZipLib');
+      var originalHtml = btnUpload ? btnUpload.innerHTML : '';
+      if (btnUpload) {
+        btnUpload.disabled = true;
+        btnUpload.innerHTML = '<div class="btn-spinner-inline"></div> Memasang .ZIP...';
+      }
+
+      var self = this;
+      try {
+        // Konversi file ke base64
+        var base64Data = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var dataUrl = reader.result;
+            var base64 = dataUrl.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        var res = await fetch('/api/libraries/upload-zip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            base64Data: base64Data
+          })
+        });
+
+        var data = await res.json();
+        if (data && data.success) {
+          var libName = data.libraryName || file.name.replace(/\.zip$/i, '');
+          installedCache.add(libName);
+          installedCache.add(libName.replace(/_/g, ' '));
+          installedCache.add(libName.replace(/-/g, ' '));
+
+          await self.fetchInstalledLibraries();
+          self.renderList();
+
+          var msg = 'Berhasil! Library "' + libName + '" siap digunakan di ArduiBlok.';
+          var headerInclude = data.exampleInclude || ('#include <' + (data.header || (libName + '.h')) + '>');
+          
+          if (confirm(msg + '\n\nHeader: ' + (data.header || (libName + '.h')) + '\n\nApakah Anda ingin menyisipkan baris ini ke kode C++ sekarang?\n' + headerInclude)) {
+            if (window.ArduiBlokEditor) {
+              window.ArduiBlokEditor.insertInclude(headerInclude);
+            }
+            self.closeModal();
+          }
+        } else {
+          alert('Gagal memasang library dari .ZIP:\n' + (data.error || 'Terjadi kesalahan sistem'));
+        }
+      } catch (err) {
+        alert('Gagal mengunggah berkas .ZIP: ' + err.message);
+      } finally {
+        if (btnUpload) {
+          btnUpload.disabled = false;
+          btnUpload.innerHTML = originalHtml;
+        }
+        var fileInput = document.getElementById('inputZipLib');
+        if (fileInput) fileInput.value = '';
+      }
+    },
+
+    /**
      * Render daftar library ke dalam modal #libraryModal
      */
     renderList: async function() {
@@ -250,6 +324,42 @@
             currentCategory = this.getAttribute('data-category') || 'all';
             self.renderList();
           });
+        });
+      }
+
+      // ── Handler Upload .ZIP Library (Arduino IDE Style) ──
+      var btnUploadZip = document.getElementById('btnUploadZipLib');
+      var inputZip = document.getElementById('inputZipLib');
+
+      if (btnUploadZip && inputZip) {
+        btnUploadZip.addEventListener('click', function() {
+          inputZip.value = '';
+          inputZip.click();
+        });
+
+        inputZip.addEventListener('change', function(e) {
+          if (e.target.files && e.target.files.length > 0) {
+            self.uploadZipLibrary(e.target.files[0]);
+          }
+        });
+      }
+
+      // Dukungan Drag & Drop file .ZIP ke dalam modal
+      if (modal) {
+        modal.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        modal.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            var file = e.dataTransfer.files[0];
+            if (file.name.toLowerCase().endsWith('.zip')) {
+              self.uploadZipLibrary(file);
+            }
+          }
         });
       }
     },
