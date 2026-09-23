@@ -3296,10 +3296,21 @@ body.mode-text #blocklyDiv {
 .welcome-modal-container {
   max-width: 820px;
   width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 24px;
   background: var(--bg-card);
   border-radius: 18px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+  scrollbar-width: none; /* Firefox: sembunyikan scrollbar */
+  -ms-overflow-style: none; /* IE/Edge: sembunyikan scrollbar */
+}
+
+.welcome-modal-container::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, WebView: sembunyikan scrollbar */
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .welcome-header {
@@ -3496,12 +3507,52 @@ body.mode-text #blocklyDiv {
 }
 
 @media (max-width: 680px) {
+  .welcome-modal-container {
+    max-height: 92vh !important;
+    padding: 16px 14px;
+    border-radius: 14px;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .welcome-modal-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  .welcome-header {
+    margin-bottom: 14px;
+  }
+  .welcome-logo-img {
+    width: 46px;
+    height: 46px;
+    margin-bottom: 8px;
+  }
+  .welcome-title {
+    font-size: 18px;
+  }
+  .welcome-subtitle {
+    font-size: 12px;
+  }
   .welcome-cards-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
+    margin-bottom: 14px;
   }
-  .welcome-modal-container {
-    padding: 18px 14px;
+  .welcome-mode-card {
+    padding: 16px 14px;
+    gap: 10px;
+  }
+  .mode-card-title {
+    font-size: 15px;
+  }
+  .mode-card-desc {
+    font-size: 12px;
+  }
+  .btn-choose-mode {
+    height: 38px;
+    font-size: 13px;
   }
 }
 
