@@ -3902,8 +3902,8 @@ body.mode-text #blocklyDiv {
 .device-modal-container {
   max-width: 680px;
   width: 95vw;
-  max-height: 88vh;
-  max-height: 88dvh;
+  max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -3934,8 +3934,8 @@ body.mode-text #blocklyDiv {
   gap: 16px;
   flex: 1 1 auto;
   min-height: 0;
-  max-height: calc(88vh - 130px);
-  max-height: calc(88dvh - 130px);
+  max-height: calc(90vh - 125px);
+  max-height: calc(90dvh - 125px);
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -4478,16 +4478,24 @@ body.mode-text #blocklyDiv {
 }
 
 .device-troubleshoot-content {
-  padding: 12px 14px 14px 14px;
+  padding: 12px 14px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 250px;
+  max-height: 340px;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  scroll-padding-bottom: 24px;
   animation: fadeIn 0.2s ease;
+}
+
+.device-troubleshoot-content::after {
+  content: "";
+  display: block;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .device-troubleshoot-content::-webkit-scrollbar {
@@ -4516,14 +4524,17 @@ body.mode-text #blocklyDiv {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  padding-bottom: 8px;
 }
 
 @media (max-width: 600px) {
   .device-troubleshoot-grid {
     grid-template-columns: 1fr;
+    padding-bottom: 12px;
   }
   .device-troubleshoot-content {
-    max-height: 230px;
+    max-height: 290px;
+    padding: 12px 12px 16px 12px;
   }
 }
 
