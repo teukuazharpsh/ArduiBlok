@@ -3934,6 +3934,8 @@ body.mode-text #blocklyDiv {
   gap: 16px;
   flex: 1 1 auto;
   min-height: 0;
+  max-height: calc(88vh - 130px);
+  max-height: calc(88dvh - 130px);
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -3968,7 +3970,10 @@ body.mode-text #blocklyDiv {
     gap: 12px;
     flex: 1 1 auto;
     min-height: 0;
-    max-height: none;
+    max-height: calc(92vh - 120px);
+    max-height: calc(92dvh - 120px);
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;
   }
@@ -4477,7 +4482,30 @@ body.mode-text #blocklyDiv {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 250px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   animation: fadeIn 0.2s ease;
+}
+
+.device-troubleshoot-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.device-troubleshoot-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
+.device-troubleshoot-content::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.device-troubleshoot-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
 }
 
 .device-troubleshoot-content.hidden {
@@ -4493,6 +4521,9 @@ body.mode-text #blocklyDiv {
 @media (max-width: 600px) {
   .device-troubleshoot-grid {
     grid-template-columns: 1fr;
+  }
+  .device-troubleshoot-content {
+    max-height: 230px;
   }
 }
 
