@@ -1778,6 +1778,7 @@ body.mode-text #tabCode {
   padding: 14px 18px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
+  flex-shrink: 0;
 }
 
 .modal-title-group {
@@ -3902,6 +3903,7 @@ body.mode-text #blocklyDiv {
   max-width: 680px;
   width: 95vw;
   max-height: 88vh;
+  max-height: 88dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -3930,9 +3932,12 @@ body.mode-text #blocklyDiv {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: calc(88vh - 125px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .device-modal-body::-webkit-scrollbar {
@@ -3954,12 +3959,18 @@ body.mode-text #blocklyDiv {
 
 @media (max-width: 680px) {
   .device-modal-container {
-    max-height: 94vh;
+    width: 96vw;
+    max-height: 92vh;
+    max-height: 92dvh;
   }
   .device-modal-body {
-    max-height: calc(94vh - 110px);
-    padding: 14px;
+    padding: 14px 12px;
     gap: 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
 }
 
@@ -4552,6 +4563,7 @@ body.mode-text #blocklyDiv {
   padding: 12px 20px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .device-footer-status {

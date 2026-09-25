@@ -473,13 +473,13 @@
         if (isOpen) {
           setTimeout(function() {
             var modalBody = document.querySelector('.device-modal-body');
-            if (modalBody) {
+            if (modalBody && deviceTroubleshootBox) {
               modalBody.scrollTo({
-                top: modalBody.scrollHeight,
+                top: deviceTroubleshootBox.offsetTop - 12,
                 behavior: 'smooth'
               });
             }
-          }, 100);
+          }, 120);
         }
       });
     }
