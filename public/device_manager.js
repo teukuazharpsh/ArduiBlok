@@ -474,12 +474,13 @@
           setTimeout(function() {
             var modalBody = document.querySelector('.device-modal-body');
             if (modalBody && deviceTroubleshootBox) {
+              var targetScroll = Math.max(0, deviceTroubleshootBox.offsetTop - 8);
               modalBody.scrollTo({
-                top: deviceTroubleshootBox.offsetTop - 12,
+                top: targetScroll,
                 behavior: 'smooth'
               });
             }
-          }, 120);
+          }, 60);
         }
       });
     }
