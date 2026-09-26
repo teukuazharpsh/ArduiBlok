@@ -1,352 +1,268 @@
 /**
- * ArduiBlok — Quick Floating Block Search & Drag-and-Drop System
- * Memungkinkan pencarian blok instan dengan keyword, filter kategori, navigasi keyboard (Ctrl+K),
- * serta penambahan langsung ke workspace via Klik (1-Click Spawn) ataupun Drag-and-Drop (Pointer Event).
+ * ArduiBlok — Visual Spotlight Block Search & Drag-and-Drop System
+ * Menampilkan WUJUD VISUAL ASLI BLOK BLOCKLY (SVG Shape) di dalam hasil pencarian,
+ * tanpa sintaks teks ArduinoIDE atau penjelasan panjang, lengkap dengan fitur
+ * Drag & Drop visual langsung ke workspace serta 1-Click Spawn.
  */
 (function(window) {
   'use strict';
 
-  // ── Database Kamus Metadata Blok (Nama ID/EN, Deskripsi, Sintaks C++, Tag) ──
+  // ── Database Metadata Blok (Untuk Pencarian Multi-Token Cerdas) ──
   const BLOCK_METADATA = {
     'arduino_setup': {
-      title: 'Setup (Inisialisasi Awal)',
-      desc: 'Blok yang dijalankan 1 kali saat mikrokontroler pertama kali menyala atau di-reset.',
-      syntax: 'void setup() { ... }',
-      keywords: 'setup awal start inisialisasi booting boot run once',
+      title: 'Setup',
+      keywords: 'setup awal start inisialisasi booting boot run once void',
       category: 'Setup & Loop',
       color: 180
     },
     'arduino_loop': {
-      title: 'Loop (Pengulangan Utama)',
-      desc: 'Blok yang berjalan terus menerus secara berulang tanpa henti selama board menyala.',
-      syntax: 'void loop() { ... }',
-      keywords: 'loop perulangan putar ulang terus repeat forever',
+      title: 'Loop',
+      keywords: 'loop perulangan putar ulang terus repeat forever void',
       category: 'Setup & Loop',
       color: 195
     },
     'motor_dc': {
-      title: 'Motor DC (Driver L298N)',
-      desc: 'Kendali arah maju/mundur/berhenti dan kecepatan motor DC via sinyal PWM.',
-      syntax: 'digitalWrite(in1, ...); analogWrite(ena, speed);',
-      keywords: 'motor dc l298n l298 dinamo maju mundur speed pwm rotasi',
+      title: 'Motor DC (L298N)',
+      keywords: 'motor dc l298n l298 dinamo maju mundur speed pwm rotasi in1 in2 ena',
       category: 'Motors',
       color: 20
     },
     'servo_write': {
-      title: 'Servo Motor (Putar Sudut 0-180°)',
-      desc: 'Mengendalikan posisi sudut putaran servo motor pada pin digital/PWM tertentu.',
-      syntax: 'servo.write(angle);',
-      keywords: 'servo motor sudut derajat angle sg90 mg995 mg996 rotasi',
+      title: 'Servo Motor',
+      keywords: 'servo motor sudut derajat angle sg90 mg995 mg996 rotasi pin',
       category: 'Motors',
       color: 20
     },
     'motor_driver_shield': {
-      title: 'Motor Driver Shield (L293D / AFMotor)',
-      desc: 'Kendali motor DC melalui shield driver multi-kanal (Motor 1 - 4).',
-      syntax: 'motor.setSpeed(speed); motor.run(FORWARD);',
+      title: 'Motor Driver Shield',
       keywords: 'motor driver shield l293d afmotor adafruit robot roda',
       category: 'Motors',
       color: 20
     },
     'digital_write': {
-      title: 'Tulis Pin Digital (digitalWrite)',
-      desc: 'Mengatur level tegangan pin digital ke HIGH (5V/3.3V) atau LOW (GND). Cocok untuk LED & relay.',
-      syntax: 'digitalWrite(pin, HIGH / LOW);',
+      title: 'Digital Write',
       keywords: 'digital write tulis output pin led lampu hidup mati nyala relay high low',
       category: 'Input / Output',
       color: 60
     },
     'digital_read': {
-      title: 'Baca Pin Digital (digitalRead)',
-      desc: 'Membaca kondisi logika pin digital apakah HIGH (1) atau LOW (0). Cocok untuk tombol & limit switch.',
-      syntax: 'digitalRead(pin);',
+      title: 'Digital Read',
       keywords: 'digital read baca input tombol button switch saklar sensor pir limit touch',
       category: 'Input / Output',
       color: 60
     },
     'pin_digital': {
-      title: 'Pilihan Pin Mikrokontroler',
-      desc: 'Blok nilai pemilih pin digital (D0 - D13) atau pin analog (A0 - A5).',
-      syntax: '13 / 2 / A0',
+      title: 'Pin Digital',
       keywords: 'pin digital nomor port kaki d13 d2 a0',
       category: 'Input / Output',
       color: 60
     },
     'digital_level': {
-      title: 'Level Logika Digital (HIGH / LOW)',
-      desc: 'Konstanta level logika 1 (HIGH / Nyala) atau 0 (LOW / Mati).',
-      syntax: 'HIGH / LOW',
+      title: 'Level Logika',
       keywords: 'high low level boolean 1 0 tegangan',
       category: 'Input / Output',
       color: 60
     },
     'analog_read': {
-      title: 'Baca Pin Analog (analogRead)',
-      desc: 'Membaca tegangan analog 0 - 5V dan mengonversinya menjadi angka ADC 0 - 1023.',
-      syntax: 'analogRead(pin);',
+      title: 'Analog Read',
       keywords: 'analog read baca adc a0 a1 a2 a3 a4 a5 potensiometer ldr ntc sensor',
       category: 'Input / Output',
       color: 60
     },
     'analog_write': {
-      title: 'Tulis Pin PWM / Analog (analogWrite)',
-      desc: 'Mengeluarkan sinyal modulasi lebar pulsa (PWM) dengan nilai 0 hingga 255.',
-      syntax: 'analogWrite(pin, value);',
+      title: 'Analog Write (PWM)',
       keywords: 'analog write tulis pwm duty cycle redup terang kecerahan kecepatan 255',
       category: 'Input / Output',
       color: 60
     },
     'pin_mode': {
-      title: 'Atur Mode Pin (pinMode)',
-      desc: 'Menetapkan mode konfigurasi pin sebagai INPUT, OUTPUT, atau INPUT_PULLUP.',
-      syntax: 'pinMode(pin, INPUT / OUTPUT);',
+      title: 'Pin Mode',
       keywords: 'pinmode mode input output pullup konfigurasi arah',
       category: 'Input / Output',
       color: 60
     },
     'controls_if': {
-      title: 'Jika / Percabangan (if / else)',
-      desc: 'Menjalankan blok kode tertentu hanya jika kondisi logika terpenuhi (bernilai benar).',
-      syntax: 'if (kondisi) { ... } else { ... }',
+      title: 'Jika (if / else)',
       keywords: 'if else jika kalau kondisi condition branching percabangan',
       category: 'Control',
       color: 120
     },
     'controls_switch': {
-      title: 'Pilihan Ganda (switch / case)',
-      desc: 'Memilih dan menjalankan blok instruksi berdasarkan nilai variabel yang cocok.',
-      syntax: 'switch (var) { case 1: ... }',
+      title: 'Switch Case',
       keywords: 'switch case pilihan opsi cabang kondisi',
       category: 'Control',
       color: 120
     },
     'controls_break': {
-      title: 'Hentikan / Keluar Loop (break / continue)',
-      desc: 'Menghentikan seketika perulangan aktif atau melompati ke iterasi berikutnya.',
-      syntax: 'break; / continue;',
+      title: 'Break',
       keywords: 'break continue hentikan lompat stop selesai keluar loop',
       category: 'Control',
       color: 120
     },
     'controls_repeat_arduino': {
-      title: 'Ulangi Sebanyak N Kali (for loop)',
-      desc: 'Melakukan perulangan kode sejumlah hitungan tertentu yang ditentukan.',
-      syntax: 'for (int i = 0; i < N; i++) { ... }',
+      title: 'Ulangi N Kali (for)',
       keywords: 'repeat ulangi count hitung kali for loop iterasi',
       category: 'Control',
       color: 120
     },
     'controls_while_arduino': {
-      title: 'Ulangi Selama Kondisi Benar (while loop)',
-      desc: 'Menjalankan instruksi berulang kali selama kondisi pengujian tetap bernilai benar (true).',
-      syntax: 'while (kondisi) { ... }',
+      title: 'While Loop',
       keywords: 'while loop selama ulangi do until kondisi perulangan',
       category: 'Control',
       color: 120
     },
     'delay_ms': {
-      title: 'Tunggu / Jeda Waktu (delay)',
-      desc: 'Menghentikan sementara jalannya program selama durasi milidetik tertentu (1000 ms = 1 detik).',
-      syntax: 'delay(1000);',
+      title: 'Tunggu / Delay',
       keywords: 'delay tunggu jeda waktu sleep ms milidetik pause stop wait',
       category: 'Control',
       color: 120
     },
     'compare_op': {
-      title: 'Perbandingan Relasional (==, !=, <, >)',
-      desc: 'Membandingkan dua nilai (sama dengan, tidak sama, lebih besar, lebih kecil).',
-      syntax: 'a == b / a < b / a > b',
+      title: 'Perbandingan Relasi',
       keywords: 'compare banding sama lebih kecil besar != == <= >= relasi',
       category: 'Logic',
       color: 210
     },
     'logic_boolean': {
-      title: 'Nilai Logika (TRUE / FALSE)',
-      desc: 'Konstanta nilai kebenaran boolean Benar (true) atau Salah (false).',
-      syntax: 'true / false',
+      title: 'Boolean (True/False)',
       keywords: 'boolean true false benar salah logika',
       category: 'Logic',
       color: 210
     },
     'logic_not': {
-      title: 'Pembalikan Logika (NOT / !)',
-      desc: 'Membalik nilai boolean: Benar menjadi Salah, dan Salah menjadi Benar.',
-      syntax: '!kondisi',
-      keywords: 'not bukan negasi kebalikan logika lawan',
+      title: 'Bukan (NOT)',
+      keywords: 'not bukan negasi kebalikan logika lawan !',
       category: 'Logic',
       color: 210
     },
     'logic_operation': {
-      title: 'Operasi Logika (AND && / OR ||)',
-      desc: 'Menggabungkan dua kondisi logika dengan operator DAN (AND) atau ATAU (OR).',
-      syntax: 'a && b / a || b',
-      keywords: 'and or dan atau logika gabung operator',
+      title: 'Operasi Logika (AND/OR)',
+      keywords: 'and or dan atau logika gabung operator && ||',
       category: 'Logic',
       color: 210
     },
     'math_number': {
       title: 'Angka Numerik',
-      desc: 'Memasukkan nilai angka bulat (integer) atau desimal (float).',
-      syntax: '123 / 3.14',
-      keywords: 'number angka nilai digit hitung desimal int float',
+      keywords: 'number angka nilai digit hitung desimal int float 0 1 2 3',
       category: 'Math',
       color: 230
     },
     'math_op': {
-      title: 'Operasi Matematika (+, -, *, /)',
-      desc: 'Operasi aritmatika dasar: penjumlahan, pengurangan, perkalian, pembagian, atau modulo.',
-      syntax: 'a + b / a * b',
+      title: 'Operasi Matematika',
       keywords: 'math tambah kurang kali bagi + - * / modulo modulus aritmatika',
       category: 'Math',
       color: 230
     },
     'map_value': {
       title: 'Pemetaan Nilai (map)',
-      desc: 'Memetakan nilai dari satu rentang skala ke rentang skala lainnya (misal 0-1023 ke 0-255).',
-      syntax: 'map(val, 0, 1023, 0, 255);',
       keywords: 'map pemetaan skala rentang konversi adc pwm range',
       category: 'Math',
       color: 230
     },
     'serial_begin': {
-      title: 'Mulai Serial Monitor (Serial.begin)',
-      desc: 'Membuka jalur komunikasi serial ke komputer dengan kecepatan baud rate (contoh 9600 bps).',
-      syntax: 'Serial.begin(9600);',
+      title: 'Serial Begin',
       keywords: 'serial begin monitor komunikasi baud baudrate 9600 115200 usb',
       category: 'Text & Serial',
       color: 160
     },
     'serial_available_do': {
-      title: 'Jika Ada Data Masuk (Serial.available)',
-      desc: 'Blok event yang otomatis mengeksekusi instruksi ketika ada kiriman byte data via serial.',
-      syntax: 'if (Serial.available() > 0) { ... }',
-      keywords: 'serial available masuk terima buffer rx event',
+      title: 'Serial Available Event',
+      keywords: 'serial available masuk terima buffer rx event do',
       category: 'Text & Serial',
       color: 160
     },
     'serial_available': {
-      title: 'Cek Data Serial Tersedia',
-      desc: 'Menghasilkan jumlah byte yang telah diterima dan siap dibaca dari buffer serial.',
-      syntax: 'Serial.available()',
+      title: 'Cek Serial Available',
       keywords: 'serial available cek byte ready',
       category: 'Text & Serial',
       color: 160
     },
     'serial_read': {
-      title: 'Baca Serial 1 Karakter (Serial.read)',
-      desc: 'Membaca karakter atau byte pertama yang masuk dari port serial.',
-      syntax: 'Serial.read();',
+      title: 'Serial Read Byte',
       keywords: 'serial read baca char karakter byte masukan',
       category: 'Text & Serial',
       color: 160
     },
     'serial_read_string': {
-      title: 'Baca Serial Teks Kalimat (Serial.readString)',
-      desc: 'Membaca seluruh teks string serial hingga batas baris baru (newline).',
-      syntax: 'Serial.readString();',
+      title: 'Serial Read String',
       keywords: 'serial readstring baca kalimat teks string pesan',
       category: 'Text & Serial',
       color: 160
     },
     'serial_parse_int': {
-      title: 'Baca Serial Nilai Angka (Serial.parseInt)',
-      desc: 'Mengambil dan mengonversi urutan karakter angka dari serial menjadi integer.',
-      syntax: 'Serial.parseInt();',
+      title: 'Serial Parse Int',
       keywords: 'serial parseint parse int angka bilangan',
       category: 'Text & Serial',
       color: 160
     },
     'serial_print': {
-      title: 'Kirim Serial + Baris Baru (Serial.println)',
-      desc: 'Mengirim teks atau nilai variabel ke Serial Monitor dengan tambahan Enter/Ganti Baris.',
-      syntax: 'Serial.println(data);',
+      title: 'Serial Println',
       keywords: 'serial print println kirim cetak monitor terminal enter newline',
       category: 'Text & Serial',
       color: 160
     },
     'serial_print_inline': {
-      title: 'Kirim Serial Satu Baris (Serial.print)',
-      desc: 'Mengirim teks atau nilai variabel ke Serial Monitor tanpa pindah baris.',
-      syntax: 'Serial.print(data);',
-      keywords: 'serial print cetak kirim satu baris inline inline',
+      title: 'Serial Print',
+      keywords: 'serial print cetak kirim satu baris inline',
       category: 'Text & Serial',
       color: 160
     },
     'text_string': {
-      title: 'Teks String ("...")',
-      desc: 'Menampung nilai teks atau kalimat di dalam tanda kutip ganda.',
-      syntax: '"Hello World"',
+      title: 'Teks String',
       keywords: 'text string teks kalimat kata huruf petik',
       category: 'Text & Serial',
       color: 160
     },
     'char_character': {
-      title: 'Karakter Tunggal (\'A\')',
-      desc: 'Menampung satu karakter ASCII di dalam tanda kutip tunggal.',
-      syntax: '\'A\'',
+      title: 'Karakter Tunggal',
       keywords: 'char character karakter huruf simbol ascii',
       category: 'Text & Serial',
       color: 160
     },
     'text_join': {
-      title: 'Gabungkan Teks (Concatenation)',
-      desc: 'Menggabungkan beberapa potongan teks string atau nilai angka menjadi satu kesatuan teks.',
-      syntax: 'String(a) + String(b)',
+      title: 'Gabungkan Teks',
       keywords: 'text join gabung susun rangkai kalimat tambah string',
       category: 'Text & Serial',
       color: 160
     },
     'variables_declare_arduino': {
-      title: 'Deklarasi Variabel (int, float, bool)',
-      desc: 'Membuat variabel baru lengkap dengan tipe data (int, long, float, char, bool, String) dan nilai awal.',
-      syntax: 'int namaVariabel = 0;',
+      title: 'Deklarasi Variabel',
       keywords: 'variable variabel declare deklarasi int float string tipe buat baru',
       category: 'Variables',
       color: 330
     },
     'variables_set_arduino': {
-      title: 'Atur Nilai Variabel (Set Variable)',
-      desc: 'Memperbarui atau memasukkan nilai baru ke dalam variabel yang sudah dideklarasikan.',
-      syntax: 'namaVariabel = nilai;',
+      title: 'Set Variabel',
       keywords: 'variable variabel set atur simpan isi ubah nilai',
       category: 'Variables',
       color: 330
     },
     'variables_set_simple': {
-      title: 'Set Variabel Sederhana',
-      desc: 'Menetapkan nilai variabel secara ringkas.',
-      syntax: 'var = value;',
+      title: 'Set Variabel Ringkas',
       keywords: 'variable variabel set ubah',
       category: 'Variables',
       color: 330
     },
     'variables_get_arduino': {
-      title: 'Ambil Nilai Variabel (Get Variable)',
-      desc: 'Mengambil isi nilai dari sebuah variabel untuk digunakan dalam operasi blok lain.',
-      syntax: 'namaVariabel',
+      title: 'Get Variabel',
       keywords: 'variable variabel get ambil baca nilai value',
       category: 'Variables',
       color: 330
     },
     'comment_block': {
-      title: 'Catatan / Komentar Kode (//)',
-      desc: 'Menambahkan catatan penjelasan satu baris pada program sketch yang tidak akan dieksekusi mesin.',
-      syntax: '// komentar Anda',
+      title: 'Catatan Komentar (//)',
       keywords: 'comment komentar catatan note penjelasan garis //',
       category: 'Comment',
       color: '#78909c'
     },
     'comment_group_block': {
-      title: 'Komentar Pengelompokan Blok (/* */)',
-      desc: 'Membungkus atau mengelompokkan sekumpulan blok kode dengan judul catatan penjelas.',
-      syntax: '/* Section: ... */',
+      title: 'Komentar Grup (/* */)',
       keywords: 'comment komentar grup kelompok catatan section wrap',
       category: 'Comment',
       color: '#78909c'
     }
   };
 
-  // Kategori Warna Bawaan
   const CATEGORY_COLORS = {
     'Setup & Loop': 'hsl(180, 70%, 40%)',
     'Motors': 'hsl(20, 85%, 48%)',
@@ -359,7 +275,7 @@
     'Comment': '#78909c'
   };
 
-  // ── State Modul Pencarian ──
+  // ── State Modul ──
   let blockCatalog = [];
   let currentFilteredList = [];
   let activeIndex = -1;
@@ -369,6 +285,9 @@
   let dragGhostEl = null;
   let dragStartPos = { x: 0, y: 0 };
   let hasMovedEnough = false;
+
+  // Off-screen Headless Workspace untuk render SVG blok asli
+  let offscreenWorkspace = null;
 
   // DOM Elements Cache
   let modalEl = null;
@@ -381,7 +300,93 @@
   let btnFloatingTrigger = null;
 
   /**
-   * Ekstraksi seluruh blok dari <xml id="toolbox"> menjadi katalog terstruktur
+   * Menyiapkan Workspace SVG tersembunyi (Off-screen) khusus untuk merender blok
+   */
+  function getOrCreateOffscreenWorkspace() {
+    if (offscreenWorkspace) return offscreenWorkspace;
+    if (!window.Blockly) return null;
+
+    let offscreenDiv = document.getElementById('blocklyOffscreenDiv');
+    if (!offscreenDiv) {
+      offscreenDiv = document.createElement('div');
+      offscreenDiv.id = 'blocklyOffscreenDiv';
+      offscreenDiv.style.cssText = 'position: fixed; width: 1000px; height: 1000px; left: -9999px; top: -9999px; visibility: hidden; pointer-events: none; z-index: -1;';
+      document.body.appendChild(offscreenDiv);
+    }
+
+    try {
+      offscreenWorkspace = Blockly.inject(offscreenDiv, {
+        renderer: 'geras',
+        readOnly: true,
+        scrollbars: false,
+        comments: false,
+        sounds: false
+      });
+    } catch (e) {
+      console.warn('[BlockSearch] Gagal inisialisasi offscreen workspace:', e);
+    }
+
+    return offscreenWorkspace;
+  }
+
+  /**
+   * Render SVG Asli dari sebuah blok menjadi markup string yang dapat disisipkan ke HTML
+   */
+  function renderBlockSvgMarkup(item) {
+    const pWs = getOrCreateOffscreenWorkspace();
+    if (!pWs) return '';
+
+    try {
+      pWs.clear();
+      let block = null;
+
+      if (item.xmlString && window.Blockly && Blockly.Xml) {
+        try {
+          const dom = Blockly.utils.xml.textToDom('<xml>' + item.xmlString + '</xml>');
+          if (dom && dom.firstChild) {
+            block = Blockly.Xml.domToBlock(dom.firstChild, pWs);
+          }
+        } catch (xmlErr) {
+          // ignore
+        }
+      }
+
+      if (!block) {
+        block = pWs.newBlock(item.type);
+      }
+
+      block.initSvg();
+      block.render();
+
+      const svgRoot = block.getSvgRoot();
+      const bbox = svgRoot.getBBox();
+
+      const pad = 3;
+      const x = Math.floor(bbox.x - pad);
+      const y = Math.floor(bbox.y - pad);
+      const w = Math.ceil(bbox.width + pad * 2);
+      const h = Math.ceil(bbox.height + pad * 2);
+
+      // Clone node SVG blok
+      const cloned = svgRoot.cloneNode(true);
+      cloned.removeAttribute('transform');
+
+      // Bungkus dalam tag <svg> yang mandiri
+      const svgMarkup =
+        '<svg class="block-visual-svg" viewBox="' + x + ' ' + y + ' ' + w + ' ' + h + '" ' +
+        'data-width="' + w + '" data-height="' + h + '">' +
+          cloned.outerHTML +
+        '</svg>';
+
+      return svgMarkup;
+    } catch (err) {
+      console.warn('[BlockSearch] Gagal render visual SVG blok:', item.type, err);
+      return '';
+    }
+  }
+
+  /**
+   * Bangun katalog blok dari <xml id="toolbox">
    */
   function buildBlockCatalog() {
     const toolboxEl = document.getElementById('toolbox');
@@ -403,28 +408,23 @@
         const type = blkNode.getAttribute('type');
         if (!type) continue;
 
-        // Ambil XML lengkap elemen ini untuk reinstansiasi dengan default values & shadow blocks
         const serializer = new XMLSerializer();
         const xmlString = serializer.serializeToString(blkNode);
 
-        // Ambil info dari kamus metadata atau fallback
         const meta = BLOCK_METADATA[type] || {};
         const title = meta.title || formatBlockTypeToTitle(type);
-        const desc = meta.desc || (window.Blockly && Blockly.Blocks[type] && Blockly.Blocks[type].tooltip) || 'Blok pemrograman mikrokontroler';
-        const syntax = meta.syntax || '';
         const keywords = (meta.keywords || '') + ' ' + type + ' ' + catName.toLowerCase();
         const color = meta.color !== undefined ? meta.color : catColour;
 
         blockCatalog.push({
           type: type,
           title: title,
-          desc: desc,
-          syntax: syntax,
           keywords: keywords.toLowerCase(),
           category: catName,
           color: color,
           xmlString: xmlString,
-          xmlNode: blkNode
+          xmlNode: blkNode,
+          svgHtml: null // Diisi saat diperlukan / di-cache
         });
       }
     }
@@ -436,9 +436,6 @@
       .replace(/\b\w/g, function(l) { return l.toUpperCase(); });
   }
 
-  /**
-   * Mengonversi warna Blockly (angka Hue atau hex) menjadi CSS color string
-   */
   function getCssColor(colorValue) {
     if (typeof colorValue === 'number' || (!isNaN(colorValue) && typeof colorValue === 'string' && colorValue.indexOf('#') === -1)) {
       return 'hsl(' + colorValue + ', 70%, 44%)';
@@ -447,7 +444,7 @@
   }
 
   /**
-   * Menghasilkan kategori unik dari katalog blok
+   * Render Filter Chips Kategori
    */
   function renderCategoryChips() {
     if (!categoryChipsEl) return;
@@ -488,7 +485,7 @@
   }
 
   /**
-   * Filter katalog berdasarkan query teks & kategori aktif
+   * Filter blok berdasarkan query teks & kategori
    */
   function filterAndRenderResults(query) {
     query = (query || '').trim().toLowerCase();
@@ -500,18 +497,16 @@
       }
       if (queryTokens.length === 0) return true;
 
-      // Pencocokan multi-token fuzzy
-      const targetStr = (item.title + ' ' + item.desc + ' ' + item.syntax + ' ' + item.keywords + ' ' + item.category).toLowerCase();
+      const targetStr = (item.title + ' ' + item.keywords + ' ' + item.category).toLowerCase();
       return queryTokens.every(token => targetStr.indexOf(token) !== -1);
     });
 
-    // Reset keyboard selection index
     activeIndex = currentFilteredList.length > 0 ? 0 : -1;
     renderResultsList();
   }
 
   /**
-   * Render daftar kartu hasil pencarian
+   * Render Galeri Bentuk Blok Visual (Tanpa Sintaks ArduinoIDE / Tanpa Teks Deskripsi Panjang)
    */
   function renderResultsList() {
     if (!resultsContainerEl) return;
@@ -528,8 +523,8 @@
             '<line x1="21" y1="21" x2="16.65" y2="16.65"></line>' +
             '<line x1="8" y1="11" x2="14" y2="11"></line>' +
           '</svg>' +
-          '<div class="empty-title">Tidak ada blok yang cocok</div>' +
-          '<div class="empty-desc">Coba gunakan kata kunci lain seperti <b>pin</b>, <b>servo</b>, <b>delay</b>, <b>motor</b>, <b>if</b>, atau <b>serial</b>.</div>' +
+          '<div class="empty-title">Tidak ada bentuk blok yang cocok</div>' +
+          '<div class="empty-desc">Coba ketik kata kunci lain seperti <b>servo</b>, <b>pin</b>, <b>delay</b>, <b>motor</b>, <b>if</b>, atau <b>serial</b>.</div>' +
         '</div>';
       return;
     }
@@ -539,27 +534,32 @@
       const isSelected = idx === activeIndex;
       const chipColor = getCssColor(item.color);
 
+      // Buat SVG bentuk blok jika belum ada di cache
+      if (!item.svgHtml) {
+        item.svgHtml = renderBlockSvgMarkup(item);
+      }
+
       html +=
         '<div class="block-result-card' + (isSelected ? ' selected' : '') + '" data-index="' + idx + '" data-type="' + escapeHtml(item.type) + '">' +
-          '<div class="card-drag-handle" title="Tahan & Drag langsung ke kanvas workspace" data-action="drag">' +
-            '<svg class="handle-icon" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle><circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle></svg>' +
-          '</div>' +
-          '<div class="card-main-info" data-action="spawn">' +
-            '<div class="card-top-row">' +
+          '<div class="card-visual-top">' +
+            '<div class="card-top-left">' +
               '<span class="card-cat-badge" style="background: ' + chipColor + '18; color: ' + chipColor + '; border-color: ' + chipColor + '40;">' +
                 escapeHtml(item.category) +
               '</span>' +
-              '<span class="card-type-tag">' + escapeHtml(item.type) + '</span>' +
+              '<span class="card-drag-hint">' +
+                '<svg class="handle-icon" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle><circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle></svg>' +
+                '<span>Tahan &amp; Drag</span>' +
+              '</span>' +
             '</div>' +
-            '<h4 class="card-block-title">' + escapeHtml(item.title) + '</h4>' +
-            '<p class="card-block-desc">' + escapeHtml(item.desc) + '</p>' +
-            (item.syntax ? '<code class="card-syntax-badge">' + escapeHtml(item.syntax) + '</code>' : '') +
+            '<div class="card-top-right">' +
+              '<button class="btn-card-spawn" title="Tambahkan langsung ke kanvas" data-action="spawn">' +
+                '<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
+                '<span>Masukkan</span>' +
+              '</button>' +
+            '</div>' +
           '</div>' +
-          '<div class="card-actions">' +
-            '<button class="btn-card-spawn" title="Tambahkan langsung ke tengah kanvas" data-action="spawn">' +
-              '<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
-              '<span>Masukkan</span>' +
-            '</button>' +
+          '<div class="card-visual-canvas" title="Tahan &amp; Drag langsung ke kanvas workspace, atau klik untuk masukkan">' +
+            (item.svgHtml || '<div class="block-svg-fallback">' + escapeHtml(item.title) + '</div>') +
           '</div>' +
         '</div>';
     });
@@ -572,18 +572,17 @@
       const idx = parseInt(card.getAttribute('data-index'), 10);
       const itemData = currentFilteredList[idx];
 
-      // Klik langsung untuk spawn
+      // Klik 1x untuk spawn langsung
       card.addEventListener('click', function(e) {
-        if (hasMovedEnough) return; // Mencegah klik terpicu saat baru selesai drag
+        if (hasMovedEnough) return;
         if (itemData) {
           spawnBlockToWorkspaceCenter(itemData);
           closeModal();
         }
       });
 
-      // Pointer event untuk Drag and Drop ke Workspace
+      // Pointer event untuk Drag and Drop Visual
       card.addEventListener('pointerdown', function(e) {
-        // Hanya tombol mouse kiri (button === 0) atau touch
         if (e.button !== undefined && e.button !== 0) return;
         startDragInteraction(e, itemData);
       });
@@ -600,7 +599,7 @@
     }
   }
 
-  // ── Penanganan Drag & Drop dengan Pointer Event ──
+  // ── Penanganan Drag & Drop Visual ──
   function startDragInteraction(e, itemData) {
     if (!itemData || !window.workspace) return;
 
@@ -636,9 +635,7 @@
       window.removeEventListener('pointercancel', onPointerUp);
 
       if (isDragging) {
-        // Cek apakah dilepas di atas kanvas Blockly
         const blocklyDiv = document.getElementById('blocklyDiv');
-        const workspaceContainer = document.getElementById('workspaceContainer');
         const rect = blocklyDiv ? blocklyDiv.getBoundingClientRect() : null;
 
         const isOverCanvas = rect &&
@@ -651,7 +648,6 @@
           spawnBlockAtScreenPosition(dragItemData, upEvent.clientX, upEvent.clientY);
           closeModal();
         } else {
-          // Restore modal jika drop dibatalkan di luar kanvas
           if (modalEl) modalEl.classList.remove('dragging-mode');
         }
 
@@ -666,23 +662,33 @@
     window.addEventListener('pointercancel', onPointerUp);
   }
 
+  /**
+   * Ghost Avatar Melayang: Menampilkan WUJUD VISUAL ASLI BLOK mengikuti kursor
+   */
   function createDragGhost(itemData, clientX, clientY) {
     cleanupDragGhost();
     const ghost = document.createElement('div');
     ghost.className = 'block-drag-ghost';
-    const chipColor = getCssColor(itemData.color);
 
-    ghost.innerHTML =
-      '<div class="ghost-pill" style="border-left: 4px solid ' + chipColor + ';">' +
-        '<span class="ghost-cat">' + escapeHtml(itemData.category) + '</span>' +
-        '<strong class="ghost-title">' + escapeHtml(itemData.title) + '</strong>' +
-        '<span class="ghost-hint">Lepaskan di kanvas</span>' +
-      '</div>';
+    // Gunakan SVG bentuk blok asli sebagai ghost avatar
+    if (itemData.svgHtml) {
+      ghost.innerHTML =
+        '<div class="ghost-visual-container">' +
+          itemData.svgHtml +
+        '</div>';
+    } else {
+      const chipColor = getCssColor(itemData.color);
+      ghost.innerHTML =
+        '<div class="ghost-pill" style="border-left: 4px solid ' + chipColor + ';">' +
+          '<span class="ghost-cat">' + escapeHtml(itemData.category) + '</span>' +
+          '<strong class="ghost-title">' + escapeHtml(itemData.title) + '</strong>' +
+        '</div>';
+    }
 
     ghost.style.position = 'fixed';
     ghost.style.left = clientX + 'px';
     ghost.style.top = clientY + 'px';
-    ghost.style.transform = 'translate(-50%, -50%)';
+    ghost.style.transform = 'translate(-30px, -20px)';
     ghost.style.zIndex = '999999';
     ghost.style.pointerEvents = 'none';
 
@@ -701,27 +707,23 @@
   }
 
   /**
-   * Spawn blok di koordinat tengah pandangan workspace saat ini
+   * Spawn blok di koordinat tengah layar workspace
    */
   function spawnBlockToWorkspaceCenter(itemData) {
     if (!window.workspace) return;
-
     try {
-      // Ambil ukuran kontainer kanvas
       const blocklyDiv = document.getElementById('blocklyDiv');
       const rect = blocklyDiv ? blocklyDiv.getBoundingClientRect() : { width: 600, height: 400, left: 100, top: 100 };
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-
       spawnBlockAtScreenPosition(itemData, centerX, centerY);
     } catch (e) {
-      console.warn('[BlockSearch] Fallback spawn block:', e);
       spawnBlockFallback(itemData);
     }
   }
 
   /**
-   * Spawn blok tepat di koordinat mouse / pointer screen (clientX, clientY)
+   * Spawn blok di koordinat layar (clientX, clientY)
    */
   function spawnBlockAtScreenPosition(itemData, clientX, clientY) {
     if (!window.workspace) return;
@@ -730,13 +732,11 @@
       const injectionDiv = window.workspace.getInjectionDiv();
       const rect = injectionDiv.getBoundingClientRect();
 
-      // Konversi pixel screen menjadi koordinat internal Workspace SVG
       const wsX = (clientX - rect.left - window.workspace.scrollX) / window.workspace.scale;
       const wsY = (clientY - rect.top - window.workspace.scrollY) / window.workspace.scale;
 
       let newBlock = null;
 
-      // 1. Coba reinstansiasi dari XML lengkap (mempertahankan default value, input field, & shadow)
       if (itemData.xmlString && window.Blockly && Blockly.Xml) {
         try {
           const dom = Blockly.utils.xml.textToDom('<xml>' + itemData.xmlString + '</xml>');
@@ -745,11 +745,10 @@
             newBlock = Blockly.Xml.domToBlock(blockDom, window.workspace);
           }
         } catch (xmlErr) {
-          console.warn('[BlockSearch] Gagal parse XML blok, mencoba newBlock:', xmlErr);
+          console.warn('[BlockSearch] Gagal parse XML blok:', xmlErr);
         }
       }
 
-      // 2. Fallback instansiasi langsung dari tipe blok
       if (!newBlock) {
         newBlock = window.workspace.newBlock(itemData.type);
         newBlock.initSvg();
@@ -760,13 +759,12 @@
         newBlock.moveTo(new Blockly.utils.Coordinate(wsX, wsY));
         newBlock.select();
 
-        // Putar efek suara snap lembut jika tersedia
         if (typeof window.playSnapSound === 'function') {
           window.playSnapSound();
         }
       }
     } catch (err) {
-      console.error('[BlockSearch] Gagal meletakkan blok pada koordinat:', err);
+      console.error('[BlockSearch] Gagal meletakkan blok:', err);
       spawnBlockFallback(itemData);
     }
   }
@@ -784,7 +782,7 @@
     }
   }
 
-  // ── Keyboard Navigation di dalam Search Palette ──
+  // ── Keyboard Navigation ──
   function handleKeyDown(e) {
     if (!modalEl || modalEl.classList.contains('hidden')) return;
 
@@ -836,9 +834,6 @@
     scrollActiveCardIntoView();
   }
 
-  /**
-   * Buka Modal Pencarian Blok
-   */
   function openModal() {
     if (!modalEl) initDOM();
     if (!modalEl) return;
@@ -859,9 +854,6 @@
     }
   }
 
-  /**
-   * Tutup Modal Pencarian Blok
-   */
   function closeModal() {
     if (!modalEl) return;
     modalEl.classList.add('hidden');
@@ -879,9 +871,6 @@
       .replace(/'/g, '&#039;');
   }
 
-  /**
-   * Inisialisasi DOM dan Event Listener
-   */
   function initDOM() {
     modalEl = document.getElementById('blockSearchModal');
     inputEl = document.getElementById('blockSearchInput');
@@ -918,7 +907,6 @@
       btnFloatingTrigger.addEventListener('click', openModal);
     }
 
-    // Klik di luar container untuk menutup modal
     if (modalEl) {
       modalEl.addEventListener('click', function(e) {
         if (e.target === modalEl) {
@@ -927,11 +915,8 @@
       });
     }
 
-    // Global shortcut Ctrl+K dan /
     window.addEventListener('keydown', function(e) {
-      // Ctrl+K atau Cmd+K
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        // Hanya jika kita berada di mode blok atau secara umum
         const bodyMode = document.body.classList.contains('mode-text') ? 'text' : 'block';
         if (bodyMode === 'block') {
           e.preventDefault();
@@ -943,7 +928,6 @@
         }
       }
 
-      // Tombol Slash '/' saat pengguna tidak sedang mengetik di input / editor
       if (e.key === '/' && !modalEl?.classList.contains('hidden')) {
         const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
         const isEditable = document.activeElement && (document.activeElement.isContentEditable || activeTag === 'input' || activeTag === 'textarea');
@@ -971,7 +955,6 @@
     rebuildCatalog: buildBlockCatalog
   };
 
-  // Otomatis init setelah DOM siap
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       window.ArduiBlokSearch.init();
