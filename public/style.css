@@ -4588,14 +4588,15 @@ body.mode-text #blocklyDiv {
     gap: 8px;
   }
   .device-troubleshoot-content {
-    max-height: 270px !important;
+    max-height: 380px !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-y !important;
-    padding: 10px 10px 14px 10px;
+    padding: 10px 10px 16px 10px;
+    scroll-padding-bottom: 30px;
   }
   .troubleshoot-scroll-spacer {
-    height: 80px !important;
+    height: 120px !important;
     width: 100%;
     flex-shrink: 0;
     pointer-events: none;
