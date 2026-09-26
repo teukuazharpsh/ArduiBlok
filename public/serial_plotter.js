@@ -220,7 +220,7 @@
     if (!elLegendContainer) return;
 
     if (channels.length === 0) {
-      elLegendContainer.innerHTML = '<span class="plotter-legend-empty">Menunggu data numerik dari Arduino (contoh: <code>Serial.println(nilai);</code> atau <code>Serial.print(v1); Serial.print(","); Serial.println(v2);</code>)...</span>';
+      elLegendContainer.innerHTML = '<span class="plotter-legend-empty">Menunggu data numerik dari mikrokontroler (contoh: <code>Serial.println(nilai);</code> atau <code>Serial.print(v1); Serial.print(","); Serial.println(v2);</code>)...</span>';
       return;
     }
 
@@ -395,7 +395,7 @@
 
         ctx.fillStyle = theme.text;
         ctx.font = '11px system-ui, -apple-system, sans-serif';
-        ctx.fillText('Kirim data numerik via Serial Arduino', centerX, centerY - 4);
+        ctx.fillText('Kirim data numerik via Serial', centerX, centerY - 4);
 
         // Code example pill box background
         var codeText = 'Serial.println(analogRead(A0));';

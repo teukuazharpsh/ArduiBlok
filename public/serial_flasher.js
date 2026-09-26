@@ -148,7 +148,7 @@
 
   // Pulse DTR to reset ATmega328P into bootloader mode (matching avrdude timing)
   ArduinoFlasher.prototype.resetTarget = async function() {
-    this.log('Mereset board Arduino via pulsa DTR...');
+    this.log('Mereset board mikrokontroler via pulsa DTR...');
     try {
       await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
       await sleep(100);
@@ -267,7 +267,7 @@
     }
 
     if (!synced) {
-      throw new Error('Gagal sinkronisasi dengan Arduino bootloader. Pastikan port COM benar dan board terhubung.');
+      throw new Error('Gagal sinkronisasi dengan bootloader board. Pastikan port COM benar dan board terhubung.');
     }
   };
 
@@ -341,7 +341,7 @@
         // Ignored
       }
 
-      this.progress(100, 'Upload Berhasil! Arduino me-restart sketch baru.');
+      this.progress(100, 'Upload Berhasil! Board me-restart sketch baru.');
       this.log('Flashing selesai dengan sukses.');
 
     } finally {

@@ -183,7 +183,7 @@
       grid.classList.add('hidden');
       if (emptyState) emptyState.classList.add('hidden');
       if (loadingState) loadingState.classList.remove('hidden');
-      if (countInfo) countInfo.textContent = 'Mencari di katalog resmi Arduino...';
+      if (countInfo) countInfo.textContent = 'Mencari di katalog resmi library...';
 
       var libraries = await this.searchLibraries(currentSearchQuery, currentCategory);
 
@@ -200,7 +200,7 @@
 
       grid.classList.remove('hidden');
       if (emptyState) emptyState.classList.add('hidden');
-      if (countInfo) countInfo.textContent = 'Menampilkan ' + libraries.length + ' library resmi Arduino';
+      if (countInfo) countInfo.textContent = 'Menampilkan ' + libraries.length + ' library mikrokontroler';
 
       var html = '';
       var self = this;
@@ -236,7 +236,7 @@
               '</div>' +
               statusBadge +
             '</div>' +
-            '<p class="library-desc">' + self.escapeHtml(lib.sentence || 'Library Arduino.') + '</p>' +
+            '<p class="library-desc">' + self.escapeHtml(lib.sentence || 'Library mikrokontroler.') + '</p>' +
             '<div class="library-card-footer">' +
               '<span class="library-category-tag">' + self.escapeHtml(lib.category || 'General') + '</span>' +
               '<div class="library-actions">' + actionButtons + '</div>' +

@@ -324,7 +324,7 @@
       return;
     }
     try {
-      appendTerminal('\n--- Mereset Board Arduino (DTR Toggle) ---\n');
+      appendTerminal('\n--- Mereset Board Mikrokontroler (DTR Toggle) ---\n');
       await currentPort.setSignals({ dataTerminalReady: false });
       await sleep(150);
       await currentPort.setSignals({ dataTerminalReady: true });
@@ -498,7 +498,7 @@
     function getTerminalText() {
       if (!elSerialTerminal) return '';
       var text = elSerialTerminal.textContent || '';
-      if (text.trim() === 'Menunggu data serial dari Arduino Uno...') {
+      if (text.trim() === 'Menunggu data serial dari Arduino Uno...' || text.trim() === 'Menunggu data serial dari board mikrokontroler...') {
         return '';
       }
       return text;

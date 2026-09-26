@@ -198,7 +198,7 @@
               '<svg class="svg-icon radar-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 9 9"></path><polyline points="12 12 16 14"></polyline></svg>' +
             '</div>' +
             '<div class="device-empty-title">Belum Ada Port yang Diizinkan</div>' +
-            '<div class="device-empty-desc">Klik tombol <strong>"Pindai &amp; Tambah Port Baru"</strong> di bawah untuk memilih port USB Arduino Anda pertama kali.</div>' +
+            '<div class="device-empty-desc">Klik tombol <strong>"Pindai &amp; Tambah Port Baru"</strong> di bawah untuk memilih port USB board mikrokontroler Anda pertama kali.</div>' +
           '</div>';
         return;
       }

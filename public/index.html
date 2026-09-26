@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="ArduiBlok — Editor visual berbasis Blockly untuk pemrograman Arduino Uno.">
-  <title>ArduiBlok — Arduino Uno Visual Programmer</title>
+  <meta name="description" content="ArduiBlok — Platform pemrograman visual blok dan teks C++ untuk berbagai board mikrokontroler (Arduino, ESP, dan lainnya).">
+  <title>ArduiBlok — Microcontroller Visual &amp; Text Studio</title>
 
   <!-- Favicon & Touch Icon -->
   <link rel="icon" type="image/jpeg" href="logo.jpeg">
@@ -17,7 +17,7 @@
   <!-- Blockly Core (CDN) -->
   <script src="https://unpkg.com/blockly/blockly.min.js"></script>
 
-  <!-- Ace Code Editor (CDN for Arduino C++ IDE) -->
+  <!-- Ace Code Editor (CDN for C++ Microcontroller IDE) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-c_cpp.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-tomorrow_night.min.js"></script>
@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=3.7">
+  <link rel="stylesheet" href="style.css?v=3.8">
 </head>
 <body>
 
@@ -58,7 +58,7 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label for="selectBoardType" class="form-label">Tipe Board Arduino:</label>
+          <label for="selectBoardType" class="form-label">Tipe Board Mikrokontroler:</label>
           <select id="selectBoardType" class="form-select">
             <option value="uno">Arduino Uno (ATmega328P)</option>
             <option value="nano">Arduino Nano (ATmega328P / 168)</option>
@@ -197,7 +197,7 @@
           <ul class="mode-card-features">
             <li>✓ Kategori blok lengkap (Sensor, Motor, Display)</li>
             <li>✓ Galeri contoh proyek bawaan siap pakai</li>
-            <li>✓ Auto-generate kode Arduino C++</li>
+            <li>✓ Auto-generate kode C++ Mikrokontroler</li>
           </ul>
           <button class="btn btn-choose-mode btn-choose-block" id="btnChooseBlockMode">
             Mulai Mode Blok
@@ -209,10 +209,10 @@
           <div class="mode-card-icon-wrapper text-gradient">
             <span class="mode-card-emoji">⌨️</span>
           </div>
-          <h2 class="mode-card-title">Pemrograman Teks Arduino (C++)</h2>
+          <h2 class="mode-card-title">Pemrograman Teks C++ (IDE)</h2>
           <span class="mode-card-tag tag-advanced">Mahir &amp; Pengembang</span>
           <p class="mode-card-desc">
-            Koding langsung dalam bahasa C++ standar Arduino IDE. Dilengkapi editor modern, auto-complete, dan Library Manager terintegrasi.
+            Koding langsung dalam bahasa C++ standar mikrokontroler. Dilengkapi editor modern, auto-complete, dan Library Manager terintegrasi.
           </p>
           <ul class="mode-card-features">
             <li>✓ Editor C++ berkecepatan tinggi dengan nomor baris</li>
@@ -337,8 +337,8 @@
             <line x1="12" y1="22.08" x2="12" y2="12"></line>
           </svg>
           <div>
-            <h2>Arduino Library Manager</h2>
-            <p class="modal-subtitle">Cari dan pasang library Arduino dari registry online resmi (LiquidCrystal, NeoPixel, DHT, dll)</p>
+            <h2>Library Manager</h2>
+            <p class="modal-subtitle">Cari dan pasang library mikrokontroler dari registry online resmi (LiquidCrystal, NeoPixel, DHT, dll)</p>
           </div>
         </div>
         <button class="modal-close-btn" id="btnCloseLibraryModal" title="Tutup Library Manager">
@@ -387,7 +387,7 @@
         <!-- Loading State Terpusat di Tengah Layar Modal -->
         <div class="library-loading hidden" id="librariesLoadingState">
           <div class="loading-spinner"></div>
-          <span class="loading-text">Mencari di seluruh katalog resmi Arduino...</span>
+          <span class="loading-text">Mencari di seluruh katalog resmi library...</span>
         </div>
 
         <!-- Wadah Grid Kartu Library -->
@@ -430,7 +430,7 @@
             </svg>
           </div>
           <div>
-            <h2>Hubungkan Board Arduino</h2>
+            <h2>Hubungkan Board Mikrokontroler</h2>
             <p class="modal-subtitle">Pilih port COM, kelola koneksi hardware, atau jalankan pemindai perangkat</p>
           </div>
         </div>
@@ -484,7 +484,7 @@
             <div class="scan-banner-icon">🔍</div>
             <div class="scan-banner-text">
               <h4>Ingin menghubungkan port USB baru?</h4>
-              <p>Klik tombol di samping untuk membuka pemilih port browser, lalu pilih board Arduino Anda dari daftar.</p>
+              <p>Klik tombol di samping untuk membuka pemilih port browser, lalu pilih board mikrokontroler Anda dari daftar.</p>
             </div>
           </div>
           <button type="button" class="btn btn-scan-port-action" id="btnTriggerNativeScan">
@@ -531,7 +531,7 @@
                 <div class="troubleshoot-icon">💡</div>
                 <div class="troubleshoot-content">
                   <strong>2. Periksa Lampu LED Daya</strong>
-                  <p>Lampu LED <code>ON</code> / <code>PWR</code> pada board Arduino harus menyala terang dan stabil saat dicolokkan ke port USB komputer.</p>
+                  <p>Lampu LED <code>ON</code> / <code>PWR</code> pada board mikrokontroler harus menyala terang dan stabil saat dicolokkan ke port USB komputer.</p>
                 </div>
               </div>
 
@@ -539,7 +539,7 @@
                 <div class="troubleshoot-icon">💾</div>
                 <div class="troubleshoot-content">
                   <strong>3. Pasang Driver CH340 / CP210x</strong>
-                  <p>Sebagian besar board Arduino clone memakai chip CH340. Jika belum terpasang di Windows, unduh driver resminya.</p>
+                  <p>Sebagian besar board mikrokontroler clone memakai chip CH340 / CP210x. Jika belum terpasang di Windows, unduh driver resminya.</p>
                   <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener noreferrer" class="btn-download-driver-link">
                     Unduh Driver CH340 (Windows .EXE) &rarr;
                   </a>
@@ -616,7 +616,7 @@
               <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               <span>Ganti Port</span>
             </button>
-            <button class="btn btn-secondary btn-serial-action" id="btnResetSerialBoard" title="Mereset mikrokontroler Arduino via DTR agar program setup() berjalan dari awal">
+            <button class="btn btn-secondary btn-serial-action" id="btnResetSerialBoard" title="Mereset mikrokontroler via sinyal DTR agar program setup() berjalan dari awal">
               <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
               <span>Reset Board</span>
             </button>
@@ -665,14 +665,14 @@
               <span class="t-dot t-yellow"></span>
               <span class="t-dot t-green"></span>
             </div>
-            <span class="terminal-title">arduino serial communication &bull; rx/tx stream</span>
+            <span class="terminal-title">serial communication &bull; rx/tx stream</span>
           </div>
-          <pre class="serial-terminal-body" id="serialTerminalBody">Menunggu data serial dari Arduino Uno...</pre>
+          <pre class="serial-terminal-body" id="serialTerminalBody">Menunggu data serial dari board mikrokontroler...</pre>
         </div>
 
         <!-- Baris Kirim Serial -->
         <div class="serial-send-bar">
-          <input type="text" id="inputSerialSend" class="serial-send-input" placeholder="Ketik pesan / perintah untuk dikirim ke Arduino (Tekan Enter)..." autocomplete="off">
+          <input type="text" id="inputSerialSend" class="serial-send-input" placeholder="Ketik pesan / perintah untuk dikirim ke mikrokontroler (Tekan Enter)..." autocomplete="off">
           <select id="selectSerialLineEnding" class="form-select serial-ending-select" title="Akhiran baris pengiriman">
             <option value="nl" selected>Baris Baru (NL)</option>
             <option value="none">Tanpa Akhiran</option>
@@ -741,7 +741,7 @@
               <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               <span>Bersihkan</span>
             </button>
-            <button class="btn btn-secondary btn-serial-action" id="btnResetPlotterBoard" title="Mereset mikrokontroler Arduino via DTR">
+            <button class="btn btn-secondary btn-serial-action" id="btnResetPlotterBoard" title="Mereset mikrokontroler via sinyal DTR">
               <svg class="svg-icon btn-action-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
               <span>Reset</span>
             </button>
@@ -789,7 +789,7 @@
 
         <!-- Legenda & Nilai Real-Time Multi-Channel -->
         <div class="plotter-legend-bar" id="plotterLegendContainer">
-          <span class="plotter-legend-empty">Menunggu data numerik dari Arduino...</span>
+          <span class="plotter-legend-empty">Menunggu data numerik dari mikrokontroler...</span>
         </div>
       </div>
     </div>
@@ -861,7 +861,7 @@
         <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 0.82rem;">
           <div style="font-weight: 600; color: #818cf8; margin-bottom: 4px;">📱 Pengaturan Ponsel Xiaomi / Redmi (MIUI):</div>
           <ul style="margin: 0 0 0 16px; padding: 0; color: var(--text-secondary, #94a3b8);">
-            <li>Pastikan lampu LED <strong>ON</strong> pada board Arduino menyala saat disambung kabel OTG.</li>
+            <li>Pastikan lampu LED <strong>ON</strong> pada board mikrokontroler menyala saat disambung kabel OTG.</li>
             <li>Jika tidak menyala, buka <strong>Setelan (Settings) HP &gt; Setelan Tambahan &gt; OTG</strong>, lalu aktifkan saklar OTG.</li>
           </ul>
         </div>
@@ -993,7 +993,7 @@
       </div>
 
       <!-- Tombol Compile -->
-      <button class="btn btn-compile" id="btnCompile" title="Compile sketch ke file biner Arduino (Ctrl + R)">
+      <button class="btn btn-compile" id="btnCompile" title="Compile sketch ke file biner mikrokontroler (Ctrl + R)">
         <svg class="svg-icon btn-compile-icon" viewBox="0 0 24 24">
           <polygon points="5 3 19 12 5 21 5 3"></polygon>
         </svg>
@@ -1124,7 +1124,7 @@
               <polyline points="16 18 22 12 16 6"></polyline>
               <polyline points="8 6 2 12 8 18"></polyline>
             </svg>
-            Kode Arduino (.ino)
+            Kode Program (.ino / .cpp)
           </button>
           <button class="panel-tab" data-tab="output" id="tabOutput">
             <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px; height:14px;">
@@ -1145,7 +1145,7 @@
           <div class="tab-content" id="outputTab">
             <div class="output-content" id="outputContent">
               <div class="output-placeholder">
-                Klik tombol "Compile" di bagian atas untuk memvalidasi dan memproses kode Arduino.
+                Klik tombol "Compile" di bagian atas untuk memvalidasi dan memproses kode program.
               </div>
             </div>
           </div>
@@ -3147,8 +3147,8 @@
                 '<svg class="cstep-check svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
               '</div>' +
               '<div class="cstep-info">' +
-                '<div class="cstep-title">Inisialisasi &amp; Penyiapan Sketch Arduino</div>' +
-                '<div class="cstep-desc">Menerjemahkan diagram blok Blockly ke kode Arduino C++ dan verifikasi library...</div>' +
+                '<div class="cstep-title">Inisialisasi &amp; Penyiapan Program Sketch</div>' +
+                '<div class="cstep-desc">Menerjemahkan diagram blok Blockly ke kode C++ mikrokontroler dan verifikasi library...</div>' +
               '</div>' +
             '</div>' +
             '<div class="compiling-step-item pending" id="cStep2">' +
@@ -3262,9 +3262,9 @@
               '</div>' +
               memoryGaugesHtml +
               '<div class="output-actions">' +
-                '<button class="btn btn-compile btn-upload-direct" id="btnUploadHexDirect" title="Upload program langsung ke board Arduino via Port USB/COM">' +
+                '<button class="btn btn-compile btn-upload-direct" id="btnUploadHexDirect" title="Upload program langsung ke board mikrokontroler via Port USB/COM">' +
                   '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff; width:15px; height:15px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>' +
-                  '<span id="btnUploadHexLabel">Upload ke Arduino</span>' +
+                  '<span id="btnUploadHexLabel">Upload ke Board</span>' +
                 '</button>' +
                 '<button class="btn btn-download-hex" id="btnDownloadHex">' +
                   '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
@@ -3292,7 +3292,7 @@
                   '<span class="t-dot t-yellow"></span>' +
                   '<span class="t-dot t-green"></span>' +
                 '</div>' +
-                '<span class="terminal-title">arduino-cli compile output &bull; build finished</span>' +
+                '<span class="terminal-title">compiler output &bull; build finished</span>' +
                 '<div class="terminal-actions">' +
                   '<button class="btn-toggle-terminal" id="btnToggleTerminal">Ciutkan</button>' +
                   '<button class="btn-copy-terminal" id="btnCopyTerminal">' +
@@ -3361,7 +3361,7 @@
                 uploadStatusText.innerHTML = '<div class="upload-success-container">' +
                   '<div class="upload-success-text">' +
                     '<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#10b981;stroke-width:2.5;fill:none;flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
-                    '<span>Program Berhasil Diupload ke Arduino Uno!</span>' +
+                    '<span>Program Berhasil Diupload ke Board Mikrokontroler!</span>' +
                   '</div>' +
                   '<button class="btn btn-open-serial-upload" id="btnOpenSerialAfterUpload">' +
                     '<svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke-width:2.2;fill:none;stroke:currentColor;"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>' +
@@ -3379,7 +3379,7 @@
               } catch (uploadErr) {
                 uploadProgressBar.style.backgroundColor = '#ef4444';
                 uploadStatusText.innerHTML = '<b style="color:#ef4444;">Upload Gagal: ' + escapeHtml(uploadErr.message) + '</b>';
-                alert('Upload gagal: ' + uploadErr.message + '\n\nTips: Periksa apakah kabel USB tersambung dengan baik dan board Arduino tidak sedang digunakan aplikasi lain.');
+                alert('Upload gagal: ' + uploadErr.message + '\n\nTips: Periksa apakah kabel USB tersambung dengan baik dan board mikrokontroler tidak sedang digunakan aplikasi lain.');
               } finally {
                 btnUploadHexDirect.disabled = false;
                 await window.ArduiBlokSerial.resumeAfterUpload();
@@ -3432,7 +3432,7 @@
                   '<span class="t-dot t-yellow"></span>' +
                   '<span class="t-dot t-green"></span>' +
                 '</div>' +
-                '<span class="terminal-title">arduino-cli compiler error &bull; build failed</span>' +
+                '<span class="terminal-title">compiler error &bull; build failed</span>' +
                 '<div class="terminal-actions">' +
                   '<button class="btn-copy-terminal" id="btnCopyTerminal">' +
                     '<svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
@@ -3477,7 +3477,7 @@
         workspace.clear();
         Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(defaultXml), workspace);
         outputContent.innerHTML = '<div class="output-placeholder">' +
-          'Klik tombol "Compile" di bagian atas untuk memvalidasi dan memproses kode Arduino.</div>';
+          'Klik tombol "Compile" di bagian atas untuk memvalidasi dan memproses kode program.</div>';
         outputIndicator.className = 'tab-indicator';
         generateCode();
       }

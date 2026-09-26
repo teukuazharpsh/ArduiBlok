@@ -10,8 +10,8 @@
 
   var DEFAULT_CPP_SKETCH = 
 `// ============================================================
-// ArduiBlok — Arduino C++ Text IDE
-// Tulis kode program Arduino secara langsung di bawah ini
+// ArduiBlok — C++ Microcontroller Text IDE
+// Tulis kode program mikrokontroler secara langsung di bawah ini
 // ============================================================
 
 void setup() {
