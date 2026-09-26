@@ -2391,7 +2391,8 @@ body.mode-text #tabCode {
 /* ── Mobile Serial Monitor Controls Layout ─────────────────── */
 @media (max-width: 768px) {
   #serialMonitorModal.modal-overlay,
-  #serialPlotterModal.modal-overlay {
+  #serialPlotterModal.modal-overlay,
+  #deviceConnectionModal.modal-overlay {
     padding: 10px 8px;
     padding-top: max(56px, env(safe-area-inset-top, 56px));
     padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
@@ -2399,7 +2400,8 @@ body.mode-text #tabCode {
   }
 
   #serialMonitorModal .serial-modal-container,
-  #serialPlotterModal .serial-modal-container {
+  #serialPlotterModal .serial-modal-container,
+  #deviceConnectionModal .device-modal-container {
     width: 96vw;
     max-height: calc(100vh - 76px);
     max-height: calc(100dvh - 76px);
@@ -4019,8 +4021,41 @@ body.mode-text #blocklyDiv {
   max-height: 90dvh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   margin: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.device-modal-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.device-modal-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.device-modal-container::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.device-modal-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+.device-modal-container .modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .device-header-icon-box {
@@ -4041,60 +4076,19 @@ body.mode-text #blocklyDiv {
 }
 
 .device-modal-body {
-  padding: 16px 20px;
+  padding: 16px 20px 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: calc(90vh - 125px);
-  max-height: calc(90dvh - 125px);
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  flex: none;
+  max-height: none;
+  overflow: visible;
 }
 
-.device-modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.device-modal-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.device-modal-body::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 4px;
-}
-
-.device-modal-body::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
-}
-
-@media (max-width: 680px) {
-  .modal-overlay {
-    padding: 8px 6px;
-  }
-  .device-modal-container {
-    width: 96vw;
-    height: calc(100vh - 16px);
-    height: calc(100dvh - 16px);
-    max-height: calc(100vh - 16px);
-    max-height: calc(100dvh - 16px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+@media (max-width: 768px) {
   .device-modal-body {
-    padding: 12px 10px 48px 10px;
-    gap: 10px;
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: none;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    position: relative;
+    padding: 12px 10px 24px 10px;
+    gap: 12px;
   }
 }
 
@@ -4597,33 +4591,13 @@ body.mode-text #blocklyDiv {
 }
 
 .device-troubleshoot-content {
-  padding: 12px 14px 14px 14px;
+  padding: 12px 14px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 250px;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  overflow: visible;
+  max-height: none;
   animation: fadeIn 0.2s ease;
-}
-
-.device-troubleshoot-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.device-troubleshoot-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 4px;
-}
-
-.device-troubleshoot-content::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 4px;
-}
-
-.device-troubleshoot-content::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
 }
 
 .device-troubleshoot-content.hidden {
@@ -4637,10 +4611,7 @@ body.mode-text #blocklyDiv {
 }
 
 .troubleshoot-scroll-spacer {
-  height: 85px;
-  width: 100%;
-  flex-shrink: 0;
-  pointer-events: none;
+  display: none !important;
 }
 
 @media (max-width: 600px) {
@@ -4704,20 +4675,12 @@ body.mode-text #blocklyDiv {
     gap: 8px;
   }
   .device-troubleshoot-content {
-    max-height: clamp(260px, 42dvh, 380px) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-y !important;
-    padding: 10px 10px 24px 10px;
-    scroll-padding-bottom: 60px;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 10px 8px 16px 8px;
   }
   .troubleshoot-scroll-spacer {
-    height: 250px !important;
-    min-height: 250px !important;
-    width: 100%;
-    flex-shrink: 0;
-    pointer-events: none;
-    display: block !important;
+    display: none !important;
   }
 }
 

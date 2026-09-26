@@ -465,6 +465,7 @@
     if (btnToggleTroubleshoot && deviceTroubleshootBox && deviceTroubleshootContent) {
       btnToggleTroubleshoot.addEventListener('click', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         var isOpen = deviceTroubleshootBox.classList.toggle('open');
         deviceTroubleshootContent.classList.toggle('hidden', !isOpen);
         if (troubleshootHintText) {
@@ -472,15 +473,17 @@
         }
         if (isOpen) {
           setTimeout(function() {
-            var modalBody = document.querySelector('.device-modal-body');
-            if (modalBody && deviceTroubleshootBox) {
-              var targetScroll = Math.max(0, deviceTroubleshootBox.offsetTop - 8);
-              modalBody.scrollTo({
-                top: targetScroll,
+            var container = document.querySelector('#deviceConnectionModal .device-modal-container');
+            if (container && deviceTroubleshootBox) {
+              var boxRect = deviceTroubleshootBox.getBoundingClientRect();
+              var containerRect = container.getBoundingClientRect();
+              var scrollOffset = boxRect.top - containerRect.top + container.scrollTop - 60;
+              container.scrollTo({
+                top: Math.max(0, scrollOffset),
                 behavior: 'smooth'
               });
             }
-          }, 60);
+          }, 80);
         }
       });
     }
