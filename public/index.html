@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=3.9">
+  <link rel="stylesheet" href="style.css?v=4.0">
 </head>
 <body>
 
@@ -1124,7 +1124,8 @@
               <polyline points="16 18 22 12 16 6"></polyline>
               <polyline points="8 6 2 12 8 18"></polyline>
             </svg>
-            Kode Program (.ino / .cpp)
+            <span class="tab-label-desktop">Kode Program (.ino / .cpp)</span>
+            <span class="tab-label-mobile">Kode (.ino)</span>
           </button>
           <button class="panel-tab" data-tab="output" id="tabOutput">
             <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px; height:14px;">
@@ -3123,6 +3124,11 @@
       updateCodeButtonUI(true);
       document.querySelector('[data-tab="output"]').click();
       outputIndicator.className = 'tab-indicator';
+      setTimeout(function() {
+        if (typeof workspace !== 'undefined' && workspace) {
+          Blockly.svgResize(workspace);
+        }
+      }, 50);
 
       const startTime = Date.now();
 
@@ -3304,6 +3310,13 @@
               '<pre class="terminal-body" id="terminalBody">' + highlightedLog + '</pre>' +
             '</div>';
 
+          var outTab = document.getElementById('outputTab');
+          if (outTab) {
+            setTimeout(function() {
+              outTab.scrollTo({ top: outTab.scrollHeight, behavior: 'smooth' });
+            }, 100);
+          }
+
           var btnUploadHexDirect = document.getElementById('btnUploadHexDirect');
           var uploadProgressBox = document.getElementById('uploadProgressBox');
           var uploadStatusText = document.getElementById('uploadStatusText');
@@ -3445,6 +3458,13 @@
 
           setupTerminalCopyButton(errorLog);
           outputIndicator.className = 'tab-indicator error';
+
+          var errOutTab = document.getElementById('outputTab');
+          if (errOutTab) {
+            setTimeout(function() {
+              errOutTab.scrollTo({ top: errOutTab.scrollHeight, behavior: 'smooth' });
+            }, 100);
+          }
         }
       } catch (err) {
         clearInterval(timerInterval);

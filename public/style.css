@@ -627,11 +627,20 @@ body.mode-text #tabCode {
 
 .panel-tabs {
   display: flex;
-  gap: 2px;
-  padding: 0 12px;
+  gap: 4px;
+  padding: 0 10px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.panel-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .panel-tab {
@@ -648,6 +657,16 @@ body.mode-text #tabCode {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tab-label-desktop {
+  display: inline;
+}
+
+.tab-label-mobile {
+  display: none;
 }
 
 .panel-tab:hover {
@@ -1543,15 +1562,40 @@ body.mode-text #tabCode {
   }
 
 
+  .workspace-container {
+    min-height: 60px !important;
+  }
+
+  body.mode-block .workspace-container {
+    min-height: 60px !important;
+  }
+
   .bottom-panel {
-    height: 230px;
-    min-height: 100px;
-    max-height: calc(100dvh - 150px);
+    height: 250px;
+    min-height: 110px;
+    max-height: calc(100dvh - 140px);
+    position: relative;
+    z-index: 35;
+  }
+
+  body.mode-block .bottom-panel {
+    position: relative;
+    z-index: 35;
   }
 
   .panel-tab {
-    padding: 6px 12px;
+    padding: 6px 10px;
     font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tab-label-desktop {
+    display: none !important;
+  }
+
+  .tab-label-mobile {
+    display: inline !important;
   }
 
   .code-preview {
@@ -1561,7 +1605,11 @@ body.mode-text #tabCode {
 
   .output-content {
     font-size: 11.5px;
-    padding: 12px 12px 85px 12px !important;
+    padding: 12px 12px 90px 12px !important;
+  }
+
+  body.mode-block #outputTab .output-content {
+    padding: 12px 12px 110px 12px !important;
   }
 
   .compiler-terminal {
@@ -1569,11 +1617,19 @@ body.mode-text #tabCode {
     margin-bottom: 40px !important;
   }
 
+  body.mode-block #outputTab .compiler-terminal {
+    margin-bottom: 50px !important;
+  }
+
   .terminal-body {
-    padding: 10px 12px 22px 12px !important;
+    padding: 10px 12px 24px 12px !important;
     font-size: 11px;
     line-height: 1.6;
     max-height: 280px;
+  }
+
+  body.mode-block #outputTab .terminal-body {
+    padding: 10px 12px 28px 12px !important;
   }
 
   .blocklyTreeRow {
