@@ -2509,19 +2509,49 @@ body.mode-text #tabCode {
     gap: 5px !important;
   }
 
-  .serial-dropdown-wrapper {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
+  /* Grid posisi 2 kolom x 3 baris untuk Serial Monitor Mobile */
+  #serialMonitorModal #btnSelectNewPort {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
   }
 
-  .serial-dropdown-wrapper .btn {
-    width: 100% !important;
+  #serialMonitorModal #btnResetSerialBoard {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
   }
 
-  .serial-dropdown-wrapper .serial-dropdown-menu {
-    left: 0;
+  #serialMonitorModal #btnClearSerialTerminal {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  #serialMonitorModal .serial-dropdown-wrapper {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    position: relative;
+  }
+
+  #serialMonitorModal .serial-dropdown-wrapper .btn {
+    width: 100% !important;
+    height: 38px !important;
+  }
+
+  #serialMonitorModal .serial-dropdown-wrapper .serial-dropdown-menu {
+    left: auto;
     right: 0;
-    min-width: 100%;
+    min-width: 190px;
+    z-index: 1050;
+  }
+
+  #serialMonitorModal #btnSwitchToSerialPlotter {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+  }
+
+  #serialMonitorModal #btnToggleSerialConnect {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
   }
 
   .serial-options-group {
