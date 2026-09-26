@@ -3959,18 +3959,21 @@ body.mode-text #blocklyDiv {
 }
 
 @media (max-width: 680px) {
+  .modal-overlay {
+    padding: 8px 6px;
+  }
   .device-modal-container {
     width: 96vw;
-    height: 90vh;
-    height: 90dvh;
-    max-height: 90vh;
-    max-height: 90dvh;
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
   .device-modal-body {
-    padding: 12px 10px 36px 10px;
+    padding: 12px 10px 24px 10px;
     gap: 10px;
     flex: 1 1 auto;
     min-height: 0;
@@ -4588,16 +4591,16 @@ body.mode-text #blocklyDiv {
     gap: 8px;
   }
   .device-troubleshoot-content {
-    max-height: 240px !important;
+    max-height: clamp(260px, 42dvh, 380px) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-y !important;
     padding: 10px 10px 16px 10px;
-    scroll-padding-bottom: 20px;
+    scroll-padding-bottom: 24px;
   }
   .troubleshoot-scroll-spacer {
-    height: 160px !important;
-    min-height: 160px !important;
+    height: 140px !important;
+    min-height: 140px !important;
     width: 100%;
     flex-shrink: 0;
     pointer-events: none;
