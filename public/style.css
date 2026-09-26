@@ -1735,6 +1735,7 @@ body.mode-text #tabCode {
   justify-content: center;
   z-index: 10000;
   padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top, 16px));
   opacity: 1;
   visibility: visible;
   transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -2009,6 +2010,8 @@ body.mode-text #tabCode {
 .serial-modal-container {
   max-width: 760px;
   width: 95vw;
+  max-height: 90vh;
+  max-height: 90dvh;
 }
 
 .serial-modal-body {
@@ -2353,6 +2356,19 @@ body.mode-text #tabCode {
 
 /* ── Mobile Serial Monitor Controls Layout ─────────────────── */
 @media (max-width: 768px) {
+  #serialMonitorModal.modal-overlay {
+    padding: 12px 8px;
+    padding-top: max(56px, env(safe-area-inset-top, 56px));
+    align-items: flex-start;
+  }
+
+  #serialMonitorModal .serial-modal-container {
+    width: 96vw;
+    max-height: calc(100vh - 70px);
+    max-height: calc(100dvh - 16px);
+    margin-top: 0;
+  }
+
   .modal-header {
     padding: 10px 14px;
     gap: 10px;
