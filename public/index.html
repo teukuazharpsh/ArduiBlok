@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=3.8">
+  <link rel="stylesheet" href="style.css?v=3.9">
 </head>
 <body>
 
@@ -3504,7 +3504,8 @@
     document.addEventListener('mousemove', function(e) {
       if (!isResizing) return;
       var delta = startY - e.clientY;
-      var newHeight = Math.max(80, Math.min(window.innerHeight * 0.55, startHeight + delta));
+      var maxLimit = (window.innerWidth <= 768) ? (window.innerHeight * 0.8) : (window.innerHeight * 0.65);
+      var newHeight = Math.max(80, Math.min(maxLimit, startHeight + delta));
       bottomPanel.style.height = newHeight + 'px';
       Blockly.svgResize(workspace);
     });
@@ -3512,7 +3513,8 @@
     document.addEventListener('touchmove', function(e) {
       if (!isResizing) return;
       var delta = startY - e.touches[0].clientY;
-      var newHeight = Math.max(80, Math.min(window.innerHeight * 0.55, startHeight + delta));
+      var maxLimit = (window.innerWidth <= 768) ? (window.innerHeight * 0.8) : (window.innerHeight * 0.65);
+      var newHeight = Math.max(80, Math.min(maxLimit, startHeight + delta));
       bottomPanel.style.height = newHeight + 'px';
       Blockly.svgResize(workspace);
     }, { passive: true });

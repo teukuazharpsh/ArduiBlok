@@ -138,6 +138,7 @@
 
 html, body {
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg-primary);
@@ -149,7 +150,10 @@ html, body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
 }
 
@@ -689,7 +693,10 @@ body.mode-text #tabCode {
   left: 0;
   right: 0;
   bottom: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .tab-content.active {
@@ -698,7 +705,7 @@ body.mode-text #tabCode {
 
 /* ── Light C++ Code Preview ────────────────────────────────── */
 .code-preview {
-  padding: 14px 18px;
+  padding: 14px 18px 48px 18px;
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, Menlo, monospace;
   font-size: 12.5px;
   line-height: 1.65;
@@ -711,10 +718,11 @@ body.mode-text #tabCode {
 
 /* ── Output Messages ───────────────────────────────────────── */
 .output-content {
-  padding: 16px 20px;
+  padding: 16px 20px 60px 20px;
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   line-height: 1.6;
+  box-sizing: border-box;
 }
 
 .output-message {
@@ -999,6 +1007,7 @@ body.mode-text #tabCode {
   box-shadow: var(--shadow-md);
   overflow: hidden;
   margin-top: 12px;
+  margin-bottom: 28px;
   display: flex;
   flex-direction: column;
 }
@@ -1113,7 +1122,7 @@ body.mode-text #tabCode {
 
 .terminal-body {
   margin: 0;
-  padding: 12px 14px;
+  padding: 12px 14px 20px 14px;
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 11.5px;
   line-height: 1.6;
@@ -1121,8 +1130,9 @@ body.mode-text #tabCode {
   background: #090d16;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .compiler-terminal.terminal-collapsed .terminal-body {
@@ -1206,6 +1216,7 @@ body.mode-text #tabCode {
   align-items: center;
   justify-content: space-between;
   padding: 4px 16px;
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 4px));
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   font-size: 11px;
@@ -1533,7 +1544,9 @@ body.mode-text #tabCode {
 
 
   .bottom-panel {
-    height: 190px;
+    height: 230px;
+    min-height: 100px;
+    max-height: calc(100dvh - 150px);
   }
 
   .panel-tab {
@@ -1541,8 +1554,26 @@ body.mode-text #tabCode {
     font-size: 11px;
   }
 
-  .code-preview, .output-content {
+  .code-preview {
     font-size: 11.5px;
+    padding-bottom: 60px;
+  }
+
+  .output-content {
+    font-size: 11.5px;
+    padding: 12px 12px 85px 12px !important;
+  }
+
+  .compiler-terminal {
+    margin-top: 10px;
+    margin-bottom: 40px !important;
+  }
+
+  .terminal-body {
+    padding: 10px 12px 22px 12px !important;
+    font-size: 11px;
+    line-height: 1.6;
+    max-height: 280px;
   }
 
   .blocklyTreeRow {
