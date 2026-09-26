@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=4.1">
 </head>
 <body>
 
@@ -569,6 +569,55 @@
     </div>
   </div>
 
+  <!-- Modal Floating Spotlight Block Search & Drag-Drop Palette -->
+  <div class="modal-overlay block-search-overlay hidden" id="blockSearchModal">
+    <div class="block-search-container" id="blockSearchContainer">
+      <div class="block-search-header">
+        <div class="block-search-input-wrapper">
+          <svg class="search-input-icon" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="block-search-input" id="blockSearchInput" placeholder="Cari blok mikrokontroler... (misal: pin, servo, delay, motor, if, serial)" autocomplete="off" spellcheck="false">
+          <button class="btn-search-clear" id="btnSearchClear" title="Bersihkan pencarian" style="display: none;">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <div class="search-shortcut-badges">
+            <kbd class="search-kbd-badge">ESC</kbd>
+          </div>
+        </div>
+        <button class="modal-close-btn block-search-close-btn" id="btnCloseBlockSearch" title="Tutup Pencarian">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Kategori Filter Chips Horizontal -->
+      <div class="block-search-categories" id="blockSearchCategoryChips">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Search Results Scroll List -->
+      <div class="block-search-results" id="blockSearchResults">
+        <!-- Rendered dynamically with cards & drag handles -->
+      </div>
+
+      <!-- Footer Info & Keyboard Hints -->
+      <div class="block-search-footer">
+        <div class="search-footer-hints">
+          <span class="hint-item"><kbd>↑</kbd><kbd>↓</kbd> Navigasi</span>
+          <span class="hint-item"><kbd>↵ Enter</kbd> Masukkan</span>
+          <span class="hint-item"><b>⠿ Drag</b> ke Workspace</span>
+        </div>
+        <div class="search-footer-count" id="blockSearchResultCount">
+          0 blok
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Mengambang Serial Monitor -->
   <div class="modal-overlay hidden" id="serialMonitorModal">
     <div class="modal-container serial-modal-container">
@@ -1027,6 +1076,15 @@
           <div class="floating-groups-wrapper" id="floatingGroupsWrapper">
             <!-- Tombol-tombol Mode Blok -->
             <div class="floating-group floating-group-block" id="floatingGroupBlock">
+              <button class="floating-search-btn" id="btnFloatingSearchBlocks" title="Cari Blok Cepat (Ctrl + K)">
+                <svg class="svg-icon floating-icon" viewBox="0 0 24 24" style="stroke: currentColor; fill: none;">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span class="floating-text">Cari Blok</span>
+                <span class="floating-kbd-shortcut">Ctrl+K</span>
+              </button>
+
               <button class="floating-toolbox-btn toolbox-open" id="btnFloatingToolbox" title="Buka / Tutup Toolbox">
                 <svg class="svg-icon floating-icon" viewBox="0 0 24 24">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1351,6 +1409,7 @@
   <script src="code_editor.js"></script>
   <script src="library_manager.js"></script>
   <script src="device_manager.js"></script>
+  <script src="block_search.js"></script>
 
   <!-- Application Logic -->
   <script>
