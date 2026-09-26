@@ -2355,15 +2355,31 @@ body.mode-text #tabCode {
 @media (max-width: 768px) {
   .modal-header {
     padding: 10px 14px;
+    gap: 10px;
   }
 
   .modal-title-group {
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .modal-title-group h2 {
-    font-size: 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .modal-close-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    z-index: 10;
   }
 
   .info-badge {
