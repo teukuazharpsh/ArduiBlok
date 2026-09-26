@@ -2556,6 +2556,43 @@ body.mode-text #tabCode {
     grid-row: 3 !important;
   }
 
+  /* Grid posisi untuk Serial Plotter Mobile */
+  #serialPlotterModal #btnTogglePlotPause {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  #serialPlotterModal #btnClearPlotterData {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  #serialPlotterModal #btnResetPlotterBoard {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  #serialPlotterModal #btnExportPlotterCsv {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  #serialPlotterModal #btnExportPlotterPng {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+  }
+
+  #serialPlotterModal #btnSwitchToPlotterMonitor {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+  }
+
+  #serialPlotterModal #btnTogglePlotterConnect {
+    grid-column: 1 / -1 !important;
+    grid-row: 4 !important;
+    width: 100% !important;
+  }
+
   .serial-options-group {
     display: flex;
     align-items: center;
