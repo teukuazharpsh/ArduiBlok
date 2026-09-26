@@ -3970,7 +3970,7 @@ body.mode-text #blocklyDiv {
     overflow: hidden;
   }
   .device-modal-body {
-    padding: 12px 10px 24px 10px;
+    padding: 12px 10px 36px 10px;
     gap: 10px;
     flex: 1 1 auto;
     min-height: 0;
@@ -4588,15 +4588,16 @@ body.mode-text #blocklyDiv {
     gap: 8px;
   }
   .device-troubleshoot-content {
-    max-height: 380px !important;
+    max-height: 240px !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-y !important;
     padding: 10px 10px 16px 10px;
-    scroll-padding-bottom: 30px;
+    scroll-padding-bottom: 20px;
   }
   .troubleshoot-scroll-spacer {
-    height: 120px !important;
+    height: 160px !important;
+    min-height: 160px !important;
     width: 100%;
     flex-shrink: 0;
     pointer-events: none;
