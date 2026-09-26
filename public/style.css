@@ -2012,6 +2012,40 @@ body.mode-text #tabCode {
   width: 95vw;
   max-height: 90vh;
   max-height: 90dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.serial-modal-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.serial-modal-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.serial-modal-container::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.serial-modal-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+.serial-modal-container .modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .serial-modal-body {
@@ -2356,17 +2390,24 @@ body.mode-text #tabCode {
 
 /* ── Mobile Serial Monitor Controls Layout ─────────────────── */
 @media (max-width: 768px) {
-  #serialMonitorModal.modal-overlay {
-    padding: 12px 8px;
+  #serialMonitorModal.modal-overlay,
+  #serialPlotterModal.modal-overlay {
+    padding: 10px 8px;
     padding-top: max(56px, env(safe-area-inset-top, 56px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
     align-items: flex-start;
   }
 
-  #serialMonitorModal .serial-modal-container {
+  #serialMonitorModal .serial-modal-container,
+  #serialPlotterModal .serial-modal-container {
     width: 96vw;
-    max-height: calc(100vh - 70px);
-    max-height: calc(100dvh - 16px);
+    max-height: calc(100vh - 76px);
+    max-height: calc(100dvh - 76px);
     margin-top: 0;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .modal-header {
@@ -2405,9 +2446,19 @@ body.mode-text #tabCode {
   }
 
   .serial-modal-body {
-    padding: 10px !important;
+    padding: 10px 10px 24px 10px !important;
     gap: 10px !important;
     box-sizing: border-box !important;
+  }
+
+  .serial-terminal-body {
+    height: 200px;
+    max-height: 35vh;
+  }
+
+  .plotter-canvas-wrapper {
+    height: 240px;
+    min-height: 180px;
   }
 
   .serial-controls-bar {
