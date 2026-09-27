@@ -9,7 +9,7 @@
  * - Tanpa modal, tanpa popup, tanpa teks penjelasan tambahan.
  * - Desain presisi selaras tema terang & gelap.
  */
-(function(window) {
+(function (window) {
   'use strict';
 
   // ── Database Metadata Kata Kunci Blok ──
@@ -144,17 +144,17 @@
     clearBtnEl = document.getElementById('btnToolboxSearchClear');
 
     // Hentikan perambatan event mousedown / pointerdown agar Blockly tidak salah mendeteksi gesture
-    searchWrapperEl.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-    searchWrapperEl.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
-    searchWrapperEl.addEventListener('click', function(e) { e.stopPropagation(); });
-    searchWrapperEl.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+    searchWrapperEl.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    searchWrapperEl.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    searchWrapperEl.addEventListener('click', function (e) { e.stopPropagation(); });
+    searchWrapperEl.addEventListener('touchstart', function (e) { e.stopPropagation(); }, { passive: true });
 
     // Event input pencarian real-time
-    searchInputEl.addEventListener('input', function() {
+    searchInputEl.addEventListener('input', function () {
       handleSearch(this.value);
     });
 
-    searchInputEl.addEventListener('keydown', function(e) {
+    searchInputEl.addEventListener('keydown', function (e) {
       e.stopPropagation();
       if (e.key === 'Escape') {
         clearSearch();
@@ -163,7 +163,7 @@
     });
 
     // Tombol bersihkan (X)
-    clearBtnEl.addEventListener('click', function(e) {
+    clearBtnEl.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       clearSearch();
@@ -171,7 +171,7 @@
     });
 
     // Deteksi jika pengguna mengklik kategori manual pada toolbox -> bersihkan pencarian
-    toolboxDiv.addEventListener('click', function(e) {
+    toolboxDiv.addEventListener('click', function (e) {
       const row = e.target.closest('.blocklyTreeRow');
       if (row) {
         if (searchInputEl && searchInputEl.value.trim().length > 0) {
@@ -181,7 +181,7 @@
     });
 
     // Listener event workspace: tutup flyout pencarian jika pengguna mulai men-drag blok di workspace
-    ws.addChangeListener(function(e) {
+    ws.addChangeListener(function (e) {
       if (isSearchActive && e) {
         const isDragStart = (e.type === (Blockly.Events.BLOCK_DRAG || 'drag')) && e.isStart;
         const isClickWorkspace = (e.type === (Blockly.Events.CLICK || 'click')) && !e.blockId;
@@ -205,7 +205,7 @@
       topBlocks.forEach(b => {
         const xy = b.getRelativeToSurfaceXY();
         // Berikan jarak ekstra +18px ke kanan agar lekukan/soket di sebelah kiri terlihat utuh dan lega
-        b.moveTo(new Blockly.utils.Coordinate(xy.x + 18, xy.y + 4));
+        b.moveTo(new Blockly.utils.Coordinate(xy.x + 14, xy.y + 4));
       });
 
       if (typeof flyout.reflow === 'function') {
@@ -230,14 +230,14 @@
     flyout._patchedForSearchIndent = true;
 
     const originalShow = flyout.show;
-    flyout.show = function(flyoutDef) {
+    flyout.show = function (flyoutDef) {
       originalShow.call(this, flyoutDef);
       adjustFlyoutBlocksLayout(this);
     };
 
     const originalCreateBlock = flyout.createBlock_;
     if (typeof originalCreateBlock === 'function') {
-      flyout.createBlock_ = function(block) {
+      flyout.createBlock_ = function (block) {
         const newBlock = originalCreateBlock.call(this, block);
         if (isSearchActive) {
           // Tutup flyout seketika saat drag dimulai agar tidak menghalangi workspace
@@ -335,7 +335,7 @@
     if (ws && ws.getToolbox()) {
       injectSearchBar();
     } else {
-      const checkInterval = setInterval(function() {
+      const checkInterval = setInterval(function () {
         const currentWs = getWorkspace();
         if (currentWs && currentWs.getToolbox()) {
           clearInterval(checkInterval);
