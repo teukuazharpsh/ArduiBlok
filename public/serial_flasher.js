@@ -363,10 +363,157 @@
     }
   };
 
+  // ── Helper: Base64 to Uint8Array ─────────────────────────────
+  function base64ToUint8Array(base64Str) {
+    if (!base64Str) throw new Error('Data biner firmware kosong.');
+    var cleanStr = base64Str.trim();
+    var binaryString;
+    try {
+      binaryString = atob(cleanStr);
+    } catch (e) {
+      binaryString = cleanStr;
+    }
+    var len = binaryString.length;
+    var bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  // ── ESP8266 / ESP32 Flasher (Web Serial & ROM Bootloader via esptool-js) ──
+  function EspFlasher(port, options) {
+    this.port = port;
+    this.options = Object.assign({
+      baudRate: 115200,
+      flashMode: 'keep',
+      flashFreq: 'keep',
+      flashSize: 'keep',
+      onProgress: function(percent, message) {},
+      onLog: function(msg) {}
+    }, options || {});
+  }
+
+  EspFlasher.prototype.log = function(msg) {
+    if (this.options.onLog) this.options.onLog(msg);
+  };
+
+  EspFlasher.prototype.progress = function(percent, msg) {
+    if (this.options.onProgress) this.options.onProgress(percent, msg);
+  };
+
+  EspFlasher.prototype.flashBin = async function(binData) {
+    this.log('Memulai persiapan flashing ESP8266 via Web Serial...');
+    this.progress(5, 'Menyiapkan modul ESP Web Flasher...');
+
+    // 1. Dapatkan esptooljs (dari window.esptooljs atau dynamic import)
+    var esp = root.esptooljs;
+    if (!esp || !esp.ESPLoader || !esp.Transport) {
+      try {
+        var mod = await import('./esptool_bundle.js');
+        esp = (mod && mod.esptooljs) ? mod.esptooljs : mod;
+      } catch (err) {
+        throw new Error('Gagal memuat modul ESPTool Web Serial: ' + err.message);
+      }
+    }
+    if (!esp || !esp.ESPLoader || !esp.Transport) {
+      throw new Error('Modul ESPTool Web Serial belum siap di browser.');
+    }
+
+    // 2. Decode biner firmware
+    var uint8Data;
+    if (binData instanceof Uint8Array) {
+      uint8Data = binData;
+    } else if (typeof binData === 'string') {
+      uint8Data = base64ToUint8Array(binData);
+    } else {
+      throw new Error('Format data biner tidak valid.');
+    }
+
+    if (uint8Data.length === 0) {
+      throw new Error('Berkas biner firmware kosong.');
+    }
+
+    // Magic byte 0xE9 pengecekan (ESP image magic)
+    if (uint8Data[0] !== 0xE9) {
+      this.log('Catatan: Byte awal berkas 0x' + uint8Data[0].toString(16) + ' (standar ESP image 0xE9).');
+    }
+
+    this.log('Ukuran berkas firmware: ' + uint8Data.length + ' Bytes (' + (uint8Data.length / 1024).toFixed(1) + ' KB)');
+
+    // 3. Inisialisasi Transport & ESPLoader
+    var self = this;
+    var transport = new esp.Transport(this.port);
+    var targetBaud = this.options.baudRate || 115200;
+
+    var esploader = new esp.ESPLoader({
+      transport: transport,
+      baudrate: targetBaud,
+      romBaudrate: 115200,
+      terminal: {
+        clean: function() {},
+        writeLine: function(line) { self.log(line); },
+        write: function(line) { self.log(line); }
+      }
+    });
+
+    try {
+      // 4. Hubungkan ke bootloader ROM & sync
+      this.progress(15, 'Menghubungkan ke bootloader ESP8266 (sinkronisasi serial)...');
+      var chipName = '';
+      try {
+        chipName = await esploader.main();
+      } catch (connErr) {
+        throw new Error('Gagal sinkronisasi dengan bootloader ESP8266 (' + connErr.message + '). Tips: Tekan & tahan tombol BOOT/FLASH pada NodeMCU saat menghubungkan.');
+      }
+
+      this.log('Board ESP terhubung! Chip: ' + (chipName || 'ESP8266'));
+      this.progress(30, 'Terhubung (' + (chipName || 'ESP8266') + '). Menyiapkan memori flash...');
+
+      // 5. Flashing firmware pada offset 0x00000
+      this.progress(35, 'Mengunggah program ke flash memory ESP8266...');
+      await esploader.writeFlash({
+        fileArray: [
+          { data: uint8Data, address: 0x00000 }
+        ],
+        flashSize: self.options.flashSize || 'keep',
+        flashMode: self.options.flashMode || 'keep',
+        flashFreq: self.options.flashFreq || 'keep',
+        eraseAll: false,
+        compress: true,
+        reportProgress: function(fileIndex, written, total) {
+          var pct = Math.min(98, Math.round(35 + ((written / total) * 60)));
+          self.progress(pct, 'Mengunggah: ' + Math.round((written / total) * 100) + '% (' + Math.round(written / 1024) + ' KB / ' + Math.round(total / 1024) + ' KB)');
+        }
+      });
+
+      // 6. Hard Reset ke sketch baru
+      this.progress(98, 'Mereset board ke sketch baru...');
+      try {
+        await esploader.after('hard_reset');
+      } catch (rstErr) {
+        self.log('Peringatan reset: ' + rstErr.message);
+      }
+
+      this.progress(100, 'Upload Berhasil! Board ESP8266 me-restart sketch baru.');
+      this.log('Flashing ESP8266 selesai dengan sukses.');
+
+    } finally {
+      // Clean up transport & disconnect
+      try {
+        await transport.disconnect();
+      } catch (dcErr) {}
+      await sleep(300);
+    }
+  };
+
   // Export to global scope
   root.ArduiBlokFlasher = {
     parseIntelHex: parseIntelHex,
-    ArduinoFlasher: ArduinoFlasher
+    base64ToUint8Array: base64ToUint8Array,
+    ArduinoFlasher: ArduinoFlasher,
+    EspFlasher: EspFlasher
   };
 
 })(typeof window !== 'undefined' ? window : this);
+
