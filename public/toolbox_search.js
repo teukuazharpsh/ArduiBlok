@@ -60,6 +60,7 @@
 
   let blockCatalog = [];
   let isSearchActive = false;
+  let originalFlyoutAutoClose = false;
   let searchInputEl = null;
   let clearBtnEl = null;
   let searchWrapperEl = null;
@@ -134,7 +135,7 @@
     // Letakkan sebagai elemen pertama sebelum kategori "Setup & Loop"
     toolboxDiv.insertBefore(searchWrapperEl, toolboxDiv.firstChild);
 
-    // Aktifkan padding aman pada flyout
+    // Aktifkan patch flyout (padding rapi & auto-close saat drag)
     if (ws.getFlyout()) {
       patchFlyoutShowOnce(ws.getFlyout());
     }
@@ -169,14 +170,23 @@
       searchInputEl.focus();
     });
 
-    // Deteksi jika pengguna mengklik kategori manual pada toolbox -> bersihkan teks search
+    // Deteksi jika pengguna mengklik kategori manual pada toolbox -> bersihkan pencarian
     toolboxDiv.addEventListener('click', function(e) {
       const row = e.target.closest('.blocklyTreeRow');
       if (row) {
         if (searchInputEl && searchInputEl.value.trim().length > 0) {
-          searchInputEl.value = '';
-          if (clearBtnEl) clearBtnEl.style.display = 'none';
-          isSearchActive = false;
+          clearSearch();
+        }
+      }
+    });
+
+    // Listener event workspace: tutup flyout pencarian jika pengguna mulai men-drag blok di workspace
+    ws.addChangeListener(function(e) {
+      if (isSearchActive && e) {
+        const isDragStart = (e.type === (Blockly.Events.BLOCK_DRAG || 'drag')) && e.isStart;
+        const isClickWorkspace = (e.type === (Blockly.Events.CLICK || 'click')) && !e.blockId;
+        if (isDragStart || isClickWorkspace) {
+          clearSearch();
         }
       }
     });
@@ -210,8 +220,10 @@
   }
 
   /**
-   * Patch resmi flyout.show agar semua tampilan blok di flyout (baik hasil pencarian
-   * maupun klik kategori) otomatis mendapatkan padding kiri yang konsisten dan rapi.
+   * Patch resmi flyout agar:
+   * 1. Semua tampilan blok di flyout mendapatkan padding kiri yang rapi.
+   * 2. Ketika blok dari hasil pencarian mulai di-drag/drop, flyout otomatis ditutup seketika
+   *    sehingga workspace bersih dan penempatan blok tidak terhalang.
    */
   function patchFlyoutShowOnce(flyout) {
     if (!flyout || flyout._patchedForSearchIndent) return;
@@ -222,6 +234,18 @@
       originalShow.call(this, flyoutDef);
       adjustFlyoutBlocksLayout(this);
     };
+
+    const originalCreateBlock = flyout.createBlock_;
+    if (typeof originalCreateBlock === 'function') {
+      flyout.createBlock_ = function(block) {
+        const newBlock = originalCreateBlock.call(this, block);
+        if (isSearchActive) {
+          // Tutup flyout seketika saat drag dimulai agar tidak menghalangi workspace
+          clearSearch();
+        }
+        return newBlock;
+      };
+    }
   }
 
   /**
@@ -233,22 +257,23 @@
     const flyout = ws.getFlyout();
     if (!flyout) return;
 
-    // Pastikan flyout sudah terpasang pengatur indentasi
+    // Pastikan flyout sudah terpasang pengatur indentasi & auto-close saat drag
     patchFlyoutShowOnce(flyout);
 
     query = (query || '').trim().toLowerCase();
 
     if (query.length === 0) {
-      if (clearBtnEl) clearBtnEl.style.display = 'none';
-      if (isSearchActive) {
-        flyout.hide();
-        isSearchActive = false;
-      }
+      clearSearch();
       return;
     }
 
     if (clearBtnEl) clearBtnEl.style.display = 'flex';
+
+    if (!isSearchActive) {
+      originalFlyoutAutoClose = !!flyout.autoClose;
+    }
     isSearchActive = true;
+    flyout.autoClose = true;
 
     // Bersihkan highlight seleksi kategori tree agar jelas sedang mode cari
     const toolbox = ws.getToolbox();
@@ -294,6 +319,7 @@
     const ws = getWorkspace();
     if (ws && ws.getFlyout()) {
       ws.getFlyout().hide();
+      ws.getFlyout().autoClose = originalFlyoutAutoClose;
     }
     isSearchActive = false;
   }
