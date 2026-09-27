@@ -816,6 +816,168 @@ Blockly.defineBlocksWithJsonArray([
     "colour": 20,
     "tooltip": "Control DC motor on L293D Arduino Motor Shield (M1-M4).",
     "helpUrl": ""
+  },
+
+  // ── ESP8266 & WIFI BLOCKS ─────────────────────────────────
+  {
+    "type": "esp8266_wifi_connect",
+    "message0": "WiFi connect  SSID %1  password %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "SSID",
+        "text": "Nama_WiFi"
+      },
+      {
+        "type": "field_input",
+        "name": "PASSWORD",
+        "text": "Password_WiFi"
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#00979d",
+    "tooltip": "Menghubungkan ESP8266 ke jaringan WiFi (menunggu hingga terhubung).",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_wifi_ap",
+    "message0": "WiFi buat Hotspot (AP)  SSID %1  password %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "SSID",
+        "text": "ArduiBlok-AP"
+      },
+      {
+        "type": "field_input",
+        "name": "PASSWORD",
+        "text": "12345678"
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#00979d",
+    "tooltip": "Menjalankan Access Point (Hotspot WiFi) pada ESP8266.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_wifi_is_connected",
+    "message0": "WiFi terhubung?",
+    "output": "Boolean",
+    "colour": "#00979d",
+    "tooltip": "Mengembalikan nilai benar (true) jika ESP8266 sudah terhubung ke router WiFi.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_wifi_local_ip",
+    "message0": "WiFi IP address lokal",
+    "output": "String",
+    "colour": "#00979d",
+    "tooltip": "Mengembalikan alamat IP lokal perangkat di jaringan WiFi (misal: 192.168.1.50).",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_wifi_ap_ip",
+    "message0": "WiFi IP address Hotspot (AP)",
+    "output": "String",
+    "colour": "#00979d",
+    "tooltip": "Mengembalikan alamat IP default Hotspot Access Point (biasanya: 192.168.4.1).",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_wifi_rssi",
+    "message0": "WiFi kekuatan sinyal (RSSI dBm)",
+    "output": "Number",
+    "colour": "#00979d",
+    "tooltip": "Mengembalikan kekuatan sinyal WiFi dalam satuan dBm (angka negatif, misal -65).",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_wifi_disconnect",
+    "message0": "WiFi putuskan koneksi",
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#00979d",
+    "tooltip": "Memutuskan sambungan dari jaringan WiFi aktif.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_pin",
+    "message0": "pin %1",
+    "args0": [
+      {
+        "type": "field_dropdown",
+        "name": "PIN",
+        "options": [
+          ["D0 (GPIO16)", "D0"],
+          ["D1 (GPIO5 / SCL)", "D1"],
+          ["D2 (GPIO4 / SDA)", "D2"],
+          ["D3 (GPIO0)", "D3"],
+          ["D4 (GPIO2 / LED)", "D4"],
+          ["D5 (GPIO14 / SCK)", "D5"],
+          ["D6 (GPIO12 / MISO)", "D6"],
+          ["D7 (GPIO13 / MOSI)", "D7"],
+          ["D8 (GPIO15)", "D8"],
+          ["A0 (Analog ADC)", "A0"]
+        ]
+      }
+    ],
+    "output": null,
+    "colour": 60,
+    "tooltip": "Pin digital / analog khusus board NodeMCU / ESP8266.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_http_get",
+    "message0": "HTTP GET URL %1",
+    "args0": [
+      {
+        "type": "input_value",
+        "name": "URL",
+        "check": "String"
+      }
+    ],
+    "output": "String",
+    "colour": "#00838f",
+    "tooltip": "Mengirim HTTP GET request ke URL (misal: API ThingSpeak / Web Server) dan mengembalikan respons teksnya.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_deep_sleep",
+    "message0": "deep sleep selama %1 detik",
+    "args0": [
+      {
+        "type": "field_number",
+        "name": "SECONDS",
+        "value": 10,
+        "min": 1
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#546e7a",
+    "tooltip": "Membuat ESP8266 masuk ke mode tidur hemat daya (Deep Sleep). Hubungkan pin D0 (GPIO16) ke pin RST untuk auto-wake up.",
+    "helpUrl": ""
+  },
+
+  {
+    "type": "esp8266_restart",
+    "message0": "ESP restart (reboot)",
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#546e7a",
+    "tooltip": "Merestart / mereset ulang modul ESP8266.",
+    "helpUrl": ""
   }
 
 ]);

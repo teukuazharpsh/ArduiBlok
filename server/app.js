@@ -544,7 +544,10 @@ app.post('/compile', async (req, res) => {
     'arduino:avr:mega:cpu=atmega2560',
     'arduino:avr:pro:cpu=16MHzatmega328',
     'arduino:avr:pro:cpu=8MHzatmega328',
-    'arduino:avr:leonardo'
+    'arduino:avr:leonardo',
+    'esp8266:esp8266:nodemcuv2',
+    'esp8266:esp8266:d1_mini',
+    'esp8266:esp8266:generic'
   ];
   const targetFqbn = (typeof fqbn === 'string' && allowedFqbns.includes(fqbn.trim()))
     ? fqbn.trim()

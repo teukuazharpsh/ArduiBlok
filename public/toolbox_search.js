@@ -55,7 +55,18 @@
     'variables_set_simple': 'variable variabel set ubah nilai singkat',
     'variables_get_arduino': 'variable variabel get ambil baca nilai value panggil variabel',
     'comment_block': 'comment komentar catatan note penjelasan garis keterangan //',
-    'comment_group_block': 'comment komentar grup kelompok catatan section wrap blok keterangan /* */'
+    'comment_group_block': 'comment komentar grup kelompok catatan section wrap blok keterangan /* */',
+    'esp8266_wifi_connect': 'wifi esp8266 nodemcu wemos connect sambung konek ssid password internet hotspot router',
+    'esp8266_wifi_ap': 'wifi access point ap hotspot buat pemancar jaringan ssid password esp8266',
+    'esp8266_wifi_is_connected': 'wifi connected terhubung status cek apakah koneksi internet online',
+    'esp8266_wifi_local_ip': 'wifi ip local ip address alamat jaringan statis dhcp router',
+    'esp8266_wifi_ap_ip': 'wifi ap ip access point hotspot gateway alamat',
+    'esp8266_wifi_rssi': 'wifi signal kekuatan sinyal kuat rssi dbm indikator jaringan',
+    'esp8266_wifi_disconnect': 'wifi disconnect putus koneksi keluar reset jaringan',
+    'esp8266_pin': 'pin nodemcu d0 d1 d2 d3 d4 d5 d6 d7 d8 a0 gpio esp8266 wemos',
+    'esp8266_http_get': 'http get web api request url server internet kirim ambil data rest client',
+    'esp8266_deep_sleep': 'deep sleep tidur hemat daya baterai power save esp8266 bangun wake',
+    'esp8266_restart': 'restart reset reboot ulang reboot esp8266 mcu'
   };
 
   let blockCatalog = [];
@@ -66,23 +77,41 @@
   let searchWrapperEl = null;
 
   /**
-   * Bangun katalog blok dari DOM <xml id="toolbox">
+   * Bangun katalog blok dari DOM <xml id="toolbox"> dengan filter board aktif
    */
   function buildBlockCatalog() {
     const toolboxEl = document.getElementById('toolbox');
-    if (!toolboxEl) return;
+    if (!toolboxEl || typeof toolboxEl.getElementsByTagName !== 'function') return;
+
+    const currentBoard = (window.currentBoardConfig && window.currentBoardConfig.boardType) || 'uno';
 
     blockCatalog = [];
     const categories = toolboxEl.getElementsByTagName('category');
 
     for (let i = 0; i < categories.length; i++) {
       const cat = categories[i];
+      const reqBoard = cat.getAttribute('data-board');
+      if (reqBoard) {
+        const allowed = reqBoard.toLowerCase().split(',').map(function(s) { return s.trim(); });
+        if (!allowed.includes(currentBoard.toLowerCase())) {
+          continue; // Lewati kategori yang tidak didukung board aktif
+        }
+      }
+
       const catName = cat.getAttribute('name') || '';
       const blocks = cat.children;
 
       for (let j = 0; j < blocks.length; j++) {
         const blkNode = blocks[j];
         if (blkNode.tagName.toLowerCase() !== 'block') continue;
+
+        const blkReqBoard = blkNode.getAttribute('data-board');
+        if (blkReqBoard) {
+          const allowedBlk = blkReqBoard.toLowerCase().split(',').map(function(s) { return s.trim(); });
+          if (!allowedBlk.includes(currentBoard.toLowerCase())) {
+            continue; // Lewati blok yang tidak didukung board aktif
+          }
+        }
 
         const type = blkNode.getAttribute('type') || '';
         const keywords = (BLOCK_KEYWORDS[type] || '') + ' ' + type.replace(/_/g, ' ') + ' ' + catName.toLowerCase();

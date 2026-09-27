@@ -522,3 +522,95 @@ arduinoGenerator.forBlock['variables_get_arduino'] = function(block, generator) 
   if (!varName) varName = 'item';
   return [varName, generator.ORDER_ATOMIC];
 };
+
+// ── ESP8266 & WIFI GENERATORS ──────────────────────────────
+arduinoGenerator.forBlock['esp8266_wifi_connect'] = function(block, generator) {
+  var ssid = block.getFieldValue('SSID') || '';
+  var pass = block.getFieldValue('PASSWORD') || '';
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+
+  var code = '  WiFi.mode(WIFI_STA);\n' +
+             '  WiFi.begin("' + ssid + '", "' + pass + '");\n' +
+             '  while (WiFi.status() != WL_CONNECTED) {\n' +
+             '    delay(500);\n' +
+             '  }\n';
+  return code;
+};
+
+arduinoGenerator.forBlock['esp8266_wifi_ap'] = function(block, generator) {
+  var ssid = block.getFieldValue('SSID') || 'ArduiBlok-AP';
+  var pass = block.getFieldValue('PASSWORD') || '';
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+
+  var code = '  WiFi.mode(WIFI_AP);\n';
+  if (pass && pass.length > 0) {
+    code += '  WiFi.softAP("' + ssid + '", "' + pass + '");\n';
+  } else {
+    code += '  WiFi.softAP("' + ssid + '");\n';
+  }
+  return code;
+};
+
+arduinoGenerator.forBlock['esp8266_wifi_is_connected'] = function(block, generator) {
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+  return ['(WiFi.status() == WL_CONNECTED)', generator.ORDER_EQUALITY];
+};
+
+arduinoGenerator.forBlock['esp8266_wifi_local_ip'] = function(block, generator) {
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+  return ['WiFi.localIP().toString()', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['esp8266_wifi_ap_ip'] = function(block, generator) {
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+  return ['WiFi.softAPIP().toString()', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['esp8266_wifi_rssi'] = function(block, generator) {
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+  return ['WiFi.RSSI()', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['esp8266_wifi_disconnect'] = function(block, generator) {
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+  return '  WiFi.disconnect();\n';
+};
+
+arduinoGenerator.forBlock['esp8266_pin'] = function(block, generator) {
+  var pin = block.getFieldValue('PIN') || 'D4';
+  return [pin, generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['esp8266_http_get'] = function(block, generator) {
+  generator.includes_['esp8266_wifi'] = '#include <ESP8266WiFi.h>';
+  generator.includes_['esp8266_http'] = '#include <ESP8266HTTPClient.h>\n#include <WiFiClient.h>';
+
+  var url = generator.valueToCode(block, 'URL', generator.ORDER_NONE) || '""';
+
+  generator.declarations_['esp8266_http_helper'] =
+    'String arduiblokHttpGet(String url) {\n' +
+    '  WiFiClient client;\n' +
+    '  HTTPClient http;\n' +
+    '  String payload = "";\n' +
+    '  if (http.begin(client, url)) {\n' +
+    '    int httpCode = http.GET();\n' +
+    '    if (httpCode > 0) {\n' +
+    '      payload = http.getString();\n' +
+    '    }\n' +
+    '    http.end();\n' +
+    '  }\n' +
+    '  return payload;\n' +
+    '}\n';
+
+  return ['arduiblokHttpGet(' + url + ')', generator.ORDER_ATOMIC];
+};
+
+arduinoGenerator.forBlock['esp8266_deep_sleep'] = function(block, generator) {
+  var seconds = block.getFieldValue('SECONDS') || 10;
+  return '  ESP.deepSleep(' + (Number(seconds) * 1000000) + ');\n';
+};
+
+arduinoGenerator.forBlock['esp8266_restart'] = function(block, generator) {
+  return '  ESP.restart();\n';
+};
+

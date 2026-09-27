@@ -65,6 +65,7 @@
             <option value="mega">Arduino Mega 2560 (ATmega2560)</option>
             <option value="promini">Arduino Pro / Pro Mini</option>
             <option value="leonardo">Arduino Leonardo (ATmega32U4)</option>
+            <option value="esp8266">NodeMCU / ESP8266 (ESP-12E / D1 Mini)</option>
           </select>
         </div>
 
@@ -1333,13 +1334,44 @@
       <block type="comment_group_block"></block>
     </category>
 
+    <!-- Category: ESP8266 & WiFi (Khusus Board ESP8266) -->
+    <category name="ESP8266 &amp; WiFi" id="cat_esp8266" data-board="esp8266" colour="#00979d">
+      <block type="esp8266_wifi_connect">
+        <field name="SSID">Nama_WiFi</field>
+        <field name="PASSWORD">Password_WiFi</field>
+      </block>
+      <block type="esp8266_wifi_ap">
+        <field name="SSID">ArduiBlok-AP</field>
+        <field name="PASSWORD">12345678</field>
+      </block>
+      <block type="esp8266_wifi_is_connected"></block>
+      <block type="esp8266_wifi_local_ip"></block>
+      <block type="esp8266_wifi_ap_ip"></block>
+      <block type="esp8266_wifi_rssi"></block>
+      <block type="esp8266_wifi_disconnect"></block>
+      <block type="esp8266_pin">
+        <field name="PIN">D4</field>
+      </block>
+      <block type="esp8266_http_get">
+        <value name="URL">
+          <shadow type="text_string">
+            <field name="TEXT">http://api.thingspeak.com</field>
+          </shadow>
+        </value>
+      </block>
+      <block type="esp8266_deep_sleep">
+        <field name="SECONDS">10</field>
+      </block>
+      <block type="esp8266_restart"></block>
+    </category>
+
   </xml>
 
   <!-- Custom Block Definitions -->
-  <script src="blocks/arduino_blocks.js"></script>
+  <script src="blocks/arduino_blocks.js?v=2.0"></script>
 
   <!-- Custom Arduino Code Generator -->
-  <script src="blocks/arduino_generator.js"></script>
+  <script src="blocks/arduino_generator.js?v=2.0"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>
@@ -1352,7 +1384,7 @@
   <script src="library_manager.js"></script>
   <script src="device_manager.js"></script>
   <!-- Native Toolbox Block Search -->
-  <script src="toolbox_search.js?v=1.5"></script>
+  <script src="toolbox_search.js?v=1.7"></script>
 
   <!-- Application Logic -->
   <script>
@@ -1525,6 +1557,42 @@
             helper: 'Modul dengan dukungan USB HID keyboard/mouse bawaan.'
           }
         ]
+      },
+      'esp8266': {
+        name: 'NodeMCU / ESP8266',
+        shortName: 'ESP8266',
+        subOptions: [
+          {
+            id: 'nodemcuv2',
+            name: 'NodeMCU 1.0 (ESP-12E Module - 115200 bps)',
+            displayName: 'NodeMCU 1.0 (ESP-12E)',
+            fqbn: 'esp8266:esp8266:nodemcuv2',
+            baud: 115200,
+            mcu: 'ESP8266EX (80/160MHz)',
+            flash: '4 MB',
+            helper: 'Board ESP8266 paling populer dengan modul WiFi bawaan.'
+          },
+          {
+            id: 'd1_mini',
+            name: 'LOLIN / Wemos D1 Mini (115200 bps)',
+            displayName: 'Wemos D1 Mini',
+            fqbn: 'esp8266:esp8266:d1_mini',
+            baud: 115200,
+            mcu: 'ESP8266EX (80/160MHz)',
+            flash: '4 MB',
+            helper: 'Modul kompak ESP8266 berukuran kecil.'
+          },
+          {
+            id: 'generic',
+            name: 'Generic ESP8266 Module (115200 bps)',
+            displayName: 'Generic ESP8266',
+            fqbn: 'esp8266:esp8266:generic',
+            baud: 115200,
+            mcu: 'ESP8266EX',
+            flash: '1 MB / 4 MB',
+            helper: 'Modul ESP-01 / ESP-12 generic.'
+          }
+        ]
       }
     };
 
@@ -1677,6 +1745,7 @@
 
         localStorage.setItem('arduiblok_board_config', JSON.stringify(currentBoardConfig));
         updateBoardBadgeLabel();
+        updateToolboxForBoard(currentBoardConfig.boardType);
         closeBoardModal();
       });
     }
@@ -2696,8 +2765,38 @@
       sounds: false
     });
 
-    // Expose workspace globally and initialize toolbox search
+    // Expose workspace globally and update toolbox for active board
     window.workspace = workspace;
+    window.currentBoardConfig = currentBoardConfig;
+
+    function updateToolboxForBoard(boardType) {
+      if (!workspace) return;
+      const toolboxXml = document.getElementById('toolbox');
+      if (!toolboxXml) return;
+
+      const clone = toolboxXml.cloneNode(true);
+      const categories = Array.from(clone.getElementsByTagName('category'));
+      for (let i = categories.length - 1; i >= 0; i--) {
+        const cat = categories[i];
+        const reqBoard = cat.getAttribute('data-board');
+        if (reqBoard) {
+          const boards = reqBoard.toLowerCase().split(',').map(function(s) { return s.trim(); });
+          if (!boards.includes((boardType || 'uno').toLowerCase())) {
+            cat.parentNode.removeChild(cat);
+          }
+        }
+      }
+      workspace.updateToolbox(clone);
+
+      if (window.ArduiBlokToolboxSearch && typeof window.ArduiBlokToolboxSearch.rebuild === 'function') {
+        window.ArduiBlokToolboxSearch.rebuild();
+      }
+    }
+    window.updateToolboxForBoard = updateToolboxForBoard;
+
+    // Apply board-specific toolbox filter on startup
+    updateToolboxForBoard(currentBoardConfig.boardType);
+
     if (window.ArduiBlokToolboxSearch) {
       window.ArduiBlokToolboxSearch.init();
     }
