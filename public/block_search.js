@@ -614,14 +614,16 @@
   /**
    * UX UTAMA: Tekan blok di daftar pencarian -> blok langsung MENEMPEL DI KURSOR
    * dan bisa digeser langsung ke workspace untuk dimasukkan / di-drop.
+   * Menggunakan Blockly.registry BlockDragger bawaan sehingga interaksi dan snap
+   * identik persis seperti drag & drop dari toolbox samping.
    */
   function startDragFromSearch(e, itemData) {
     if (!itemData || !window.workspace) return;
 
-    var clientX = e.clientX;
-    var clientY = e.clientY;
+    var startClientX = e.clientX;
+    var startClientY = e.clientY;
 
-    // Lepaskan pointer capture dari elemen HTML agar pointermove mengalir ke dokumen
+    // Lepaskan pointer capture dari elemen HTML agar pointermove mengalir bebas ke window
     if (e.target && e.target.releasePointerCapture && e.pointerId !== undefined) {
       try {
         if (e.target.hasPointerCapture(e.pointerId)) {
@@ -630,11 +632,11 @@
       } catch (err) {}
     }
 
-    // 1. Hitung koordinat workspace dari posisi kursor pengguna
+    // 1. Hitung koordinat workspace dari posisi kursor pengguna saat pointerdown
     var injectionDiv = window.workspace.getInjectionDiv();
     var injRect = injectionDiv.getBoundingClientRect();
-    var wsX = (clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale;
-    var wsY = (clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale;
+    var wsX = (startClientX - injRect.left - window.workspace.scrollX) / window.workspace.scale;
+    var wsY = (startClientY - injRect.top - window.workspace.scrollY) / window.workspace.scale;
 
     // Offset posisi blok agar kursor berada di bagian atas-kiri blok yang wajar
     wsX -= 25;
@@ -667,40 +669,63 @@
       modalEl.style.pointerEvents = 'none';
     }
 
-    // 4. Hubungkan ke Gesture System bawaan Blockly agar blok langsung didrag oleh kursor
+    // 4. Inisialisasi Native Blockly BlockDragger (Persis seperti toolbox bawaan)
+    var dragger = null;
     try {
-      var gesture = window.workspace.getGesture(e);
-      if (gesture) {
-        gesture.handleBlockStart(e, newBlock);
-        gesture.handleWsStart(e, window.workspace);
+      var BlockDraggerClass = (window.Blockly && Blockly.registry) ?
+        Blockly.registry.getClass(Blockly.registry.Type.BLOCK_DRAGGER, 'default') : null;
+      if (BlockDraggerClass) {
+        dragger = new BlockDraggerClass(newBlock, window.workspace);
+        dragger.onDragStart(e);
       }
-    } catch (gestureErr) {
-      console.warn('[BlockSearch] Blockly gesture start error:', gestureErr);
+    } catch (draggerErr) {
+      console.warn('[BlockSearch] Native BlockDragger init failed, using fallback:', draggerErr);
     }
 
-    // 5. Active tracking fallback: memastikan blok selalu menempel di kursor
-    // bahkan jika gesture Blockly tertunda di browser/perangkat tertentu
-    var isDraggingBlock = true;
+    // 5. Geser blok mengikuti pergerakan pointer / mouse (dengan snap & connection highlighting)
     function onPointerMove(moveEvent) {
-      if (!isDraggingBlock) return;
-      if (window.workspace.isDragging && window.workspace.isDragging()) return;
+      moveEvent.preventDefault();
+      var deltaX = moveEvent.clientX - startClientX;
+      var deltaY = moveEvent.clientY - startClientY;
+      var totalDelta = new Blockly.utils.Coordinate(deltaX, deltaY);
 
-      var curWsX = (moveEvent.clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale - 25;
-      var curWsY = (moveEvent.clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale - 15;
-      newBlock.moveTo(new Blockly.utils.Coordinate(curWsX, curWsY));
+      if (dragger) {
+        try {
+          dragger.onDrag(moveEvent, totalDelta);
+        } catch (err) {
+          // Fallback jika dragger mengalami kendala
+          var curWsX = (moveEvent.clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale - 25;
+          var curWsY = (moveEvent.clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale - 15;
+          newBlock.moveTo(new Blockly.utils.Coordinate(curWsX, curWsY));
+        }
+      } else {
+        var curWsX = (moveEvent.clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale - 25;
+        var curWsY = (moveEvent.clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale - 15;
+        newBlock.moveTo(new Blockly.utils.Coordinate(curWsX, curWsY));
+      }
     }
 
-    // Suara feedback
-    if (typeof window.playSnapSound === 'function') {
-      window.playSnapSound();
-    }
-
-    // 6. Cleanup modal saat pointerup / pointercancel (lepas drag)
-    function cleanupOnPointerEnd() {
-      isDraggingBlock = false;
+    // 6. Lepas tekanan pointer: Drop & Snap ke koneksi blok lain pada workspace
+    function onPointerEnd(upEvent) {
       window.removeEventListener('pointermove', onPointerMove, true);
-      window.removeEventListener('pointerup', cleanupOnPointerEnd, true);
-      window.removeEventListener('pointercancel', cleanupOnPointerEnd, true);
+      window.removeEventListener('pointerup', onPointerEnd, true);
+      window.removeEventListener('pointercancel', onPointerEnd, true);
+
+      var deltaX = upEvent.clientX - startClientX;
+      var deltaY = upEvent.clientY - startClientY;
+      var totalDelta = new Blockly.utils.Coordinate(deltaX, deltaY);
+
+      if (dragger) {
+        try {
+          dragger.onDragEnd(upEvent, totalDelta);
+        } catch (endErr) {
+          console.warn('[BlockSearch] dragger.onDragEnd error:', endErr);
+        }
+      }
+
+      if (typeof window.playSnapSound === 'function') {
+        window.playSnapSound();
+      }
 
       // Tutup modal secara tuntas
       closeModal();
@@ -711,8 +736,8 @@
     }
 
     window.addEventListener('pointermove', onPointerMove, true);
-    window.addEventListener('pointerup', cleanupOnPointerEnd, true);
-    window.addEventListener('pointercancel', cleanupOnPointerEnd, true);
+    window.addEventListener('pointerup', onPointerEnd, true);
+    window.addEventListener('pointercancel', onPointerEnd, true);
   }
 
   /**
