@@ -587,10 +587,12 @@ app.post('/compile', async (req, res) => {
         (error, stdout, stderr) => {
           const rawLog = ((stdout || '') + (stderr ? '\n' + stderr : '')).trim();
           if (error) {
-            const errorMsg = (stderr || '') + (stdout || '') + (error.message || '');
-            console.error(`[compile] ERROR: ${errorMsg}`);
-            const compileErr = new Error(errorMsg);
-            compileErr.log = rawLog || errorMsg;
+            const cleanStderr = (stderr || '').trim();
+            const cleanStdout = (stdout || '').trim();
+            const detailedMsg = cleanStderr || cleanStdout || error.message || 'Gagal menjalankan kompilasi.';
+            console.error(`[compile] ERROR:\n${detailedMsg}`);
+            const compileErr = new Error(detailedMsg);
+            compileErr.log = rawLog || detailedMsg;
             reject(compileErr);
             return;
           }
@@ -598,31 +600,42 @@ app.post('/compile', async (req, res) => {
           console.log(`[compile] SUCCESS: ${stdout}`);
 
           const files = fs.readdirSync(outputDir);
-          const hexFile = files.find(f => f.endsWith('.hex'));
+          const isEsp = targetFqbn.startsWith('esp8266:') || targetFqbn.startsWith('esp32:');
+          let binaryFile = null;
+          if (isEsp) {
+            binaryFile = files.find(f => f.endsWith('.bin')) || files.find(f => f.endsWith('.hex'));
+          } else {
+            binaryFile = files.find(f => f.endsWith('.hex')) || files.find(f => f.endsWith('.bin'));
+          }
 
-          if (!hexFile) {
-            const noHexErr = new Error('Compile berhasil tapi file .hex tidak ditemukan di output directory.');
-            noHexErr.log = rawLog;
-            reject(noHexErr);
+          if (!binaryFile) {
+            const noBinErr = new Error(`Compile berhasil tapi berkas biner output (${isEsp ? '.bin' : '.hex'}) tidak ditemukan di output directory.`);
+            noBinErr.log = rawLog;
+            reject(noBinErr);
             return;
           }
 
+          const binExtension = path.extname(binaryFile).toLowerCase();
           resolve({
-            hexPath: path.join(outputDir, hexFile),
+            binPath: path.join(outputDir, binaryFile),
+            binFilename: binaryFile,
+            binType: binExtension === '.bin' ? 'bin' : 'hex',
             log: rawLog
           });
         }
       );
     });
 
-    const hexContent = fs.readFileSync(compileResult.hexPath);
-    const hexBase64 = hexContent.toString('base64');
+    const binContent = fs.readFileSync(compileResult.binPath);
+    const binBase64 = binContent.toString('base64');
 
-    console.log(`[compile] Hex file size: ${hexContent.length} bytes`);
+    console.log(`[compile] Binary file (${compileResult.binFilename}) size: ${binContent.length} bytes`);
 
     res.json({
       success: true,
-      hex: hexBase64,
+      hex: binBase64,
+      binaryType: compileResult.binType,
+      binaryFilename: compileResult.binFilename,
       log: compileResult.log,
       fqbn: targetFqbn
     });
