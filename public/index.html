@@ -1384,7 +1384,7 @@
   <script src="library_manager.js"></script>
   <script src="device_manager.js"></script>
   <!-- Native Toolbox Block Search -->
-  <script src="toolbox_search.js?v=1.7"></script>
+  <script src="toolbox_search.js?v=1.8"></script>
 
   <!-- Application Logic -->
   <script>
@@ -1744,6 +1744,7 @@
         };
 
         localStorage.setItem('arduiblok_board_config', JSON.stringify(currentBoardConfig));
+        window.currentBoardConfig = currentBoardConfig;
         updateBoardBadgeLabel();
         updateToolboxForBoard(currentBoardConfig.boardType);
         closeBoardModal();
@@ -2765,12 +2766,18 @@
       sounds: false
     });
 
-    // Expose workspace globally and update toolbox for active board
+    // Expose workspace & currentBoardConfig globally
     window.workspace = workspace;
     window.currentBoardConfig = currentBoardConfig;
+    window.getCurrentBoardType = function() {
+      return (currentBoardConfig && currentBoardConfig.boardType) || 'uno';
+    };
 
     function updateToolboxForBoard(boardType) {
       if (!workspace) return;
+      window.currentBoardConfig = currentBoardConfig;
+
+      const targetBoard = (boardType || (currentBoardConfig && currentBoardConfig.boardType) || 'uno').toLowerCase();
       const toolboxXml = document.getElementById('toolbox');
       if (!toolboxXml) return;
 
@@ -2781,7 +2788,7 @@
         const reqBoard = cat.getAttribute('data-board');
         if (reqBoard) {
           const boards = reqBoard.toLowerCase().split(',').map(function(s) { return s.trim(); });
-          if (!boards.includes((boardType || 'uno').toLowerCase())) {
+          if (!boards.includes(targetBoard)) {
             cat.parentNode.removeChild(cat);
           }
         }
@@ -2789,7 +2796,7 @@
       workspace.updateToolbox(clone);
 
       if (window.ArduiBlokToolboxSearch && typeof window.ArduiBlokToolboxSearch.rebuild === 'function') {
-        window.ArduiBlokToolboxSearch.rebuild();
+        window.ArduiBlokToolboxSearch.rebuild(targetBoard);
       }
     }
     window.updateToolboxForBoard = updateToolboxForBoard;

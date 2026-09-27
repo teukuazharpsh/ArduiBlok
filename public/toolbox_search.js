@@ -79,11 +79,27 @@
   /**
    * Bangun katalog blok dari DOM <xml id="toolbox"> dengan filter board aktif
    */
-  function buildBlockCatalog() {
+  function buildBlockCatalog(targetBoard) {
     const toolboxEl = document.getElementById('toolbox');
     if (!toolboxEl || typeof toolboxEl.getElementsByTagName !== 'function') return;
 
-    const currentBoard = (window.currentBoardConfig && window.currentBoardConfig.boardType) || 'uno';
+    let currentBoard = targetBoard;
+    if (!currentBoard) {
+      if (typeof window.getCurrentBoardType === 'function') {
+        currentBoard = window.getCurrentBoardType();
+      } else if (window.currentBoardConfig && window.currentBoardConfig.boardType) {
+        currentBoard = window.currentBoardConfig.boardType;
+      } else {
+        try {
+          const saved = localStorage.getItem('arduiblok_board_config');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.boardType) currentBoard = parsed.boardType;
+          }
+        } catch (e) {}
+      }
+    }
+    currentBoard = (currentBoard || 'uno').toLowerCase();
 
     blockCatalog = [];
     const categories = toolboxEl.getElementsByTagName('category');
@@ -93,7 +109,7 @@
       const reqBoard = cat.getAttribute('data-board');
       if (reqBoard) {
         const allowed = reqBoard.toLowerCase().split(',').map(function(s) { return s.trim(); });
-        if (!allowed.includes(currentBoard.toLowerCase())) {
+        if (!allowed.includes(currentBoard)) {
           continue; // Lewati kategori yang tidak didukung board aktif
         }
       }
@@ -108,7 +124,7 @@
         const blkReqBoard = blkNode.getAttribute('data-board');
         if (blkReqBoard) {
           const allowedBlk = blkReqBoard.toLowerCase().split(',').map(function(s) { return s.trim(); });
-          if (!allowedBlk.includes(currentBoard.toLowerCase())) {
+          if (!allowedBlk.includes(currentBoard)) {
             continue; // Lewati blok yang tidak didukung board aktif
           }
         }
@@ -142,8 +158,14 @@
     const toolboxDiv = (toolbox.getDiv && toolbox.getDiv()) || toolbox.HtmlDiv || document.querySelector('.blocklyToolboxDiv');
     if (!toolboxDiv) return;
 
-    // Cegah duplikasi jika sudah pernah diinjeksi
-    if (document.getElementById('toolboxSearchWrapper')) return;
+    // Cegah duplikasi jika sudah pernah diinjeksi, tapi pastikan tetap ada di DOM jika toolbox di-update
+    const existing = document.getElementById('toolboxSearchWrapper');
+    if (existing) {
+      if (!toolboxDiv.contains(existing)) {
+        toolboxDiv.insertBefore(existing, toolboxDiv.firstChild);
+      }
+      return;
+    }
 
     searchWrapperEl = document.createElement('div');
     searchWrapperEl.id = 'toolboxSearchWrapper';
@@ -374,10 +396,19 @@
     }
   }
 
+  /**
+   * Rebuild katalog dan refresh antarmuka search bar saat board berganti
+   */
+  function rebuild(boardType) {
+    clearSearch();
+    buildBlockCatalog(boardType);
+    injectSearchBar();
+  }
+
   // Ekspor API ke global
   window.ArduiBlokToolboxSearch = {
     init: init,
-    rebuild: buildBlockCatalog,
+    rebuild: rebuild,
     clear: clearSearch
   };
 
