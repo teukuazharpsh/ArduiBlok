@@ -226,9 +226,31 @@ execFile('arduino-cli', ['lib', 'update-index'], { timeout: 60000 }, (err) => {
   }
 });
 
+// ── Startup Check: Cek daftar core platform terpasang ──────────
+try {
+  const coresOut = execSync('arduino-cli core list', { timeout: 15000 }).toString();
+  console.log('[startup] Installed Arduino cores:\n' + coresOut.trim());
+} catch (e) {
+  console.warn('[startup] Note checking cores:', e.message);
+}
+
 // ── GET /health ────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'ArduiBlok server is running' });
+  let cores = [];
+  try {
+    const listOut = execSync('arduino-cli core list', { timeout: 10000 }).toString();
+    cores = listOut.trim().split('\n').filter(Boolean);
+  } catch (e) {
+    cores = [e.message];
+  }
+  res.json({
+    status: 'ok',
+    message: 'ArduiBlok server is running',
+    installedCores: cores,
+    arch: process.arch,
+    platform: process.platform,
+    env: process.env.NODE_ENV || 'development'
+  });
 });
 
 // ── GET /api/libraries/search ──────────────────────────────
@@ -556,7 +578,7 @@ app.post('/compile', async (req, res) => {
   const sketchId = 'sketch_' + uuidv4().replace(/-/g, '').substring(0, 12);
   const sketchDir = path.join(TEMP_DIR, sketchId);
   const sketchFile = path.join(sketchDir, sketchId + '.ino');
-  const outputDir = path.join(sketchDir, 'build');
+  const outputDir = path.join(TEMP_DIR, sketchId + '_build');
 
   try {
     fs.mkdirSync(sketchDir, { recursive: true });
@@ -565,10 +587,12 @@ app.post('/compile', async (req, res) => {
 
     console.log(`[compile] Sketch created: ${sketchFile} | Target FQBN: ${targetFqbn}`);
 
+    const isProduction = process.env.NODE_ENV === 'production' || process.platform === 'linux';
     const compileArgs = [
       'compile',
       '--fqbn', targetFqbn,
-      '--output-dir', outputDir
+      '--output-dir', outputDir,
+      '--jobs', isProduction ? '1' : '2'
     ];
 
     if (fs.existsSync(LIBRARIES_DIR)) {
@@ -581,15 +605,32 @@ app.post('/compile', async (req, res) => {
         'arduino-cli',
         compileArgs,
         {
-          timeout: 120000,
-          maxBuffer: 1024 * 1024
+          timeout: 180000,
+          maxBuffer: 2 * 1024 * 1024
         },
         (error, stdout, stderr) => {
           const rawLog = ((stdout || '') + (stderr ? '\n' + stderr : '')).trim();
           if (error) {
             const cleanStderr = (stderr || '').trim();
             const cleanStdout = (stdout || '').trim();
-            const detailedMsg = cleanStderr || cleanStdout || error.message || 'Gagal menjalankan kompilasi.';
+            let detailedMsg = cleanStderr || cleanStdout;
+
+            if (!detailedMsg) {
+              if (error.killed) {
+                if (error.signal === 'SIGKILL') {
+                  detailedMsg = 'Kompilasi dihentikan oleh sistem (Out-Of-Memory / SIGKILL). Memori server terlampaui saat kompilasi.';
+                } else if (error.signal === 'SIGTERM') {
+                  detailedMsg = 'Kompilasi melebihi batas waktu maksimal (Timeout 180 detik).';
+                } else {
+                  detailedMsg = `Proses kompilasi dihentikan oleh sinyal: ${error.signal}`;
+                }
+              } else if (error.code) {
+                detailedMsg = `Perintah kompilasi gagal dengan exit code: ${error.code}. ${error.message}`;
+              } else {
+                detailedMsg = error.message || 'Gagal menjalankan kompilasi.';
+              }
+            }
+
             console.error(`[compile] ERROR:\n${detailedMsg}`);
             const compileErr = new Error(detailedMsg);
             compileErr.log = rawLog || detailedMsg;
@@ -650,8 +691,11 @@ app.post('/compile', async (req, res) => {
     try {
       if (fs.existsSync(sketchDir)) {
         fs.rmSync(sketchDir, { recursive: true, force: true });
-        console.log(`[compile] Cleanup: ${sketchDir} deleted`);
       }
+      if (fs.existsSync(outputDir)) {
+        fs.rmSync(outputDir, { recursive: true, force: true });
+      }
+      console.log(`[compile] Cleanup: ${sketchId} temporary folders deleted`);
     } catch (cleanupErr) {
       console.error(`[compile] Cleanup error: ${cleanupErr.message}`);
     }

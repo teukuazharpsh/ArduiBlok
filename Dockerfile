@@ -13,14 +13,15 @@ RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/inst
 
 # ── 3. Setup Arduino AVR & ESP8266 Cores & Libraries ──────────
 # Install AVR Core (Uno, Nano, Mega, etc.), ESP8266 Core (NodeMCU, D1 Mini, etc.), and Servo
-RUN arduino-cli config init && \
+RUN (arduino-cli config init --overwrite || true) && \
     arduino-cli config set library.enable_unsafe_install true && \
     arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com/stable/package_esp8266com_index.json && \
     arduino-cli core update-index && \
     arduino-cli lib update-index && \
     arduino-cli core install arduino:avr && \
     arduino-cli core install esp8266:esp8266 && \
-    arduino-cli lib install Servo
+    arduino-cli lib install Servo && \
+    arduino-cli core list
 
 # ── 4. Copy Bundled Custom Libraries ──────────────────────────
 # Copy to global Arduino libraries directory
