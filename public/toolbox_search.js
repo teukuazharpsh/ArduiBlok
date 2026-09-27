@@ -134,6 +134,11 @@
     // Letakkan sebagai elemen pertama sebelum kategori "Setup & Loop"
     toolboxDiv.insertBefore(searchWrapperEl, toolboxDiv.firstChild);
 
+    // Aktifkan padding aman pada flyout
+    if (ws.getFlyout()) {
+      patchFlyoutShowOnce(ws.getFlyout());
+    }
+
     searchInputEl = document.getElementById('toolboxSearchInput');
     clearBtnEl = document.getElementById('btnToolboxSearchClear');
 
@@ -178,6 +183,48 @@
   }
 
   /**
+   * Terapkan margin kiri dan atas yang lapang serta rapi pada blok-blok di flyout,
+   * sehingga wujud fisik blok tidak pernah terpotong atau menempel ke garis tepi kiri panel.
+   */
+  function adjustFlyoutBlocksLayout(flyout) {
+    if (!flyout) return;
+    try {
+      const topBlocks = flyout.getWorkspace().getTopBlocks(false);
+      if (topBlocks.length === 0) return;
+
+      topBlocks.forEach(b => {
+        const xy = b.getRelativeToSurfaceXY();
+        // Berikan jarak ekstra +18px ke kanan agar lekukan/soket di sebelah kiri terlihat utuh dan lega
+        b.moveTo(new Blockly.utils.Coordinate(xy.x + 18, xy.y + 4));
+      });
+
+      if (typeof flyout.reflow === 'function') {
+        flyout.reflow();
+      }
+      if (typeof flyout.position === 'function') {
+        flyout.position();
+      }
+    } catch (e) {
+      console.warn('[ToolboxSearch] adjustFlyoutBlocksLayout error:', e);
+    }
+  }
+
+  /**
+   * Patch resmi flyout.show agar semua tampilan blok di flyout (baik hasil pencarian
+   * maupun klik kategori) otomatis mendapatkan padding kiri yang konsisten dan rapi.
+   */
+  function patchFlyoutShowOnce(flyout) {
+    if (!flyout || flyout._patchedForSearchIndent) return;
+    flyout._patchedForSearchIndent = true;
+
+    const originalShow = flyout.show;
+    flyout.show = function(flyoutDef) {
+      originalShow.call(this, flyoutDef);
+      adjustFlyoutBlocksLayout(this);
+    };
+  }
+
+  /**
    * Eksekusi filter pencarian dan render langsung ke Flyout Blockly samping kanan
    */
   function handleSearch(query) {
@@ -185,6 +232,9 @@
     if (!ws) return;
     const flyout = ws.getFlyout();
     if (!flyout) return;
+
+    // Pastikan flyout sudah terpasang pengatur indentasi
+    patchFlyoutShowOnce(flyout);
 
     query = (query || '').trim().toLowerCase();
 
@@ -217,6 +267,8 @@
       // Clone block XML nodes agar dapat di-render oleh flyout Blockly
       const nodesToShow = matchedItems.map(item => item.node.cloneNode(true));
       flyout.show(nodesToShow);
+      // Terapkan penyesuaian posisi presisi
+      adjustFlyoutBlocksLayout(flyout);
     } else {
       // Jika tidak ada yang cocok, tampilkan label bersih di flyout
       try {
