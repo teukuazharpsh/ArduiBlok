@@ -1384,7 +1384,7 @@
   <script src="library_manager.js"></script>
   <script src="device_manager.js"></script>
   <!-- Native Toolbox Block Search -->
-  <script src="toolbox_search.js?v=1.8"></script>
+  <script src="toolbox_search.js?v=2.0"></script>
 
   <!-- Application Logic -->
   <script>
@@ -2859,6 +2859,9 @@
 
       if (toolbox && typeof toolbox.setVisible === 'function') {
         toolbox.setVisible(visible);
+        if (!visible && typeof toolbox.clearSelection === 'function') {
+          toolbox.clearSelection();
+        }
       }
 
       if (visible) {
@@ -2875,6 +2878,18 @@
     }
 
     function toggleToolbox() {
+      const toolbox = workspace && workspace.getToolbox();
+      // Jika flyout kategori sedang terbuka, klik "Tutup Blok" akan menutup blok yang dipilih terlebih dahulu
+      if (toolbox && typeof toolbox.getSelectedItem === 'function' && toolbox.getSelectedItem()) {
+        toolbox.clearSelection();
+        if (window.ArduiBlokToolboxSearch && typeof window.ArduiBlokToolboxSearch.clear === 'function') {
+          window.ArduiBlokToolboxSearch.clear();
+        }
+        return;
+      }
+      if (window.ArduiBlokToolboxSearch && typeof window.ArduiBlokToolboxSearch.clear === 'function') {
+        window.ArduiBlokToolboxSearch.clear();
+      }
       setToolboxVisibility(!toolboxVisible);
     }
 

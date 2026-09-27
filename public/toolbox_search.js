@@ -149,6 +149,27 @@
     return window.workspace || (window.Blockly && typeof Blockly.getMainWorkspace === 'function' && Blockly.getMainWorkspace());
   }
 
+  /**
+   * Cari objek ToolboxItem berdasarkan elemen DOM yang diklik
+   */
+  function findToolboxItemForElement(tb, target) {
+    if (!tb || typeof tb.getToolboxItems !== 'function' || !target) return null;
+    const row = target.closest('.blocklyToolboxCategory, .blocklyTreeRow');
+    if (!row) return null;
+    const items = tb.getToolboxItems();
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const div = (item.getClickTarget && item.getClickTarget()) || (item.getDiv && item.getDiv());
+      if (div && (div === row || div.contains(target) || row.contains(div))) {
+        return item;
+      }
+      if (item.getId && row.id && item.getId() === row.id) {
+        return item;
+      }
+    }
+    return null;
+  }
+
   function injectSearchBar() {
     const ws = getWorkspace();
     if (!ws) return;
@@ -221,26 +242,100 @@
       searchInputEl.focus();
     });
 
-    // Deteksi jika pengguna mengklik kategori manual pada toolbox -> bersihkan pencarian
+    // Toggle penutupan kategori: jika kategori yang sedang aktif diklik lagi, tutup bloknya!
+    let justClosedByToggle = false;
+    toolboxDiv.addEventListener('pointerdown', function (e) {
+      justClosedByToggle = false;
+      const row = e.target.closest('.blocklyToolboxCategory, .blocklyTreeRow');
+      if (!row) return;
+
+      if (searchInputEl && searchInputEl.value.trim().length > 0) {
+        clearSearch();
+      }
+
+      const tb = ws.getToolbox();
+      if (!tb || typeof tb.getSelectedItem !== 'function') return;
+      const selectedItem = tb.getSelectedItem();
+      if (!selectedItem) return;
+
+      const clickedItem = findToolboxItemForElement(tb, e.target);
+      if (clickedItem && clickedItem === selectedItem) {
+        // Kategori yang sama diklik lagi -> Toggle Tutup Kategori!
+        justClosedByToggle = true;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        tb.clearSelection();
+      }
+    }, true);
+
     toolboxDiv.addEventListener('click', function (e) {
-      const row = e.target.closest('.blocklyTreeRow');
+      if (justClosedByToggle) {
+        justClosedByToggle = false;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return;
+      }
+      const row = e.target.closest('.blocklyToolboxCategory, .blocklyTreeRow');
       if (row) {
         if (searchInputEl && searchInputEl.value.trim().length > 0) {
           clearSearch();
         }
       }
-    });
+    }, true);
 
-    // Listener event workspace: tutup flyout pencarian jika pengguna mulai men-drag blok di workspace
+    // Tutup blok yang sedang dipilih jika pengguna mengklik area kosong kanvas workspace
+    const blocklyDivEl = document.getElementById('blocklyDiv');
+    if (blocklyDivEl && !blocklyDivEl._hasCanvasCloseHandler) {
+      blocklyDivEl._hasCanvasCloseHandler = true;
+      blocklyDivEl.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('.blocklyToolboxDiv') || e.target.closest('.blocklyFlyout')) {
+          return;
+        }
+        const tb = ws.getToolbox();
+        if (tb && typeof tb.clearSelection === 'function' && tb.getSelectedItem()) {
+          tb.clearSelection();
+        }
+        if (isSearchActive) {
+          clearSearch();
+        }
+      }, true);
+    }
+
+    // Listener event workspace: tutup flyout jika pengguna mulai men-drag blok atau klik kanvas
     ws.addChangeListener(function (e) {
-      if (isSearchActive && e) {
+      if (e) {
         const isDragStart = (e.type === (Blockly.Events.BLOCK_DRAG || 'drag')) && e.isStart;
         const isClickWorkspace = (e.type === (Blockly.Events.CLICK || 'click')) && !e.blockId;
         if (isDragStart || isClickWorkspace) {
-          clearSearch();
+          if (isSearchActive) {
+            clearSearch();
+          } else {
+            const tb = ws.getToolbox();
+            if (tb && typeof tb.clearSelection === 'function' && tb.getSelectedItem()) {
+              tb.clearSelection();
+            }
+          }
         }
       }
     });
+
+    // Dukungan tombol keyboard Escape untuk menutup blok yang sedang terbuka
+    if (!window._hasEscapeCloseListener) {
+      window._hasEscapeCloseListener = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          if (isSearchActive) {
+            clearSearch();
+          }
+          const tb = ws.getToolbox();
+          if (tb && typeof tb.clearSelection === 'function' && tb.getSelectedItem()) {
+            tb.clearSelection();
+          }
+        }
+      });
+    }
   }
 
   /**
@@ -255,7 +350,7 @@
 
       topBlocks.forEach(b => {
         const xy = b.getRelativeToSurfaceXY();
-        // Berikan jarak ekstra +18px ke kanan agar lekukan/soket di sebelah kiri terlihat utuh dan lega
+        // Berikan jarak ekstra +14px ke kanan agar lekukan/soket di sebelah kiri terlihat utuh dan lega
         b.moveTo(new Blockly.utils.Coordinate(xy.x + 14, xy.y + 4));
       });
 
@@ -273,8 +368,8 @@
   /**
    * Patch resmi flyout agar:
    * 1. Semua tampilan blok di flyout mendapatkan padding kiri yang rapi.
-   * 2. Ketika blok dari hasil pencarian mulai di-drag/drop, flyout otomatis ditutup seketika
-   *    sehingga workspace bersih dan penempatan blok tidak terhalang.
+   * 2. Ketika blok dari hasil pencarian maupun toolbox utama mulai di-drag/drop,
+   *    flyout otomatis ditutup seketika sehingga blok di dalamnya menghilang dan workspace bersih bebas halangan.
    */
   function patchFlyoutShowOnce(flyout) {
     if (!flyout || flyout._patchedForSearchIndent) return;
@@ -291,8 +386,16 @@
       flyout.createBlock_ = function (block) {
         const newBlock = originalCreateBlock.call(this, block);
         if (isSearchActive) {
-          // Tutup flyout seketika saat drag dimulai agar tidak menghalangi workspace
+          // Tutup flyout pencarian seketika saat drag dimulai agar tidak menghalangi workspace
           clearSearch();
+        } else {
+          // Tutup juga flyout kategori utama saat drag dimulai agar blok di flyout menghilang
+          // dan proses drag & drop ke workspace tidak terhalang
+          const ws = getWorkspace();
+          const tb = ws && ws.getToolbox();
+          if (tb && typeof tb.clearSelection === 'function' && tb.getSelectedItem()) {
+            tb.clearSelection();
+          }
         }
         return newBlock;
       };
