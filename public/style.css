@@ -5470,6 +5470,55 @@ body.mode-text #blocklyDiv {
   flex-shrink: 0;
 }
 
+/* Floating Drag Avatar Ghost */
+.bs-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-30px, -20px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--accent-primary);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--accent-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: grabbing;
+  user-select: none;
+  animation: ghostPop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ghostPop {
+  from { transform: translate(-30px, -20px) scale(0.92); opacity: 0; }
+  to   { transform: translate(-30px, -20px) scale(1); opacity: 1; }
+}
+
+.bs-ghost-preview {
+  width: 90px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bs-ghost-preview .bs-block-svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.bs-ghost-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .block-search-overlay {

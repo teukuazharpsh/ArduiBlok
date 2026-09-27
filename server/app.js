@@ -12,8 +12,15 @@ const PORT = process.env.PORT || 3000;
 // ── Middleware ──────────────────────────────────────────────
 app.use(cors());                        // Izinkan request dari origin manapun (WebView Android)
 app.use(express.json({ limit: '50mb' })); // Parse JSON body, max 50MB (mendukung upload file .ZIP library)
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, '..', 'public'))); // Serve frontend statis
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  etag: false,
+  maxAge: 0,
+  setHeaders: function(res) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+})); // Serve frontend statis tanpa cache basi
 
 // Path ke folder temp dan libraries (relative ke project root)
 const TEMP_DIR = path.join(__dirname, '..', 'temp');

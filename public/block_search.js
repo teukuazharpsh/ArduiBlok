@@ -612,132 +612,179 @@
   }
 
   /**
-   * UX UTAMA: Tekan blok di daftar pencarian -> blok langsung MENEMPEL DI KURSOR
-   * dan bisa digeser langsung ke workspace untuk dimasukkan / di-drop.
-   * Menggunakan Blockly.registry BlockDragger bawaan sehingga interaksi dan snap
-   * identik persis seperti drag & drop dari toolbox samping.
+   * UX UTAMA: Drag & Drop Blok Langsung ke Workspace (Identik dengan Toolbox Flyout)
+   * 
+   * Menggunakan Blockly.BlockDragger resmi bawaan Blockly:
+   * - Tekan & Geser (drag >= 5px):
+   *   1. Modal search dibuat transparan (opacity: 0) tanpa merusak pointer events.
+   *   2. Blok SVG asli dibuat di workspace pada posisi kursor mouse.
+   *   3. Blockly.BlockDragger menggerakkan blok asli secara real-time di workspace.
+   *   4. Saat didekatkan ke blok lain, insertion marker / preview koneksi menyala otomatis.
+   *   5. Saat dilepas (pointerup), blok otomatis menancap (snap) ke soket / koneksi yang cocok.
+   * - Klik / Tap tanpa menggeser:
+   *   Blok langsung ditaruh di tengah workspace yang terlihat.
    */
   function startDragFromSearch(e, itemData) {
     if (!itemData || !window.workspace) return;
 
     var startClientX = e.clientX;
     var startClientY = e.clientY;
+    var isDragging = false;
+    var block = null;
+    var blockDragger = null;
+    var dragStartCoord = null;
 
-    // Lepaskan pointer capture dari elemen HTML agar pointermove mengalir bebas ke window
-    if (e.target && e.target.releasePointerCapture && e.pointerId !== undefined) {
-      try {
-        if (e.target.hasPointerCapture(e.pointerId)) {
-          e.target.releasePointerCapture(e.pointerId);
-        }
-      } catch (err) {}
-    }
-
-    // 1. Hitung koordinat workspace dari posisi kursor pengguna saat pointerdown
-    var injectionDiv = window.workspace.getInjectionDiv();
-    var injRect = injectionDiv.getBoundingClientRect();
-    var wsX = (startClientX - injRect.left - window.workspace.scrollX) / window.workspace.scale;
-    var wsY = (startClientY - injRect.top - window.workspace.scrollY) / window.workspace.scale;
-
-    // Offset posisi blok agar kursor berada di bagian atas-kiri blok yang wajar
-    wsX -= 25;
-    wsY -= 15;
-
-    // 2. Buat blok baru di workspace aktif
-    var newBlock = null;
-    if (itemData.xmlString && window.Blockly && Blockly.Xml) {
-      try {
-        var dom = Blockly.utils.xml.textToDom('<xml>' + itemData.xmlString + '</xml>');
-        if (dom && dom.firstChild) {
-          newBlock = Blockly.Xml.domToBlock(dom.firstChild, window.workspace);
-        }
-      } catch (xmlErr) {}
-    }
-
-    if (!newBlock) {
-      newBlock = window.workspace.newBlock(itemData.type);
-    }
-
-    newBlock.initSvg();
-    newBlock.render();
-    newBlock.moveTo(new Blockly.utils.Coordinate(wsX, wsY));
-    newBlock.select();
-
-    // 3. Buat modal pencarian langsung transparan & non-interaktif saat itu juga
-    // Pengguna langsung melihat workspace dan blok yang menempel di kursornya
-    if (modalEl) {
-      modalEl.style.opacity = '0';
-      modalEl.style.pointerEvents = 'none';
-    }
-
-    // 4. Inisialisasi Native Blockly BlockDragger (Persis seperti toolbox bawaan)
-    var dragger = null;
-    try {
-      var BlockDraggerClass = (window.Blockly && Blockly.registry) ?
-        Blockly.registry.getClass(Blockly.registry.Type.BLOCK_DRAGGER, 'default') : null;
-      if (BlockDraggerClass) {
-        dragger = new BlockDraggerClass(newBlock, window.workspace);
-        dragger.onDragStart(e);
-      }
-    } catch (draggerErr) {
-      console.warn('[BlockSearch] Native BlockDragger init failed, using fallback:', draggerErr);
-    }
-
-    // 5. Geser blok mengikuti pergerakan pointer / mouse (dengan snap & connection highlighting)
     function onPointerMove(moveEvent) {
-      moveEvent.preventDefault();
-      var deltaX = moveEvent.clientX - startClientX;
-      var deltaY = moveEvent.clientY - startClientY;
-      var totalDelta = new Blockly.utils.Coordinate(deltaX, deltaY);
+      if (!isDragging) {
+        var dist = Math.hypot(moveEvent.clientX - startClientX, moveEvent.clientY - startClientY);
+        if (dist >= 5) {
+          isDragging = true;
 
-      if (dragger) {
-        try {
-          dragger.onDrag(moveEvent, totalDelta);
-        } catch (err) {
-          // Fallback jika dragger mengalami kendala
-          var curWsX = (moveEvent.clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale - 25;
-          var curWsY = (moveEvent.clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale - 15;
-          newBlock.moveTo(new Blockly.utils.Coordinate(curWsX, curWsY));
+          // Jadikan modal transparan agar workspace di baliknya 100% terlihat jelas
+          // PENTING: Jangan gunakan pointer-events: none atau display: none agar Chromium tidak membatalkan pointer
+          if (modalEl) {
+            modalEl.style.opacity = '0';
+          }
+
+          // Buat blok baru di workspace utama
+          if (itemData.xmlString && window.Blockly && Blockly.Xml) {
+            try {
+              var dom = Blockly.utils.xml.textToDom('<xml>' + itemData.xmlString + '</xml>');
+              if (dom && dom.firstChild) {
+                block = Blockly.Xml.domToBlock(dom.firstChild, window.workspace);
+              }
+            } catch (err) {}
+          }
+
+          if (!block) {
+            block = window.workspace.newBlock(itemData.type);
+          }
+
+          block.initSvg();
+          block.render();
+
+          // Konversi koordinat mouse layar ke koordinat workspace
+          var wsCoord = Blockly.utils.svgMath.screenToWsCoordinates(
+            window.workspace,
+            new Blockly.utils.Coordinate(moveEvent.clientX, moveEvent.clientY)
+          );
+
+          // Posisikan blok sehingga cursor berada di dekat header blok
+          block.moveTo(new Blockly.utils.Coordinate(wsCoord.x - 20, wsCoord.y - 15));
+
+          // Inisialisasi dragger resmi Blockly (identik dengan drag dari toolbox samping)
+          blockDragger = new Blockly.BlockDragger(block, window.workspace);
+          dragStartCoord = new Blockly.utils.Coordinate(moveEvent.clientX, moveEvent.clientY);
+          blockDragger.startDrag(new Blockly.utils.Coordinate(0, 0), false);
         }
-      } else {
-        var curWsX = (moveEvent.clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale - 25;
-        var curWsY = (moveEvent.clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale - 15;
-        newBlock.moveTo(new Blockly.utils.Coordinate(curWsX, curWsY));
+      }
+
+      if (isDragging && blockDragger) {
+        var deltaX = moveEvent.clientX - dragStartCoord.x;
+        var deltaY = moveEvent.clientY - dragStartCoord.y;
+        blockDragger.drag(moveEvent, new Blockly.utils.Coordinate(deltaX, deltaY));
       }
     }
 
-    // 6. Lepas tekanan pointer: Drop & Snap ke koneksi blok lain pada workspace
-    function onPointerEnd(upEvent) {
-      window.removeEventListener('pointermove', onPointerMove, true);
-      window.removeEventListener('pointerup', onPointerEnd, true);
-      window.removeEventListener('pointercancel', onPointerEnd, true);
+    function onPointerUp(upEvent) {
+      document.removeEventListener('pointermove', onPointerMove, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerCancel, true);
 
-      var deltaX = upEvent.clientX - startClientX;
-      var deltaY = upEvent.clientY - startClientY;
-      var totalDelta = new Blockly.utils.Coordinate(deltaX, deltaY);
-
-      if (dragger) {
-        try {
-          dragger.onDragEnd(upEvent, totalDelta);
-        } catch (endErr) {
-          console.warn('[BlockSearch] dragger.onDragEnd error:', endErr);
-        }
-      }
-
-      if (typeof window.playSnapSound === 'function') {
-        window.playSnapSound();
-      }
-
-      // Tutup modal secara tuntas
-      closeModal();
+      // Kembalikan modal opacity dan tutup modal
       if (modalEl) {
         modalEl.style.opacity = '';
-        modalEl.style.pointerEvents = '';
+      }
+      closeModal();
+
+      if (isDragging && blockDragger) {
+        var deltaX = upEvent.clientX - dragStartCoord.x;
+        var deltaY = upEvent.clientY - dragStartCoord.y;
+        blockDragger.endDrag(upEvent, new Blockly.utils.Coordinate(deltaX, deltaY));
+
+        if (block) {
+          block.select();
+          // Fallback snap jika posisi dekat koneksi lain tapi belum terhubung
+          if (!block.getParent()) {
+            trySnapBlock(block);
+          }
+        }
+
+        if (typeof window.playSnapSound === 'function') {
+          window.playSnapSound();
+        }
+        showInsertFeedback(itemData.title);
+      } else if (!isDragging) {
+        // Klik biasa tanpa geser: masukkan langsung ke tengah workspace
+        insertBlockToWorkspace(itemData);
       }
     }
 
-    window.addEventListener('pointermove', onPointerMove, true);
-    window.addEventListener('pointerup', onPointerEnd, true);
-    window.addEventListener('pointercancel', onPointerEnd, true);
+    function onPointerCancel(cancelEvent) {
+      document.removeEventListener('pointermove', onPointerMove, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerCancel, true);
+
+      if (modalEl) {
+        modalEl.style.opacity = '';
+      }
+      closeModal();
+
+      if (isDragging && blockDragger) {
+        var deltaX = cancelEvent.clientX - dragStartCoord.x;
+        var deltaY = cancelEvent.clientY - dragStartCoord.y;
+        blockDragger.endDrag(cancelEvent, new Blockly.utils.Coordinate(deltaX, deltaY));
+        if (block) block.select();
+      }
+    }
+
+    document.addEventListener('pointermove', onPointerMove, true);
+    document.addEventListener('pointerup', onPointerUp, true);
+    document.addEventListener('pointercancel', onPointerCancel, true);
+  }
+
+  /**
+   * Fallback snap jika blok berada sangat dekat dengan koneksi blok lain
+   */
+  function trySnapBlock(block) {
+    if (!block || !window.workspace) return false;
+    try {
+      var dThreshold = 45; // workspace units
+      var blockConns = block.getConnections_ ? block.getConnections_(false) : [];
+      var topBlocks = window.workspace.getTopBlocks(true);
+
+      for (var i = 0; i < topBlocks.length; i++) {
+        var other = topBlocks[i];
+        if (other === block) continue;
+        var otherConns = other.getDescendants(false).flatMap(function(b) {
+          return b.getConnections_ ? b.getConnections_(false) : [];
+        });
+
+        for (var bIdx = 0; bIdx < blockConns.length; bIdx++) {
+          var c1 = blockConns[bIdx];
+          for (var oIdx = 0; oIdx < otherConns.length; oIdx++) {
+            var c2 = otherConns[oIdx];
+            if (c1.canConnectWithReason_(c2) === 0) {
+              var p1 = c1.getOffsetInBlock();
+              var p2 = c2.getOffsetInBlock();
+              var bPos = block.getRelativeToSurfaceXY();
+              var oPos = c2.getSourceBlock().getRelativeToSurfaceXY();
+              var c1X = bPos.x + p1.x;
+              var c1Y = bPos.y + p1.y;
+              var c2X = oPos.x + p2.x;
+              var c2Y = oPos.y + p2.y;
+              if (Math.hypot(c1X - c2X, c1Y - c2Y) <= dThreshold) {
+                c1.connect(c2);
+                return true;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[BlockSearch] trySnapBlock error:', e);
+    }
+    return false;
   }
 
   /**
