@@ -327,6 +327,71 @@
     </div>
   </div>
 
+  <!-- Modal Panduan Upload ESP8266 / NodeMCU -->
+  <div class="modal-overlay hidden" id="espFlasherModal">
+    <div class="modal-container" style="max-width: 540px;">
+      <div class="modal-header" style="background: rgba(16, 185, 129, 0.08);">
+        <div class="modal-title-group">
+          <span style="font-size: 22px;">📶</span>
+          <div>
+            <h2 style="font-size: 16px;">Panduan Upload Firmware ESP8266</h2>
+            <p class="modal-subtitle" style="margin: 0; font-size: 11.5px; color: var(--text-secondary);">Berkas biner firmware (.BIN) berhasil dikompilasi</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseEspFlasherModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 18px 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+        <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; color: var(--text-primary);">
+          <div style="font-weight: 600; color: #0284c7; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; stroke: currentColor;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            Informasi Format Biner ESP8266
+          </div>
+          Mikrokontroler ESP8266 (NodeMCU / WeMos) menggunakan berkas biner mentah (<b>.BIN</b>) dengan protokol <i>ESP ROM Bootloader</i> (berbeda dari Arduino AVR yang menggunakan Intel HEX &amp; STK500).
+        </div>
+
+        <p style="margin: 0 0 10px 0; color: var(--text-primary); font-weight: 600;">
+          Pilih salah satu metode upload yang paling mudah bagi Anda:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Opsi 1: Unduh Berkas .BIN -->
+          <div class="switch-option-card" id="btnEspModalDownloadBin" style="cursor: pointer; border: 1px solid rgba(16, 185, 129, 0.35);">
+            <div class="switch-opt-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">⬇️</div>
+            <div class="switch-opt-text">
+              <strong style="color: #10b981;">1. Unduh Berkas Firmware (.BIN)</strong>
+              <span>Simpan file biner .bin ke komputer atau HP Anda untuk di-flash ke NodeMCU.</span>
+            </div>
+          </div>
+
+          <!-- Opsi 2: Buka Web ESPTool di Browser -->
+          <a href="https://espressif.github.io/esptool-js/" target="_blank" rel="noopener noreferrer" class="switch-option-card" style="text-decoration: none; color: inherit; cursor: pointer; border: 1px solid rgba(2, 132, 199, 0.3);">
+            <div class="switch-opt-icon" style="background: rgba(2, 132, 199, 0.15); color: #0284c7;">🌐</div>
+            <div class="switch-opt-text">
+              <strong style="color: #0284c7;">2. Flash Langsung via Web ESPTool (Di Browser) ↗</strong>
+              <span>Upload langsung dari browser Chrome/Edge tanpa instal aplikasi. Cukup klik "Connect", masukkan file .bin pada offset <code>0x00000</code>, lalu klik Program.</span>
+            </div>
+          </a>
+
+          <!-- Opsi 3: Software Desktop (NodeMCU PyFlasher / ESP Flash Tool) -->
+          <div class="switch-option-card" style="cursor: default;">
+            <div class="switch-opt-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">💻</div>
+            <div class="switch-opt-text">
+              <strong style="color: #f59e0b;">3. Software Desktop (NodeMCU PyFlasher)</strong>
+              <span>Pilih file .bin, baud <code>115200</code>, Flash Mode: <code>DIO</code>, lalu klik Flash NodeMCU.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button class="btn btn-secondary" id="btnOkEspModal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Pengelola Library Eksternal (Library Manager) -->
   <div class="modal-overlay hidden" id="libraryModal">
     <div class="modal-container library-modal-container">
@@ -1702,6 +1767,39 @@
       boardModal.addEventListener('click', function(e) {
         if (e.target === boardModal) {
           closeBoardModal();
+        }
+      });
+    }
+
+    // ── Manajemen Modal Panduan Upload ESP8266 ────────────
+    const espFlasherModal = document.getElementById('espFlasherModal');
+    const btnCloseEspFlasherModal = document.getElementById('btnCloseEspFlasherModal');
+    const btnOkEspModal = document.getElementById('btnOkEspModal');
+    const btnEspModalDownloadBin = document.getElementById('btnEspModalDownloadBin');
+
+    function openEspFlasherModal() {
+      if (espFlasherModal) espFlasherModal.classList.remove('hidden');
+    }
+    function closeEspFlasherModal() {
+      if (espFlasherModal) espFlasherModal.classList.add('hidden');
+    }
+
+    if (btnCloseEspFlasherModal) {
+      btnCloseEspFlasherModal.addEventListener('click', closeEspFlasherModal);
+    }
+    if (btnOkEspModal) {
+      btnOkEspModal.addEventListener('click', closeEspFlasherModal);
+    }
+    if (espFlasherModal) {
+      espFlasherModal.addEventListener('click', function(e) {
+        if (e.target === espFlasherModal) closeEspFlasherModal();
+      });
+    }
+    if (btnEspModalDownloadBin) {
+      btnEspModalDownloadBin.addEventListener('click', function() {
+        if (lastCompiledHex) {
+          const binFilename = getCleanProjectName() + '.bin';
+          downloadHexFile(lastCompiledHex, binFilename);
         }
       });
     }
@@ -3382,8 +3480,13 @@
 
           var highlightedLog = highlightTerminalLog(result.log);
 
-          var binExt = (result && result.binaryType === 'bin') ? '.bin' : '.hex';
+          var isEsp = (currentBoardConfig.boardType === 'esp8266') || (result && result.binaryType === 'bin');
+          var binExt = isEsp ? '.bin' : '.hex';
           var binExtUpper = binExt.toUpperCase();
+          var uploadButtonText = isEsp ? 'Upload / Panduan ESP8266' : 'Upload ke Board';
+          var uploadButtonTitle = isEsp
+            ? 'Buka opsi dan panduan flashing firmware biner (.BIN) untuk ESP8266 / NodeMCU'
+            : 'Upload program langsung ke board mikrokontroler via Port USB/COM (STK500)';
 
           outputContent.innerHTML =
             '<div class="output-message success">' +
@@ -3400,9 +3503,9 @@
               '</div>' +
               memoryGaugesHtml +
               '<div class="output-actions">' +
-                '<button class="btn btn-compile btn-upload-direct" id="btnUploadHexDirect" title="Upload program langsung ke board mikrokontroler via Port USB/COM">' +
+                '<button class="btn btn-compile btn-upload-direct" id="btnUploadHexDirect" title="' + escapeHtml(uploadButtonTitle) + '">' +
                   '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff; width:15px; height:15px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>' +
-                  '<span id="btnUploadHexLabel">Upload ke Board</span>' +
+                  '<span id="btnUploadHexLabel">' + escapeHtml(uploadButtonText) + '</span>' +
                 '</button>' +
                 '<button class="btn btn-download-hex" id="btnDownloadHex">' +
                   '<svg class="svg-icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
@@ -3457,6 +3560,15 @@
 
           if (btnUploadHexDirect) {
             btnUploadHexDirect.addEventListener('click', async function() {
+              var isEspTarget = (currentBoardConfig.boardType === 'esp8266') || (result && result.binaryType === 'bin');
+              if (isEspTarget) {
+                // Tampilkan modal panduan flashing khusus ESP8266 tanpa memanggil STK500 AVR
+                openEspFlasherModal();
+                return;
+              }
+
+              // Untuk Arduino AVR (Uno, Nano, Mega, Pro Mini, Leonardo):
+              // Jalankan flasher Web Serial STK500 v1 seperti biasa tanpa kendala!
               if (!window.ArduiBlokSerial || !window.ArduiBlokSerial.isSupported()) {
                 if (window.ArduiBlokSerial && window.ArduiBlokSerial.showAndroidHelp) {
                   window.ArduiBlokSerial.showAndroidHelp();
