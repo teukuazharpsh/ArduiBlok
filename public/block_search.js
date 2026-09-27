@@ -1,13 +1,17 @@
 /**
- * ArduiBlok — Visual Spotlight Block Search & Drag-and-Drop System
- * Menampilkan WUJUD VISUAL ASLI BLOK BLOCKLY (SVG Shape) di dalam hasil pencarian,
- * tanpa sintaks teks ArduinoIDE atau penjelasan panjang, lengkap dengan fitur
- * Drag & Drop visual langsung ke workspace serta 1-Click Spawn.
+ * ArduiBlok — Compact Spotlight Block Search & Insert System
+ * 
+ * DESAIN BARU:
+ * - Tampilan KOMPAK list-style (bukan kartu besar) — setiap item hanya 1 baris
+ * - SVG mini blok asli Blockly di setiap baris hasil pencarian 
+ * - Klik / Tap = blok langsung muncul di tengah workspace (reliable, tanpa bug gesture)
+ * - Keyboard: ↑↓ navigasi, Enter masukkan, Esc tutup
+ * - Ctrl+K shortcut untuk buka/tutup
  */
 (function(window) {
   'use strict';
 
-  // ── Database Metadata Blok (Untuk Pencarian Multi-Token Cerdas) ──
+  // ── Database Metadata Blok ──
   const BLOCK_METADATA = {
     'arduino_setup': {
       title: 'Setup',
@@ -275,18 +279,11 @@
     'Comment': '#78909c'
   };
 
-  // ── State Modul ──
+  // ── State ──
   let blockCatalog = [];
   let currentFilteredList = [];
   let activeIndex = -1;
   let activeCategory = 'all';
-  let isDragging = false;
-  let dragItemData = null;
-  let dragGhostEl = null;
-  let dragStartPos = { x: 0, y: 0 };
-  let hasMovedEnough = false;
-
-  // Off-screen Headless Workspace untuk render SVG blok asli
   let offscreenWorkspace = null;
 
   // DOM Elements Cache
@@ -299,9 +296,7 @@
   let btnCloseEl = null;
   let btnFloatingTrigger = null;
 
-  /**
-   * Menyiapkan Workspace SVG tersembunyi (Off-screen) khusus untuk merender blok
-   */
+  // ── Offscreen Workspace ──
   function getOrCreateOffscreenWorkspace() {
     if (offscreenWorkspace) return offscreenWorkspace;
     if (!window.Blockly) return null;
@@ -310,7 +305,7 @@
     if (!offscreenDiv) {
       offscreenDiv = document.createElement('div');
       offscreenDiv.id = 'blocklyOffscreenDiv';
-      offscreenDiv.style.cssText = 'position: fixed; width: 1000px; height: 1000px; left: -9999px; top: -9999px; visibility: hidden; pointer-events: none; z-index: -1;';
+      offscreenDiv.style.cssText = 'position:fixed;width:1200px;height:1200px;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;z-index:-1;';
       document.body.appendChild(offscreenDiv);
     }
 
@@ -323,14 +318,15 @@
         sounds: false
       });
     } catch (e) {
-      console.warn('[BlockSearch] Gagal inisialisasi offscreen workspace:', e);
+      console.warn('[BlockSearch] Offscreen workspace init failed:', e);
     }
 
     return offscreenWorkspace;
   }
 
   /**
-   * Render SVG Asli dari sebuah blok menjadi markup string yang dapat disisipkan ke HTML
+   * Render SVG mini blok — COMPACT, PROPORSIONAL & CRISP
+   * Scaled smoothly inside container using preserveAspectRatio
    */
   function renderBlockSvgMarkup(item) {
     const pWs = getOrCreateOffscreenWorkspace();
@@ -346,9 +342,7 @@
           if (dom && dom.firstChild) {
             block = Blockly.Xml.domToBlock(dom.firstChild, pWs);
           }
-        } catch (xmlErr) {
-          // ignore
-        }
+        } catch (xmlErr) {}
       }
 
       if (!block) {
@@ -364,57 +358,75 @@
       const pad = 3;
       const x = Math.floor(bbox.x - pad);
       const y = Math.floor(bbox.y - pad);
-      const w = Math.ceil(bbox.width + pad * 2);
-      const h = Math.ceil(bbox.height + pad * 2);
+      const w = Math.max(1, Math.ceil(bbox.width + pad * 2));
+      const h = Math.max(1, Math.ceil(bbox.height + pad * 2));
 
-      // Clone node SVG blok
       const cloned = svgRoot.cloneNode(true);
       cloned.removeAttribute('transform');
 
-      // Bungkus dalam tag <svg> yang mandiri
-      const svgMarkup =
-        '<svg class="block-visual-svg" viewBox="' + x + ' ' + y + ' ' + w + ' ' + h + '" ' +
-        'data-width="' + w + '" data-height="' + h + '">' +
+      // Style field rects (inputs/dropdowns) with clean white badge look
+      const fieldRects = cloned.querySelectorAll('.blocklyFieldRect');
+      fieldRects.forEach(function(rect) {
+        rect.setAttribute('fill', '#ffffff');
+        rect.setAttribute('fill-opacity', '0.9');
+        rect.setAttribute('stroke', 'rgba(0,0,0,0.18)');
+        rect.setAttribute('stroke-width', '1');
+        rect.setAttribute('rx', '3');
+        rect.setAttribute('ry', '3');
+      });
+
+      // Style text inside fields & dropdowns
+      var allTexts = cloned.querySelectorAll('text');
+      allTexts.forEach(function(txt) {
+        if (txt.closest('.blocklyEditableText') || txt.classList.contains('blocklyDropdownText')) {
+          txt.setAttribute('fill', '#0f172a');
+          txt.setAttribute('font-weight', '600');
+        } else {
+          txt.setAttribute('fill', '#ffffff');
+          txt.setAttribute('font-weight', '500');
+        }
+      });
+
+      var svgMarkup =
+        '<svg class="bs-block-svg" viewBox="' + x + ' ' + y + ' ' + w + ' ' + h + '" preserveAspectRatio="xMinYMid meet">' +
           cloned.outerHTML +
         '</svg>';
 
       return svgMarkup;
     } catch (err) {
-      console.warn('[BlockSearch] Gagal render visual SVG blok:', item.type, err);
+      console.warn('[BlockSearch] SVG render failed:', item.type, err);
       return '';
     }
   }
 
-  /**
-   * Bangun katalog blok dari <xml id="toolbox">
-   */
+  // ── Build Catalog ──
   function buildBlockCatalog() {
-    const toolboxEl = document.getElementById('toolbox');
+    var toolboxEl = document.getElementById('toolbox');
     if (!toolboxEl) return;
 
     blockCatalog = [];
-    const categories = toolboxEl.getElementsByTagName('category');
+    var categories = toolboxEl.getElementsByTagName('category');
 
-    for (let i = 0; i < categories.length; i++) {
-      const cat = categories[i];
-      const catName = cat.getAttribute('name') || 'Umum';
-      const catColour = cat.getAttribute('colour') || '120';
-      const blocks = cat.children;
+    for (var i = 0; i < categories.length; i++) {
+      var cat = categories[i];
+      var catName = cat.getAttribute('name') || 'Umum';
+      var catColour = cat.getAttribute('colour') || '120';
+      var blocks = cat.children;
 
-      for (let j = 0; j < blocks.length; j++) {
-        const blkNode = blocks[j];
+      for (var j = 0; j < blocks.length; j++) {
+        var blkNode = blocks[j];
         if (blkNode.tagName.toLowerCase() !== 'block') continue;
 
-        const type = blkNode.getAttribute('type');
+        var type = blkNode.getAttribute('type');
         if (!type) continue;
 
-        const serializer = new XMLSerializer();
-        const xmlString = serializer.serializeToString(blkNode);
+        var serializer = new XMLSerializer();
+        var xmlString = serializer.serializeToString(blkNode);
 
-        const meta = BLOCK_METADATA[type] || {};
-        const title = meta.title || formatBlockTypeToTitle(type);
-        const keywords = (meta.keywords || '') + ' ' + type + ' ' + catName.toLowerCase();
-        const color = meta.color !== undefined ? meta.color : catColour;
+        var meta = BLOCK_METADATA[type] || {};
+        var title = meta.title || formatBlockTypeToTitle(type);
+        var keywords = (meta.keywords || '') + ' ' + type + ' ' + catName.toLowerCase();
+        var color = meta.color !== undefined ? meta.color : catColour;
 
         blockCatalog.push({
           type: type,
@@ -424,16 +436,14 @@
           color: color,
           xmlString: xmlString,
           xmlNode: blkNode,
-          svgHtml: null // Diisi saat diperlukan / di-cache
+          svgHtml: null
         });
       }
     }
   }
 
   function formatBlockTypeToTitle(type) {
-    return type
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    return type.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
   }
 
   function getCssColor(colorValue) {
@@ -443,40 +453,38 @@
     return colorValue || '#3b82f6';
   }
 
-  /**
-   * Render Filter Chips Kategori
-   */
+  // ── Category Chips ──
   function renderCategoryChips() {
     if (!categoryChipsEl) return;
-    const categories = ['all'];
-    const seen = {};
+    var cats = ['all'];
+    var seen = {};
 
-    blockCatalog.forEach(item => {
+    blockCatalog.forEach(function(item) {
       if (!seen[item.category]) {
         seen[item.category] = true;
-        categories.push(item.category);
+        cats.push(item.category);
       }
     });
 
-    let html = '<button class="block-cat-chip' + (activeCategory === 'all' ? ' active' : '') + '" data-cat="all">Semua Blok</button>';
+    var html = '<button class="bs-chip' + (activeCategory === 'all' ? ' active' : '') + '" data-cat="all">Semua</button>';
 
-    categories.forEach(cat => {
+    cats.forEach(function(cat) {
       if (cat === 'all') return;
-      const isActive = activeCategory === cat;
-      const dotColor = CATEGORY_COLORS[cat] || '#3b82f6';
-      html += '<button class="block-cat-chip' + (isActive ? ' active' : '') + '" data-cat="' + escapeHtml(cat) + '">' +
-        '<span class="cat-dot" style="background:' + dotColor + ';"></span>' +
+      var isActive = activeCategory === cat;
+      var dotColor = CATEGORY_COLORS[cat] || '#3b82f6';
+      html += '<button class="bs-chip' + (isActive ? ' active' : '') + '" data-cat="' + escapeHtml(cat) + '">' +
+        '<span class="bs-chip-dot" style="background:' + dotColor + ';"></span>' +
         escapeHtml(cat) +
       '</button>';
     });
 
     categoryChipsEl.innerHTML = html;
 
-    const chips = categoryChipsEl.querySelectorAll('.block-cat-chip');
-    chips.forEach(chip => {
+    var chips = categoryChipsEl.querySelectorAll('.bs-chip');
+    chips.forEach(function(chip) {
       chip.addEventListener('click', function() {
         activeCategory = this.getAttribute('data-cat') || 'all';
-        chips.forEach(c => c.classList.remove('active'));
+        chips.forEach(function(c) { c.classList.remove('active'); });
         this.classList.add('active');
         filterAndRenderResults(inputEl ? inputEl.value : '');
         if (inputEl) inputEl.focus();
@@ -484,21 +492,16 @@
     });
   }
 
-  /**
-   * Filter blok berdasarkan query teks & kategori
-   */
+  // ── Filter & Render ──
   function filterAndRenderResults(query) {
     query = (query || '').trim().toLowerCase();
-    const queryTokens = query.split(/\s+/).filter(t => t.length > 0);
+    var queryTokens = query.split(/\s+/).filter(function(t) { return t.length > 0; });
 
-    currentFilteredList = blockCatalog.filter(item => {
-      if (activeCategory !== 'all' && item.category !== activeCategory) {
-        return false;
-      }
+    currentFilteredList = blockCatalog.filter(function(item) {
+      if (activeCategory !== 'all' && item.category !== activeCategory) return false;
       if (queryTokens.length === 0) return true;
-
-      const targetStr = (item.title + ' ' + item.keywords + ' ' + item.category).toLowerCase();
-      return queryTokens.every(token => targetStr.indexOf(token) !== -1);
+      var targetStr = (item.title + ' ' + item.keywords + ' ' + item.category).toLowerCase();
+      return queryTokens.every(function(token) { return targetStr.indexOf(token) !== -1; });
     });
 
     activeIndex = currentFilteredList.length > 0 ? 0 : -1;
@@ -506,283 +509,291 @@
   }
 
   /**
-   * Render Galeri Bentuk Blok Visual (Tanpa Sintaks ArduinoIDE / Tanpa Teks Deskripsi Panjang)
+   * Render hasil pencarian sebagai LIST KOMPAK & RAPI
+   * Setiap item memuat:
+   * [Mini Preview SVG (rapi, scaled)] [Nama Blok + Kategori] [Ikon Tahan & Tarik]
    */
   function renderResultsList() {
     if (!resultsContainerEl) return;
 
     if (resultCountEl) {
-      resultCountEl.textContent = currentFilteredList.length + ' blok ditemukan';
+      resultCountEl.textContent = currentFilteredList.length + ' blok';
     }
 
     if (currentFilteredList.length === 0) {
       resultsContainerEl.innerHTML =
-        '<div class="block-search-empty">' +
-          '<svg class="empty-icon" viewBox="0 0 24 24">' +
+        '<div class="bs-empty">' +
+          '<svg class="bs-empty-icon" viewBox="0 0 24 24">' +
             '<circle cx="11" cy="11" r="8"></circle>' +
             '<line x1="21" y1="21" x2="16.65" y2="16.65"></line>' +
             '<line x1="8" y1="11" x2="14" y2="11"></line>' +
           '</svg>' +
-          '<div class="empty-title">Tidak ada bentuk blok yang cocok</div>' +
-          '<div class="empty-desc">Coba ketik kata kunci lain seperti <b>servo</b>, <b>pin</b>, <b>delay</b>, <b>motor</b>, <b>if</b>, atau <b>serial</b>.</div>' +
+          '<div class="bs-empty-title">Tidak ada blok yang cocok</div>' +
+          '<div class="bs-empty-desc">Coba kata kunci: <b>servo</b>, <b>pin</b>, <b>delay</b>, <b>motor</b>, <b>if</b>, <b>serial</b></div>' +
         '</div>';
       return;
     }
 
-    let html = '';
-    currentFilteredList.forEach((item, idx) => {
-      const isSelected = idx === activeIndex;
-      const chipColor = getCssColor(item.color);
+    var html = '';
+    currentFilteredList.forEach(function(item, idx) {
+      var isSelected = idx === activeIndex;
+      var chipColor = getCssColor(item.color);
 
-      // Buat SVG bentuk blok jika belum ada di cache
+      // Lazy render SVG
       if (!item.svgHtml) {
         item.svgHtml = renderBlockSvgMarkup(item);
       }
 
       html +=
-        '<div class="block-result-card' + (isSelected ? ' selected' : '') + '" data-index="' + idx + '" data-type="' + escapeHtml(item.type) + '">' +
-          '<div class="card-visual-top">' +
-            '<div class="card-top-left">' +
-              '<span class="card-cat-badge" style="background: ' + chipColor + '18; color: ' + chipColor + '; border-color: ' + chipColor + '40;">' +
-                escapeHtml(item.category) +
-              '</span>' +
-              '<span class="card-drag-hint">' +
-                '<svg class="handle-icon" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="9" cy="19" r="1.5"></circle><circle cx="15" cy="5" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="15" cy="19" r="1.5"></circle></svg>' +
-                '<span>Tahan &amp; Drag</span>' +
-              '</span>' +
-            '</div>' +
-            '<div class="card-top-right">' +
-              '<button class="btn-card-spawn" title="Tambahkan langsung ke kanvas" data-action="spawn">' +
-                '<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>' +
-                '<span>Masukkan</span>' +
-              '</button>' +
-            '</div>' +
+        '<div class="bs-item' + (isSelected ? ' selected' : '') + '" data-index="' + idx + '" data-type="' + escapeHtml(item.type) + '">' +
+          '<div class="bs-item-preview">' +
+            (item.svgHtml || '<span class="bs-item-fallback">' + escapeHtml(item.title) + '</span>') +
           '</div>' +
-          '<div class="card-visual-canvas" title="Tahan &amp; Drag langsung ke kanvas workspace, atau klik untuk masukkan">' +
-            (item.svgHtml || '<div class="block-svg-fallback">' + escapeHtml(item.title) + '</div>') +
+          '<div class="bs-item-info">' +
+            '<div class="bs-item-title">' + escapeHtml(item.title) + '</div>' +
+            '<div class="bs-item-cat"><span class="bs-item-cat-dot" style="background:' + chipColor + ';"></span>' + escapeHtml(item.category) + '</div>' +
+          '</div>' +
+          '<div class="bs-item-drag-hint" title="Tekan &amp; Tarik langsung ke workspace">' +
+            '<svg class="bs-item-drag-icon" viewBox="0 0 24 24">' +
+              '<circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>' +
+              '<circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>' +
+              '<circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>' +
+            '</svg>' +
+            '<span>Tarik</span>' +
           '</div>' +
         '</div>';
     });
 
     resultsContainerEl.innerHTML = html;
 
-    // Pasang listener interaksi pointer & click pada setiap kartu
-    const cards = resultsContainerEl.querySelectorAll('.block-result-card');
-    cards.forEach(card => {
-      const idx = parseInt(card.getAttribute('data-index'), 10);
-      const itemData = currentFilteredList[idx];
+    // Attach pointerdown handlers for PRESS-AND-DRAG directly into workspace
+    var items = resultsContainerEl.querySelectorAll('.bs-item');
+    items.forEach(function(itemEl) {
+      var idx = parseInt(itemEl.getAttribute('data-index'), 10);
+      var itemData = currentFilteredList[idx];
 
-      // Klik 1x untuk spawn langsung
-      card.addEventListener('click', function(e) {
-        if (hasMovedEnough) return;
-        if (itemData) {
-          spawnBlockToWorkspaceCenter(itemData);
-          closeModal();
-        }
+      // PointerDown: Block sticks to cursor and drags immediately
+      itemEl.addEventListener('pointerdown', function(e) {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        e.stopPropagation();
+        startDragFromSearch(e, itemData);
       });
 
-      // Pointer event untuk Drag and Drop Visual
-      card.addEventListener('pointerdown', function(e) {
-        if (e.button !== undefined && e.button !== 0) return;
-        startDragInteraction(e, itemData);
+      // Hover highlight
+      itemEl.addEventListener('mouseenter', function() {
+        activeIndex = idx;
+        updateSelectedVisual();
       });
     });
 
-    scrollActiveCardIntoView();
+    scrollActiveIntoView();
   }
 
-  function scrollActiveCardIntoView() {
+  function scrollActiveIntoView() {
     if (!resultsContainerEl) return;
-    const selectedCard = resultsContainerEl.querySelector('.block-result-card.selected');
-    if (selectedCard) {
-      selectedCard.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    var sel = resultsContainerEl.querySelector('.bs-item.selected');
+    if (sel) {
+      sel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }
 
-  // ── Penanganan Drag & Drop Visual ──
-  function startDragInteraction(e, itemData) {
+  function updateSelectedVisual() {
+    if (!resultsContainerEl) return;
+    var items = resultsContainerEl.querySelectorAll('.bs-item');
+    items.forEach(function(el, idx) {
+      if (idx === activeIndex) {
+        el.classList.add('selected');
+      } else {
+        el.classList.remove('selected');
+      }
+    });
+    scrollActiveIntoView();
+  }
+
+  /**
+   * UX UTAMA: Tekan blok di daftar pencarian -> blok langsung MENEMPEL DI KURSOR
+   * dan bisa digeser langsung ke workspace untuk dimasukkan / di-drop.
+   */
+  function startDragFromSearch(e, itemData) {
     if (!itemData || !window.workspace) return;
 
-    dragItemData = itemData;
-    dragStartPos = { x: e.clientX, y: e.clientY };
-    hasMovedEnough = false;
+    var clientX = e.clientX;
+    var clientY = e.clientY;
 
-    function onPointerMove(moveEvent) {
-      const dx = moveEvent.clientX - dragStartPos.x;
-      const dy = moveEvent.clientY - dragStartPos.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (!isDragging && dist > 7) {
-        isDragging = true;
-        hasMovedEnough = true;
-        createDragGhost(dragItemData, moveEvent.clientX, moveEvent.clientY);
-
-        // Meredupkan modal pencarian agar kanvas di bawahnya terlihat sangat jelas
-        if (modalEl) {
-          modalEl.classList.add('dragging-mode');
+    // Lepaskan pointer capture dari elemen HTML agar pointermove mengalir ke dokumen
+    if (e.target && e.target.releasePointerCapture && e.pointerId !== undefined) {
+      try {
+        if (e.target.hasPointerCapture(e.pointerId)) {
+          e.target.releasePointerCapture(e.pointerId);
         }
-      }
-
-      if (isDragging && dragGhostEl) {
-        dragGhostEl.style.left = moveEvent.clientX + 'px';
-        dragGhostEl.style.top = moveEvent.clientY + 'px';
-      }
+      } catch (err) {}
     }
 
-    function onPointerUp(upEvent) {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
+    // 1. Hitung koordinat workspace dari posisi kursor pengguna
+    var injectionDiv = window.workspace.getInjectionDiv();
+    var injRect = injectionDiv.getBoundingClientRect();
+    var wsX = (clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale;
+    var wsY = (clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale;
 
-      if (isDragging) {
-        const blocklyDiv = document.getElementById('blocklyDiv');
-        const rect = blocklyDiv ? blocklyDiv.getBoundingClientRect() : null;
+    // Offset posisi blok agar kursor berada di bagian atas-kiri blok yang wajar
+    wsX -= 25;
+    wsY -= 15;
 
-        const isOverCanvas = rect &&
-          upEvent.clientX >= rect.left &&
-          upEvent.clientX <= rect.right &&
-          upEvent.clientY >= rect.top &&
-          upEvent.clientY <= rect.bottom;
-
-        if (isOverCanvas && dragItemData) {
-          spawnBlockAtScreenPosition(dragItemData, upEvent.clientX, upEvent.clientY);
-          closeModal();
-        } else {
-          if (modalEl) modalEl.classList.remove('dragging-mode');
+    // 2. Buat blok baru di workspace aktif
+    var newBlock = null;
+    if (itemData.xmlString && window.Blockly && Blockly.Xml) {
+      try {
+        var dom = Blockly.utils.xml.textToDom('<xml>' + itemData.xmlString + '</xml>');
+        if (dom && dom.firstChild) {
+          newBlock = Blockly.Xml.domToBlock(dom.firstChild, window.workspace);
         }
-
-        cleanupDragGhost();
-        isDragging = false;
-        setTimeout(() => { hasMovedEnough = false; }, 150);
-      }
+      } catch (xmlErr) {}
     }
 
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
-  }
-
-  /**
-   * Ghost Avatar Melayang: Menampilkan WUJUD VISUAL ASLI BLOK mengikuti kursor
-   */
-  function createDragGhost(itemData, clientX, clientY) {
-    cleanupDragGhost();
-    const ghost = document.createElement('div');
-    ghost.className = 'block-drag-ghost';
-
-    // Gunakan SVG bentuk blok asli sebagai ghost avatar
-    if (itemData.svgHtml) {
-      ghost.innerHTML =
-        '<div class="ghost-visual-container">' +
-          itemData.svgHtml +
-        '</div>';
-    } else {
-      const chipColor = getCssColor(itemData.color);
-      ghost.innerHTML =
-        '<div class="ghost-pill" style="border-left: 4px solid ' + chipColor + ';">' +
-          '<span class="ghost-cat">' + escapeHtml(itemData.category) + '</span>' +
-          '<strong class="ghost-title">' + escapeHtml(itemData.title) + '</strong>' +
-        '</div>';
+    if (!newBlock) {
+      newBlock = window.workspace.newBlock(itemData.type);
     }
 
-    ghost.style.position = 'fixed';
-    ghost.style.left = clientX + 'px';
-    ghost.style.top = clientY + 'px';
-    ghost.style.transform = 'translate(-30px, -20px)';
-    ghost.style.zIndex = '999999';
-    ghost.style.pointerEvents = 'none';
+    newBlock.initSvg();
+    newBlock.render();
+    newBlock.moveTo(new Blockly.utils.Coordinate(wsX, wsY));
+    newBlock.select();
 
-    document.body.appendChild(ghost);
-    dragGhostEl = ghost;
-  }
-
-  function cleanupDragGhost() {
-    if (dragGhostEl && dragGhostEl.parentNode) {
-      dragGhostEl.parentNode.removeChild(dragGhostEl);
-    }
-    dragGhostEl = null;
+    // 3. Buat modal pencarian langsung transparan & non-interaktif saat itu juga
+    // Pengguna langsung melihat workspace dan blok yang menempel di kursornya
     if (modalEl) {
-      modalEl.classList.remove('dragging-mode');
+      modalEl.style.opacity = '0';
+      modalEl.style.pointerEvents = 'none';
     }
+
+    // 4. Hubungkan ke Gesture System bawaan Blockly agar blok langsung didrag oleh kursor
+    try {
+      var gesture = window.workspace.getGesture(e);
+      if (gesture) {
+        gesture.handleBlockStart(e, newBlock);
+        gesture.handleWsStart(e, window.workspace);
+      }
+    } catch (gestureErr) {
+      console.warn('[BlockSearch] Blockly gesture start error:', gestureErr);
+    }
+
+    // 5. Active tracking fallback: memastikan blok selalu menempel di kursor
+    // bahkan jika gesture Blockly tertunda di browser/perangkat tertentu
+    var isDraggingBlock = true;
+    function onPointerMove(moveEvent) {
+      if (!isDraggingBlock) return;
+      if (window.workspace.isDragging && window.workspace.isDragging()) return;
+
+      var curWsX = (moveEvent.clientX - injRect.left - window.workspace.scrollX) / window.workspace.scale - 25;
+      var curWsY = (moveEvent.clientY - injRect.top - window.workspace.scrollY) / window.workspace.scale - 15;
+      newBlock.moveTo(new Blockly.utils.Coordinate(curWsX, curWsY));
+    }
+
+    // Suara feedback
+    if (typeof window.playSnapSound === 'function') {
+      window.playSnapSound();
+    }
+
+    // 6. Cleanup modal saat pointerup / pointercancel (lepas drag)
+    function cleanupOnPointerEnd() {
+      isDraggingBlock = false;
+      window.removeEventListener('pointermove', onPointerMove, true);
+      window.removeEventListener('pointerup', cleanupOnPointerEnd, true);
+      window.removeEventListener('pointercancel', cleanupOnPointerEnd, true);
+
+      // Tutup modal secara tuntas
+      closeModal();
+      if (modalEl) {
+        modalEl.style.opacity = '';
+        modalEl.style.pointerEvents = '';
+      }
+    }
+
+    window.addEventListener('pointermove', onPointerMove, true);
+    window.addEventListener('pointerup', cleanupOnPointerEnd, true);
+    window.addEventListener('pointercancel', cleanupOnPointerEnd, true);
   }
 
   /**
-   * Spawn blok di koordinat tengah layar workspace
+   * Fallback insert blok ke tengah workspace (misal saat tekan Enter pada keyboard)
    */
-  function spawnBlockToWorkspaceCenter(itemData) {
-    if (!window.workspace) return;
-    try {
-      const blocklyDiv = document.getElementById('blocklyDiv');
-      const rect = blocklyDiv ? blocklyDiv.getBoundingClientRect() : { width: 600, height: 400, left: 100, top: 100 };
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      spawnBlockAtScreenPosition(itemData, centerX, centerY);
-    } catch (e) {
-      spawnBlockFallback(itemData);
-    }
-  }
-
-  /**
-   * Spawn blok di koordinat layar (clientX, clientY)
-   */
-  function spawnBlockAtScreenPosition(itemData, clientX, clientY) {
-    if (!window.workspace) return;
+  function insertBlockToWorkspace(itemData) {
+    if (!itemData || !window.workspace) return;
 
     try {
-      const injectionDiv = window.workspace.getInjectionDiv();
-      const rect = injectionDiv.getBoundingClientRect();
+      var blocklyDiv = document.getElementById('blocklyDiv');
+      var rect = blocklyDiv ? blocklyDiv.getBoundingClientRect() : { width: 600, height: 400, left: 100, top: 100 };
+      var centerScreenX = rect.left + rect.width / 2;
+      var centerScreenY = rect.top + rect.height / 2;
 
-      const wsX = (clientX - rect.left - window.workspace.scrollX) / window.workspace.scale;
-      const wsY = (clientY - rect.top - window.workspace.scrollY) / window.workspace.scale;
+      var injectionDiv = window.workspace.getInjectionDiv();
+      var injRect = injectionDiv.getBoundingClientRect();
+      var wsX = (centerScreenX - injRect.left - window.workspace.scrollX) / window.workspace.scale;
+      var wsY = (centerScreenY - injRect.top - window.workspace.scrollY) / window.workspace.scale;
 
-      let newBlock = null;
+      wsX += (Math.random() - 0.5) * 60;
+      wsY += (Math.random() - 0.5) * 40;
 
+      var newBlock = null;
       if (itemData.xmlString && window.Blockly && Blockly.Xml) {
         try {
-          const dom = Blockly.utils.xml.textToDom('<xml>' + itemData.xmlString + '</xml>');
-          const blockDom = dom.firstChild;
-          if (blockDom) {
-            newBlock = Blockly.Xml.domToBlock(blockDom, window.workspace);
+          var dom = Blockly.utils.xml.textToDom('<xml>' + itemData.xmlString + '</xml>');
+          if (dom && dom.firstChild) {
+            newBlock = Blockly.Xml.domToBlock(dom.firstChild, window.workspace);
           }
-        } catch (xmlErr) {
-          console.warn('[BlockSearch] Gagal parse XML blok:', xmlErr);
-        }
+        } catch (e) {}
       }
 
       if (!newBlock) {
         newBlock = window.workspace.newBlock(itemData.type);
-        newBlock.initSvg();
-        newBlock.render();
       }
 
-      if (newBlock) {
-        newBlock.moveTo(new Blockly.utils.Coordinate(wsX, wsY));
-        newBlock.select();
+      newBlock.initSvg();
+      newBlock.render();
+      newBlock.moveTo(new Blockly.utils.Coordinate(wsX, wsY));
+      newBlock.select();
 
-        if (typeof window.playSnapSound === 'function') {
-          window.playSnapSound();
-        }
+      showInsertFeedback(itemData.title);
+
+      if (typeof window.playSnapSound === 'function') {
+        window.playSnapSound();
       }
+
+      closeModal();
     } catch (err) {
-      console.error('[BlockSearch] Gagal meletakkan blok:', err);
-      spawnBlockFallback(itemData);
+      console.error('[BlockSearch] Insert failed:', err);
+      closeModal();
     }
   }
 
-  function spawnBlockFallback(itemData) {
-    if (!window.workspace) return;
-    try {
-      const b = window.workspace.newBlock(itemData.type);
-      b.initSvg();
-      b.render();
-      b.moveBy(150, 150);
-      b.select();
-    } catch (e) {
-      console.error('[BlockSearch] Fatal spawn fallback:', e);
-    }
+  /**
+   * Brief visual toast feedback saat blok dimasukkan
+   */
+  function showInsertFeedback(title) {
+    var existing = document.getElementById('bsInsertToast');
+    if (existing) existing.remove();
+
+    var toast = document.createElement('div');
+    toast.id = 'bsInsertToast';
+    toast.className = 'bs-insert-toast';
+    toast.innerHTML = 
+      '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+      '<span>Blok <b>' + escapeHtml(title) + '</b> ditambahkan</span>';
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(function() {
+      toast.classList.add('show');
+    });
+
+    setTimeout(function() {
+      toast.classList.remove('show');
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 1800);
   }
 
-  // ── Keyboard Navigation ──
+  // ── Keyboard ──
   function handleKeyDown(e) {
     if (!modalEl || modalEl.classList.contains('hidden')) return;
 
@@ -796,7 +807,7 @@
       e.preventDefault();
       if (currentFilteredList.length > 0) {
         activeIndex = (activeIndex + 1) % currentFilteredList.length;
-        updateSelectedCardVisual();
+        updateSelectedVisual();
       }
       return;
     }
@@ -805,7 +816,7 @@
       e.preventDefault();
       if (currentFilteredList.length > 0) {
         activeIndex = (activeIndex - 1 + currentFilteredList.length) % currentFilteredList.length;
-        updateSelectedCardVisual();
+        updateSelectedVisual();
       }
       return;
     }
@@ -813,25 +824,10 @@
     if (e.key === 'Enter') {
       e.preventDefault();
       if (activeIndex >= 0 && activeIndex < currentFilteredList.length) {
-        const item = currentFilteredList[activeIndex];
-        spawnBlockToWorkspaceCenter(item);
-        closeModal();
+        insertBlockToWorkspace(currentFilteredList[activeIndex]);
       }
       return;
     }
-  }
-
-  function updateSelectedCardVisual() {
-    if (!resultsContainerEl) return;
-    const cards = resultsContainerEl.querySelectorAll('.block-result-card');
-    cards.forEach((c, idx) => {
-      if (idx === activeIndex) {
-        c.classList.add('selected');
-      } else {
-        c.classList.remove('selected');
-      }
-    });
-    scrollActiveCardIntoView();
   }
 
   function openModal() {
@@ -842,12 +838,11 @@
     renderCategoryChips();
 
     modalEl.classList.remove('hidden');
-    modalEl.classList.remove('dragging-mode');
 
     if (inputEl) {
       inputEl.value = '';
       filterAndRenderResults('');
-      setTimeout(() => {
+      setTimeout(function() {
         inputEl.focus();
         inputEl.select();
       }, 50);
@@ -857,9 +852,6 @@
   function closeModal() {
     if (!modalEl) return;
     modalEl.classList.add('hidden');
-    modalEl.classList.remove('dragging-mode');
-    cleanupDragGhost();
-    isDragging = false;
   }
 
   function escapeHtml(str) {
@@ -917,24 +909,12 @@
 
     window.addEventListener('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        const bodyMode = document.body.classList.contains('mode-text') ? 'text' : 'block';
+        var bodyMode = document.body.classList.contains('mode-text') ? 'text' : 'block';
         if (bodyMode === 'block') {
           e.preventDefault();
           if (modalEl && !modalEl.classList.contains('hidden')) {
             closeModal();
           } else {
-            openModal();
-          }
-        }
-      }
-
-      if (e.key === '/' && !modalEl?.classList.contains('hidden')) {
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        const isEditable = document.activeElement && (document.activeElement.isContentEditable || activeTag === 'input' || activeTag === 'textarea');
-        if (!isEditable) {
-          const bodyMode = document.body.classList.contains('mode-text') ? 'text' : 'block';
-          if (bodyMode === 'block') {
-            e.preventDefault();
             openModal();
           }
         }
