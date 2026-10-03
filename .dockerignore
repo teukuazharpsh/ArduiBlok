@@ -10,3 +10,6 @@ library_arduino
 scratch
 *.md
 soul.md
+Railway/
+.railway/
+

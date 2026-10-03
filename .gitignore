@@ -9,4 +9,7 @@ server/*.pem
 server/data/*
 !server/data/.gitkeep
 soul.md
+Railway/
+.railway/
+
 
