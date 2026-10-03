@@ -137,13 +137,6 @@
     otpBoxes.forEach(b => { if (b) b.value = ''; });
   }
 
-  function fillOtpInputs(code) {
-    if (!code || typeof code !== 'string') return;
-    for (let i = 0; i < otpBoxes.length; i++) {
-      if (otpBoxes[i]) otpBoxes[i].value = code[i] || '';
-    }
-  }
-
   // ── OTP Timers ──────────────────────────────────────────────
   function startOtpCountdown(durationSeconds = 600) {
     if (otpCountdownTimer) clearInterval(otpCountdownTimer);
@@ -215,10 +208,7 @@
           pendingEmail = data.email;
           if (otpTargetEmailText) otpTargetEmailText.textContent = data.email;
           showView('otp');
-          showAlert(data.error || 'Akun Anda belum terverifikasi. Kami telah mengirimkan kode OTP baru.', 'warning');
-          if (data.mockOtp) {
-            fillOtpInputs(data.mockOtp);
-          }
+          showAlert(data.error || 'Akun Anda belum terverifikasi. Kami telah mengirimkan kode OTP baru ke email Anda.', 'warning');
           startOtpCountdown(600);
           startResendCooldown(45);
           return;
@@ -286,10 +276,7 @@
       pendingEmail = data.email || email;
       if (otpTargetEmailText) otpTargetEmailText.textContent = pendingEmail;
       showView('otp');
-      showAlert(data.message, data.isMock ? 'warning' : 'success');
-      if (data.mockOtp) {
-        fillOtpInputs(data.mockOtp);
-      }
+      showAlert(data.message || 'Kode OTP verifikasi telah dikirimkan ke email Anda.', 'success');
       startOtpCountdown(600);
       startResendCooldown(45);
 
@@ -364,12 +351,10 @@
       }
 
       clearOtpInputs();
-      if (data.mockOtp) {
-        fillOtpInputs(data.mockOtp);
-      } else if (otpBoxes[0]) {
+      if (otpBoxes[0]) {
         otpBoxes[0].focus();
       }
-      showAlert(data.message || 'Kode OTP baru telah dikirimkan ke email Anda.', data.isMock ? 'warning' : 'success');
+      showAlert(data.message || 'Kode OTP baru telah dikirimkan ke email Anda. Silakan periksa inbox atau folder spam.', 'success');
       startOtpCountdown(600);
       startResendCooldown(45);
 

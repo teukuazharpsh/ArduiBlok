@@ -54,13 +54,17 @@ async function sendOtpEmail(toEmail, username, otpCode) {
   console.log('  Masa Berlaku : 10 Menit');
   console.log('======================================================\n');
 
-  // Jika transporter SMTP tidak dikonfigurasi, gunakan mode mock
+  // Jika transporter SMTP tidak dikonfigurasi
   if (!transporter) {
-    return {
-      success: true,
-      mock: true,
-      message: 'Kode OTP berhasil dibuat (Mode Mock/Dev: lihat konsol server).'
-    };
+    if (devMock) {
+      console.warn('[Mailer Warning] SMTP belum diset, menggunakan mode dev mock (DEV_MOCK_OTP=true)');
+      return {
+        success: true,
+        mock: true,
+        message: 'Kode OTP dicatat di konsol server (Mode Dev).'
+      };
+    }
+    throw new Error('Layanan email SMTP belum dikonfigurasi di server. Pastikan variabel SMTP_HOST, SMTP_PORT, SMTP_USER, dan SMTP_PASS telah disetel di Railway Variables.');
   }
 
   // Template email HTML modern

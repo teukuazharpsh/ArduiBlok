@@ -112,16 +112,12 @@ router.post('/register', async (req, res) => {
     });
 
     // Kirim email OTP
-    const mailResult = await mailer.sendOtpEmail(cleanEmail, cleanUsername, otpCode);
+    await mailer.sendOtpEmail(cleanEmail, cleanUsername, otpCode);
 
     return res.json({
       success: true,
-      message: mailResult.mock
-        ? `[Mode Lokal / SMTP Belum Diset] Kode verifikasi Anda adalah: ${otpCode}`
-        : 'Kode OTP verifikasi telah dikirim ke email Anda. Silakan periksa inbox atau folder spam.',
-      email: cleanEmail,
-      isMock: mailResult.mock,
-      mockOtp: mailResult.mock ? otpCode : undefined
+      message: 'Kode OTP verifikasi telah dikirim ke email Anda. Silakan periksa inbox atau folder spam.',
+      email: cleanEmail
     });
 
   } catch (err) {
@@ -237,15 +233,11 @@ router.post('/resend-otp', async (req, res) => {
       expiresAtMs: 10 * 60 * 1000
     });
 
-    const mailResult = await mailer.sendOtpEmail(cleanEmail, user.username, newOtp);
+    await mailer.sendOtpEmail(cleanEmail, user.username, newOtp);
 
     return res.json({
       success: true,
-      message: mailResult.mock
-        ? `[Mode Lokal / SMTP Belum Diset] Kode verifikasi baru Anda: ${newOtp}`
-        : 'Kode OTP baru berhasil dikirimkan ke email Anda.',
-      isMock: mailResult.mock,
-      mockOtp: mailResult.mock ? newOtp : undefined
+      message: 'Kode OTP baru berhasil dikirimkan ke email Anda. Silakan periksa inbox atau folder spam.'
     });
 
   } catch (err) {
@@ -286,17 +278,14 @@ router.post('/login', async (req, res) => {
         otpCode: newOtp,
         expiresAtMs: 10 * 60 * 1000
       });
-      const mailRes = await mailer.sendOtpEmail(user.email, user.username, newOtp);
+      await mailer.sendOtpEmail(user.email, user.username, newOtp);
 
       return res.status(403).json({
         success: false,
         requireVerification: true,
         email: user.email,
         username: user.username,
-        mockOtp: mailRes.mock ? newOtp : undefined,
-        error: mailRes.mock
-          ? `Akun belum terverifikasi. [Mode Lokal] Kode OTP Anda: ${newOtp}`
-          : 'Akun Anda belum diverifikasi. Kode OTP baru telah dikirimkan ke email Anda.'
+        error: 'Akun Anda belum diverifikasi. Kode OTP baru telah dikirimkan ke email Anda. Silakan periksa inbox atau folder spam.'
       });
     }
 
