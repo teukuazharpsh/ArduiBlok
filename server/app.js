@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
@@ -5,6 +6,7 @@ const { execFile, execSync } = require('child_process');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { router: authRouter } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +14,10 @@ const PORT = process.env.PORT || 3000;
 // ── Middleware ──────────────────────────────────────────────
 app.use(cors());                        // Izinkan request dari origin manapun (WebView Android)
 app.use(express.json({ limit: '50mb' })); // Parse JSON body, max 50MB (mendukung upload file .ZIP library)
+
+// ── Auth API Router (Registrasi, Login, Verifikasi OTP) ──────
+app.use('/api/auth', authRouter);
+
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   etag: false,
   maxAge: 0,

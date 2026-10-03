@@ -6,5 +6,7 @@ temp/*
 Thumbs.db
 library_arduino/
 server/*.pem
+server/data/*
+!server/data/.gitkeep
 soul.md
 
