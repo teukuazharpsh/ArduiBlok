@@ -5,6 +5,12 @@
 
 const nodemailer = require('nodemailer');
 
+// Helper: Bersihkan string dari tanda petik dua/satu dan spasi berlebih (mengantisipasi copy-paste di Railway)
+function sanitizeEnv(val) {
+  if (!val) return '';
+  return String(val).replace(/^["']|["']$/g, '').trim();
+}
+
 // Helper: Hasilkan kode acak 6 digit numerik
 function generateOtpCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -12,23 +18,45 @@ function generateOtpCode() {
 
 // Buat transporter Nodemailer jika kredensial SMTP tersedia
 function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  const host = sanitizeEnv(process.env.SMTP_HOST);
+  const rawPort = sanitizeEnv(process.env.SMTP_PORT);
+  const port = parseInt(rawPort || '465', 10);
+  const user = sanitizeEnv(process.env.SMTP_USER);
+  const rawPass = sanitizeEnv(process.env.SMTP_PASS);
+  const pass = rawPass.replace(/\s+/g, ''); // Hapus spasi untuk App Password Google (16 karakter bersih)
+  const secureEnv = sanitizeEnv(process.env.SMTP_SECURE);
+  const secure = secureEnv === 'true' || port === 465;
 
-  if (host && user && pass) {
+  if (user && pass) {
+    // Jika menggunakan Gmail (host smtp.gmail.com atau user @gmail.com)
+    // Menggunakan service: 'gmail' memberikan rute tercepat dan paling stabil di cloud container (Railway)
+    const isGmail = (host && host.toLowerCase().includes('gmail')) || user.toLowerCase().endsWith('@gmail.com');
+    if (isGmail) {
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: user,
+          pass: pass
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 7000,
+        socketTimeout: 15000
+      });
+    }
+
     return nodemailer.createTransport({
-      host: host,
-      port: port,
+      host: host || 'smtp.gmail.com',
+      port: isNaN(port) ? 465 : port,
       secure: secure,
       auth: {
         user: user,
         pass: pass
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 7000,
+      socketTimeout: 15000,
       tls: {
-        rejectUnauthorized: false // Menghindari kendala self-signed cert
+        rejectUnauthorized: false
       }
     });
   }
@@ -43,7 +71,8 @@ function createTransporter() {
  * @returns {Promise<{ success: boolean, mock: boolean, message: string }>}
  */
 async function sendOtpEmail(toEmail, username, otpCode) {
-  const devMock = process.env.DEV_MOCK_OTP === 'true';
+  const devMock = sanitizeEnv(process.env.DEV_MOCK_OTP) === 'true';
+  const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
   const transporter = createTransporter();
 
   // Log ke terminal server untuk kemudahan debugging dan pengujian lokal
@@ -56,15 +85,15 @@ async function sendOtpEmail(toEmail, username, otpCode) {
 
   // Jika transporter SMTP tidak dikonfigurasi
   if (!transporter) {
-    if (devMock) {
-      console.warn('[Mailer Warning] SMTP belum diset, menggunakan mode dev mock (DEV_MOCK_OTP=true)');
+    if (devMock && !isProduction) {
+      console.warn('[Mailer Warning] SMTP belum diset, menggunakan mode dev mock lokal (DEV_MOCK_OTP=true)');
       return {
         success: true,
         mock: true,
         message: 'Kode OTP dicatat di konsol server (Mode Dev).'
       };
     }
-    throw new Error('Layanan email SMTP belum dikonfigurasi di server. Pastikan variabel SMTP_HOST, SMTP_PORT, SMTP_USER, dan SMTP_PASS telah disetel di Railway Variables.');
+    throw new Error('Layanan email SMTP belum dikonfigurasi di server. Pastikan variabel SMTP_USER dan SMTP_PASS telah disetel tanpa tanda petik di Railway Variables.');
   }
 
   // Template email HTML modern
@@ -110,14 +139,19 @@ async function sendOtpEmail(toEmail, username, otpCode) {
   `;
 
   try {
-    const fromAddress = process.env.EMAIL_FROM || `"ArduiBlok Studio" <${process.env.SMTP_USER}>`;
-    await transporter.sendMail({
+    const rawFrom = sanitizeEnv(process.env.EMAIL_FROM);
+    const user = sanitizeEnv(process.env.SMTP_USER);
+    const fromAddress = rawFrom || `"ArduiBlok Studio" <${user}>`;
+
+    const info = await transporter.sendMail({
       from: fromAddress,
       to: toEmail,
       subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
       text: `Halo ${username},\n\nKode verifikasi akun ArduiBlok Anda adalah: ${otpCode}\n\nKode berlaku selama 10 menit.`,
       html: htmlContent
     });
+
+    console.log(`[Mailer] Email OTP sukses terkirim ke ${toEmail} (MessageId: ${info.messageId})`);
 
     return {
       success: true,
@@ -126,15 +160,16 @@ async function sendOtpEmail(toEmail, username, otpCode) {
     };
   } catch (err) {
     console.error('[Mailer] Gagal mengirim email via SMTP:', err.message);
-    // Jika SMTP gagal dan devMock aktif, jangan gagalkan proses registrasi
-    if (devMock) {
+    // HANYA gunakan fallback jika devMock aktif dan BUKAN di production/Railway
+    if (devMock && !isProduction) {
       return {
         success: true,
         mock: true,
-        message: 'Koneksi SMTP bermasalah, kode dicatat di konsol server (Dev Mode).'
+        message: 'Koneksi SMTP lokal bermasalah, kode dicatat di konsol server (Dev Mode).'
       };
     }
-    throw new Error('Gagal mengirim email verifikasi: ' + err.message);
+    // Di Railway/Production, wajib lempar error agar respons 500 sampai ke frontend dan user mengetahui penyebabnya
+    throw new Error('Gagal mengirim email verifikasi ke ' + toEmail + ': ' + err.message);
   }
 }
 
