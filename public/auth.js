@@ -406,6 +406,10 @@
     } else {
       userAvatarInitial.textContent = '?';
       userNameLabel.textContent = 'Masuk';
+      if (dropdownAvatar) dropdownAvatar.textContent = '?';
+      if (dropdownUsername) dropdownUsername.textContent = 'Pengguna';
+      if (dropdownEmail) dropdownEmail.textContent = '';
+      if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
     }
   }
 
@@ -427,8 +431,14 @@
   function logout() {
     authToken = null;
     currentUser = null;
-    localStorage.removeItem(STORAGE_KEY_TOKEN);
-    localStorage.removeItem(STORAGE_KEY_USER);
+    try {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_USER);
+      sessionStorage.removeItem(STORAGE_KEY_TOKEN);
+      sessionStorage.removeItem(STORAGE_KEY_USER);
+    } catch (e) {
+      console.warn('[Auth] Gagal membersihkan storage:', e);
+    }
 
     if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
     updateUserNavbar();
@@ -600,12 +610,11 @@
 
     if (btnLogout) {
       btnLogout.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
-        if (confirm('Apakah Anda yakin ingin keluar (logout)?')) {
-          logout();
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
         }
+        logout();
       });
     }
 
