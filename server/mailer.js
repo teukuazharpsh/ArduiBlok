@@ -60,6 +60,41 @@ async function sendViaResend(apiKey, toEmail, username, otpCode, htmlContent) {
   };
 }
 
+/**
+ * Pengiriman via Google Apps Script Webhook (Port 443 HTTPS)
+ * Mengirimkan email langsung dari Gmail pribadi pengguna (misal teukuazharpasha@gmail.com)
+ * ke SIAPA SAJA tanpa butuh domain berbayar dan tanpa diblokir oleh Railway.
+ */
+async function sendViaGoogleScript(webhookUrl, toEmail, username, otpCode, htmlContent) {
+  const secret = sanitizeEnv(process.env.GMAIL_WEBHOOK_SECRET) || 'arduiblok_mailer_secret_2026';
+  
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      secret: secret,
+      to: toEmail,
+      subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
+      html: htmlContent
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (data.error) {
+    throw new Error('Google Apps Script: ' + data.error);
+  }
+
+  console.log(`[Mailer - Google Webhook] Email OTP sukses terkirim ke ${toEmail} via Gmail`);
+  return {
+    success: true,
+    mock: false,
+    message: 'Kode OTP telah dikirim ke email Anda.'
+  };
+}
+
 // Buat transporter Nodemailer jika kredensial SMTP tersedia (untuk lokal atau server dengan port SMTP terbuka)
 function createTransporter() {
   const host = sanitizeEnv(process.env.SMTP_HOST);
@@ -170,7 +205,18 @@ async function sendOtpEmail(toEmail, username, otpCode) {
     </html>
   `;
 
-  // ── Opsi 1: Pengiriman via Resend REST API (HTTPS Port 443 - Solusi Utama Railway) ──
+  // ── Opsi 1: Pengiriman via Google Apps Script Webhook (Port 443 HTTPS - Pakai Gmail Pribadi ke Siapa Saja Tanpa Butuh Domain) ──
+  const gmailWebhookUrl = sanitizeEnv(process.env.GMAIL_WEBHOOK_URL);
+  if (gmailWebhookUrl) {
+    try {
+      return await sendViaGoogleScript(gmailWebhookUrl, toEmail, username, otpCode, htmlContent);
+    } catch (gErr) {
+      console.error('[Mailer Google Webhook Error]:', gErr.message);
+      throw new Error('Gagal mengirim email via Google Webhook: ' + gErr.message);
+    }
+  }
+
+  // ── Opsi 2: Pengiriman via Resend REST API (HTTPS Port 443) ──
   if (resendApiKey) {
     try {
       return await sendViaResend(resendApiKey, toEmail, username, otpCode, htmlContent);
