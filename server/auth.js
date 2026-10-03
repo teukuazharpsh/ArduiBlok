@@ -116,9 +116,12 @@ router.post('/register', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Kode OTP verifikasi telah dikirim ke email Anda. Silakan periksa inbox atau folder spam.',
+      message: mailResult.mock
+        ? `[Mode Lokal / SMTP Belum Diset] Kode verifikasi Anda adalah: ${otpCode}`
+        : 'Kode OTP verifikasi telah dikirim ke email Anda. Silakan periksa inbox atau folder spam.',
       email: cleanEmail,
-      isMock: mailResult.mock
+      isMock: mailResult.mock,
+      mockOtp: mailResult.mock ? otpCode : undefined
     });
 
   } catch (err) {
@@ -238,8 +241,11 @@ router.post('/resend-otp', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Kode OTP baru berhasil dikirimkan ke email Anda.',
-      isMock: mailResult.mock
+      message: mailResult.mock
+        ? `[Mode Lokal / SMTP Belum Diset] Kode verifikasi baru Anda: ${newOtp}`
+        : 'Kode OTP baru berhasil dikirimkan ke email Anda.',
+      isMock: mailResult.mock,
+      mockOtp: mailResult.mock ? newOtp : undefined
     });
 
   } catch (err) {
@@ -280,14 +286,17 @@ router.post('/login', async (req, res) => {
         otpCode: newOtp,
         expiresAtMs: 10 * 60 * 1000
       });
-      await mailer.sendOtpEmail(user.email, user.username, newOtp);
+      const mailRes = await mailer.sendOtpEmail(user.email, user.username, newOtp);
 
       return res.status(403).json({
         success: false,
         requireVerification: true,
         email: user.email,
         username: user.username,
-        error: 'Akun Anda belum diverifikasi. Kode OTP baru telah dikirimkan ke email Anda.'
+        mockOtp: mailRes.mock ? newOtp : undefined,
+        error: mailRes.mock
+          ? `Akun belum terverifikasi. [Mode Lokal] Kode OTP Anda: ${newOtp}`
+          : 'Akun Anda belum diverifikasi. Kode OTP baru telah dikirimkan ke email Anda.'
       });
     }
 
