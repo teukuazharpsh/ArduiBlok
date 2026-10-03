@@ -578,6 +578,7 @@
     // User Profile Dropdown
     if (btnUserMenu && userDropdownMenu) {
       btnUserMenu.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         if (!currentUser) {
           showAuthModal('login');
@@ -586,15 +587,22 @@
         userDropdownMenu.classList.toggle('hidden');
       });
 
+      userDropdownMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
       document.addEventListener('click', (e) => {
-        if (userDropdownMenu && !userDropdownMenu.contains(e.target) && !btnUserMenu.contains(e.target)) {
+        if (userDropdownMenu && !userDropdownMenu.classList.contains('hidden') && !userDropdownMenu.contains(e.target) && !btnUserMenu.contains(e.target)) {
           userDropdownMenu.classList.add('hidden');
         }
       });
     }
 
     if (btnLogout) {
-      btnLogout.addEventListener('click', () => {
+      btnLogout.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
         if (confirm('Apakah Anda yakin ingin keluar (logout)?')) {
           logout();
         }
