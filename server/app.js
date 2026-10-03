@@ -1,4 +1,11 @@
 require('dotenv').config();
+const dns = require('dns');
+
+// Prioritaskan IPv4 daripada IPv6 di seluruh proses (mengatasi ENETUNREACH di lingkungan cloud/Railway)
+if (dns && dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');

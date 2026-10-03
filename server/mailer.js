@@ -4,6 +4,12 @@
  */
 
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Paksa resolusi DNS mendahulukan IPv4 untuk mencegah ENETUNREACH pada Railway / Docker
+if (dns && dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Helper: Bersihkan string dari tanda petik dua/satu dan spasi berlebih (mengantisipasi copy-paste di Railway)
 function sanitizeEnv(val) {
@@ -34,6 +40,7 @@ function createTransporter() {
     if (isGmail) {
       return nodemailer.createTransport({
         service: 'gmail',
+        family: 4, // Gunakan IPv4 secara ketat untuk cloud container tanpa rute IPv6
         auth: {
           user: user,
           pass: pass
@@ -48,6 +55,7 @@ function createTransporter() {
       host: host || 'smtp.gmail.com',
       port: isNaN(port) ? 465 : port,
       secure: secure,
+      family: 4, // Gunakan IPv4 secara ketat untuk cloud container tanpa rute IPv6
       auth: {
         user: user,
         pass: pass
