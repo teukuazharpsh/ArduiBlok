@@ -1,6 +1,8 @@
 /**
  * ArduiBlok — Email & OTP Service (server/mailer.js)
- * Generates OTP codes and delivers emails via Nodemailer with local mock fallback.
+ * Generates OTP codes and delivers emails via:
+ * 1. Resend REST API (HTTPS Port 443 - Solusi resmi Railway karena memblokir port SMTP 465/587)
+ * 2. Nodemailer SMTP (Gmail / Custom SMTP untuk server lokal atau VPS)
  */
 
 const nodemailer = require('nodemailer');
@@ -11,7 +13,7 @@ if (dns && dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
 
-// Helper: Bersihkan string dari tanda petik dua/satu dan spasi berlebih (mengantisipasi copy-paste di Railway)
+// Helper: Bersihkan string dari tanda petik dua/satu dan spasi berlebih
 function sanitizeEnv(val) {
   if (!val) return '';
   return String(val).replace(/^["']|["']$/g, '').trim();
@@ -22,25 +24,59 @@ function generateOtpCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Buat transporter Nodemailer jika kredensial SMTP tersedia
+/**
+ * Pengiriman via Resend REST API (HTTPS Port 443)
+ * Sangat direkomendasikan untuk Railway karena Railway memblokir port SMTP (25, 465, 587) pada akun Free/Hobby.
+ */
+async function sendViaResend(apiKey, toEmail, username, otpCode, htmlContent) {
+  const fromAddress = sanitizeEnv(process.env.RESEND_FROM) || 'ArduiBlok Studio <onboarding@resend.dev>';
+  
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: fromAddress,
+      to: [toEmail],
+      subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
+      html: htmlContent,
+      text: `Halo ${username},\n\nKode verifikasi akun ArduiBlok Anda adalah: ${otpCode}\n\nKode berlaku selama 10 menit.`
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    const errorMsg = data && (data.message || data.error) ? (data.message || data.error) : JSON.stringify(data);
+    throw new Error('Resend API: ' + errorMsg);
+  }
+
+  console.log(`[Mailer - Resend] Email OTP sukses terkirim ke ${toEmail} (ID: ${data.id})`);
+  return {
+    success: true,
+    mock: false,
+    message: 'Kode OTP telah dikirim ke email Anda.'
+  };
+}
+
+// Buat transporter Nodemailer jika kredensial SMTP tersedia (untuk lokal atau server dengan port SMTP terbuka)
 function createTransporter() {
   const host = sanitizeEnv(process.env.SMTP_HOST);
   const rawPort = sanitizeEnv(process.env.SMTP_PORT);
   const port = parseInt(rawPort || '465', 10);
   const user = sanitizeEnv(process.env.SMTP_USER);
   const rawPass = sanitizeEnv(process.env.SMTP_PASS);
-  const pass = rawPass.replace(/\s+/g, ''); // Hapus spasi untuk App Password Google (16 karakter bersih)
+  const pass = rawPass.replace(/\s+/g, '');
   const secureEnv = sanitizeEnv(process.env.SMTP_SECURE);
   const secure = secureEnv === 'true' || port === 465;
 
   if (user && pass) {
-    // Jika menggunakan Gmail (host smtp.gmail.com atau user @gmail.com)
-    // Menggunakan service: 'gmail' memberikan rute tercepat dan paling stabil di cloud container (Railway)
     const isGmail = (host && host.toLowerCase().includes('gmail')) || user.toLowerCase().endsWith('@gmail.com');
     if (isGmail) {
       return nodemailer.createTransport({
         service: 'gmail',
-        family: 4, // Gunakan IPv4 secara ketat untuk cloud container tanpa rute IPv6
+        family: 4,
         auth: {
           user: user,
           pass: pass
@@ -55,7 +91,7 @@ function createTransporter() {
       host: host || 'smtp.gmail.com',
       port: isNaN(port) ? 465 : port,
       secure: secure,
-      family: 4, // Gunakan IPv4 secara ketat untuk cloud container tanpa rute IPv6
+      family: 4,
       auth: {
         user: user,
         pass: pass
@@ -81,6 +117,7 @@ function createTransporter() {
 async function sendOtpEmail(toEmail, username, otpCode) {
   const devMock = sanitizeEnv(process.env.DEV_MOCK_OTP) === 'true';
   const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
+  const resendApiKey = sanitizeEnv(process.env.RESEND_API_KEY);
   const transporter = createTransporter();
 
   // Log ke terminal server untuk kemudahan debugging dan pengujian lokal
@@ -90,19 +127,6 @@ async function sendOtpEmail(toEmail, username, otpCode) {
   console.log(`  Kode OTP     : >>> ${otpCode} <<<`);
   console.log('  Masa Berlaku : 10 Menit');
   console.log('======================================================\n');
-
-  // Jika transporter SMTP tidak dikonfigurasi
-  if (!transporter) {
-    if (devMock && !isProduction) {
-      console.warn('[Mailer Warning] SMTP belum diset, menggunakan mode dev mock lokal (DEV_MOCK_OTP=true)');
-      return {
-        success: true,
-        mock: true,
-        message: 'Kode OTP dicatat di konsol server (Mode Dev).'
-      };
-    }
-    throw new Error('Layanan email SMTP belum dikonfigurasi di server. Pastikan variabel SMTP_USER dan SMTP_PASS telah disetel tanpa tanda petik di Railway Variables.');
-  }
 
   // Template email HTML modern
   const htmlContent = `
@@ -146,6 +170,32 @@ async function sendOtpEmail(toEmail, username, otpCode) {
     </html>
   `;
 
+  // ── Opsi 1: Pengiriman via Resend REST API (HTTPS Port 443 - Solusi Utama Railway) ──
+  if (resendApiKey) {
+    try {
+      return await sendViaResend(resendApiKey, toEmail, username, otpCode, htmlContent);
+    } catch (resendErr) {
+      console.error('[Mailer Resend Error]:', resendErr.message);
+      throw new Error('Gagal mengirim email via Resend API: ' + resendErr.message);
+    }
+  }
+
+  // ── Opsi 2: Pengiriman via Nodemailer SMTP (Jika kredensial diset) ──
+  if (!transporter) {
+    if (devMock && !isProduction) {
+      console.warn('[Mailer Warning] Layanan email belum diset, menggunakan mode dev mock lokal (DEV_MOCK_OTP=true)');
+      return {
+        success: true,
+        mock: true,
+        message: 'Kode OTP dicatat di konsol server (Mode Dev).'
+      };
+    }
+    throw new Error(
+      'Layanan email belum dikonfigurasi di server. ' +
+      'Karena Railway memblokir port SMTP (465/587), tambahkan variabel RESEND_API_KEY di Railway Dashboard (dapatkan gratis di resend.com).'
+    );
+  }
+
   try {
     const rawFrom = sanitizeEnv(process.env.EMAIL_FROM);
     const user = sanitizeEnv(process.env.SMTP_USER);
@@ -167,8 +217,21 @@ async function sendOtpEmail(toEmail, username, otpCode) {
       message: 'Kode OTP telah dikirim ke email Anda.'
     };
   } catch (err) {
-    console.error('[Mailer] Gagal mengirim email via SMTP:', err.message);
-    // HANYA gunakan fallback jika devMock aktif dan BUKAN di production/Railway
+    console.error('[Mailer SMTP Error]:', err.message);
+    
+    // Deteksi jika kegagalan disebabkan blokir port SMTP oleh cloud provider (Railway)
+    const isPortBlocked = err.message.includes('timeout') || 
+                          err.message.includes('ETIMEDOUT') || 
+                          err.message.includes('ENETUNREACH') ||
+                          err.message.includes('ECONNREFUSED');
+
+    if (isPortBlocked && isProduction) {
+      throw new Error(
+        'Railway memblokir port SMTP (465/587) pada akun Free/Hobby. ' +
+        'Solusi resmi: Tambahkan variabel RESEND_API_KEY di Railway Variables. Dapatkan API Key gratis di https://resend.com (menggunakan HTTPS Port 443 yang tidak pernah diblokir).'
+      );
+    }
+
     if (devMock && !isProduction) {
       return {
         success: true,
@@ -176,7 +239,7 @@ async function sendOtpEmail(toEmail, username, otpCode) {
         message: 'Koneksi SMTP lokal bermasalah, kode dicatat di konsol server (Dev Mode).'
       };
     }
-    // Di Railway/Production, wajib lempar error agar respons 500 sampai ke frontend dan user mengetahui penyebabnya
+
     throw new Error('Gagal mengirim email verifikasi ke ' + toEmail + ': ' + err.message);
   }
 }
