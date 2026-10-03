@@ -453,6 +453,8 @@
       if (adminDropdownSection) adminDropdownSection.classList.add('hidden');
       const adminModal = document.getElementById('modalAdminServer');
       if (adminModal) adminModal.classList.add('hidden');
+      const cloudModal = document.getElementById('cloudProjectsModal');
+      if (cloudModal) cloudModal.classList.add('hidden');
     }
   }
 

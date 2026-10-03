@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=6.2">
+  <link rel="stylesheet" href="style.css?v=6.3">
 </head>
 <body>
 
@@ -378,6 +378,76 @@
           <input type="checkbox" id="chkRememberModeChoice">
           <span>Ingat pilihan saya (bisa beralih kapan saja lewat tombol di workspace)</span>
         </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cloud Projects (Proyek Saya di Cloud) -->
+  <div class="modal-overlay hidden" id="cloudProjectsModal">
+    <div class="modal-container cloud-projects-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 22px; height: 22px; color: var(--accent-primary); stroke: currentColor; fill: none; stroke-width: 1.8;">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+          </svg>
+          <div>
+            <h2>Proyek Saya di Cloud</h2>
+            <p class="modal-subtitle">Kelola proyek Blockly yang tersimpan di akun Anda</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseCloudProjects" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body cloud-projects-body">
+        <!-- Toolbar Atas: Simpan ke Cloud -->
+        <div class="cloud-save-section">
+          <div class="cloud-save-info">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;color:var(--accent-primary);">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Simpan workspace saat ini ke Cloud dengan nama:</span>
+          </div>
+          <div class="cloud-save-form">
+            <input type="text" id="cloudProjectNameInput" class="cloud-project-name-input" placeholder="Nama proyek..." maxlength="80" spellcheck="false" autocomplete="off">
+            <button class="btn btn-compile cloud-save-btn" id="btnSaveToCloud" title="Simpan proyek ke Cloud">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+              <span>Simpan ke Cloud</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="cloud-projects-divider"></div>
+
+        <!-- Daftar Proyek Cloud -->
+        <div class="cloud-projects-list-header">
+          <h3>Daftar Proyek Tersimpan</h3>
+          <span class="cloud-projects-count" id="cloudProjectsCount">Memuat...</span>
+        </div>
+
+        <div class="cloud-projects-list" id="cloudProjectsList">
+          <!-- Dirender via JavaScript -->
+        </div>
+
+        <!-- State Kosong -->
+        <div class="cloud-projects-empty hidden" id="cloudProjectsEmpty">
+          <div class="cloud-empty-icon">☁️</div>
+          <h3>Belum Ada Proyek</h3>
+          <p>Simpan proyek Blockly Anda ke cloud agar bisa diakses dari mana saja dan kapan saja!</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="cloud-projects-hint">💡 Proyek disimpan di server dan terikat dengan akun Anda.</span>
+        <button class="btn btn-secondary" id="btnCloseCloudProjectsFooter">Tutup</button>
       </div>
     </div>
   </div>
@@ -1244,6 +1314,14 @@
           <span class="btn-text btn-text-mobile-hide">Simpan</span>
         </button>
 
+        <!-- Tombol Cloud Projects -->
+        <button class="btn btn-secondary btn-cloud-projects" id="btnCloudProjects" title="Buka Proyek Cloud — Simpan & Muat proyek dari server">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Cloud</span>
+        </button>
+
         <!-- Tombol Clear / Reset -->
         <button class="btn btn-secondary" id="btnClear" title="Kosongkan workspace">
           <svg class="svg-icon" viewBox="0 0 24 24">
@@ -1294,6 +1372,13 @@
                 <span id="dropdownEmail">email@domain.com</span>
               </div>
             </div>
+
+            <!-- Item Proyek Cloud Saya -->
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item" id="btnOpenCloudProjectsDropdown" type="button">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="color: #6366f1;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+              <span>Proyek Cloud Saya</span>
+            </button>
             <!-- Item Khusus Superadmin (Hanya muncul jika akun superadmin terotentikasi) -->
             <div id="adminDropdownSection" class="hidden">
               <div class="user-dropdown-divider"></div>
@@ -1695,7 +1780,7 @@
   <script src="blocks/arduino_generator.js?v=2.0"></script>
 
   <!-- Authentication & User Session Manager -->
-  <script src="auth.js?v=2.5"></script>
+  <script src="auth.js?v=2.6"></script>
 
   <!-- Superadmin Server Management & Database Migration Panel -->
   <script src="admin.js?v=1.3"></script>
@@ -2727,6 +2812,386 @@
         }
       });
     }
+
+    // ── Cloud Project Management ──────────────────────────
+    (function initCloudProjects() {
+      const cloudModal = document.getElementById('cloudProjectsModal');
+      const btnCloudProjects = document.getElementById('btnCloudProjects');
+      const btnCloseCloud = document.getElementById('btnCloseCloudProjects');
+      const btnCloseCloudFooter = document.getElementById('btnCloseCloudProjectsFooter');
+      const cloudNameInput = document.getElementById('cloudProjectNameInput');
+      const btnSaveToCloud = document.getElementById('btnSaveToCloud');
+      const cloudProjectsList = document.getElementById('cloudProjectsList');
+      const cloudProjectsCount = document.getElementById('cloudProjectsCount');
+      const cloudProjectsEmpty = document.getElementById('cloudProjectsEmpty');
+
+      let currentCloudProjectId = null; // ID proyek yang saat ini aktif (untuk update)
+
+      function getAuthHeaders() {
+        const token = window.ArduiBlokAuth && window.ArduiBlokAuth.getToken();
+        if (!token) return null;
+        return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+      }
+
+      function openCloudModal() {
+        if (!window.ArduiBlokAuth || !window.ArduiBlokAuth.isLoggedIn()) {
+          if (confirm('Fitur Cloud Projects membutuhkan akun masuk.\n\nApakah Anda ingin membuka halaman Masuk / Daftar sekarang?')) {
+            if (window.ArduiBlokAuth && window.ArduiBlokAuth.showAuthModal) {
+              window.ArduiBlokAuth.showAuthModal('login');
+            }
+          }
+          return;
+        }
+        if (cloudModal) cloudModal.classList.remove('hidden');
+        // Pre-fill nama project dari text box
+        if (cloudNameInput && projectNameInput) {
+          cloudNameInput.value = projectNameInput.value || '';
+        }
+        fetchCloudProjects();
+      }
+
+      function closeCloudModal() {
+        if (cloudModal) cloudModal.classList.add('hidden');
+      }
+
+      // Ambil daftar proyek dari server
+      async function fetchCloudProjects() {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        if (cloudProjectsList) cloudProjectsList.innerHTML = '<div class="cloud-loading"><span class="loading-spinner-sm"></span> Memuat proyek...</div>';
+        if (cloudProjectsEmpty) cloudProjectsEmpty.classList.add('hidden');
+
+        try {
+          const res = await fetch('/api/projects', { headers });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            renderCloudProjects(data.projects || []);
+          } else {
+            if (cloudProjectsList) cloudProjectsList.innerHTML = '<div class="cloud-error">❌ Gagal memuat proyek: ' + (data.error || 'Unknown error') + '</div>';
+          }
+        } catch (err) {
+          if (cloudProjectsList) cloudProjectsList.innerHTML = '<div class="cloud-error">❌ Gagal terhubung ke server: ' + err.message + '</div>';
+        }
+      }
+
+      function renderCloudProjects(projects) {
+        if (cloudProjectsCount) {
+          cloudProjectsCount.textContent = projects.length + ' proyek';
+        }
+
+        if (!projects || projects.length === 0) {
+          if (cloudProjectsList) cloudProjectsList.innerHTML = '';
+          if (cloudProjectsEmpty) cloudProjectsEmpty.classList.remove('hidden');
+          return;
+        }
+
+        if (cloudProjectsEmpty) cloudProjectsEmpty.classList.add('hidden');
+
+        let html = '';
+        projects.forEach(function(p) {
+          const updatedDate = p.updatedAt ? new Date(p.updatedAt).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          }) : '-';
+          const createdDate = p.createdAt ? new Date(p.createdAt).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', year: 'numeric'
+          }) : '-';
+          const isActive = currentCloudProjectId === p.id;
+          const boardLabel = (p.board || 'arduino_uno').replace(/_/g, ' ');
+
+          html += '<div class="cloud-project-card' + (isActive ? ' active' : '') + '" data-project-id="' + p.id + '">';
+          html += '  <div class="cloud-project-info">';
+          html += '    <div class="cloud-project-name">' + escapeHtml(p.name) + (isActive ? ' <span class="cloud-active-badge">AKTIF</span>' : '') + '</div>';
+          html += '    <div class="cloud-project-meta">';
+          html += '      <span class="cloud-meta-item">📋 ' + boardLabel + '</span>';
+          html += '      <span class="cloud-meta-item">📅 ' + updatedDate + '</span>';
+          html += '    </div>';
+          html += '  </div>';
+          html += '  <div class="cloud-project-actions">';
+          html += '    <button class="btn btn-compile btn-sm cloud-btn-load" data-id="' + p.id + '" title="Muat proyek ini ke workspace">';
+          html += '      <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+          html += '      <span>Muat</span>';
+          html += '    </button>';
+          html += '    <button class="btn btn-danger btn-sm cloud-btn-delete" data-id="' + p.id + '" data-name="' + escapeHtml(p.name) + '" title="Hapus proyek ini">';
+          html += '      <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+          html += '      <span>Hapus</span>';
+          html += '    </button>';
+          html += '  </div>';
+          html += '</div>';
+        });
+
+        if (cloudProjectsList) {
+          cloudProjectsList.innerHTML = html;
+
+          // Event: Muat Proyek
+          cloudProjectsList.querySelectorAll('.cloud-btn-load').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              loadCloudProject(this.getAttribute('data-id'));
+            });
+          });
+
+          // Event: Hapus Proyek
+          cloudProjectsList.querySelectorAll('.cloud-btn-delete').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const id = this.getAttribute('data-id');
+              const name = this.getAttribute('data-name');
+              deleteCloudProject(id, name);
+            });
+          });
+        }
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+
+      // Simpan workspace saat ini ke cloud
+      async function saveToCloud() {
+        const headers = getAuthHeaders();
+        if (!headers) {
+          alert('Silakan masuk ke akun terlebih dahulu.');
+          return;
+        }
+
+        const projectName = (cloudNameInput ? cloudNameInput.value.trim() : '') || (projectNameInput ? projectNameInput.value.trim() : '') || 'Proyek Tanpa Judul';
+
+        let xmlText = '';
+        let cppCode = '';
+        let board = 'arduino_uno';
+
+        // Dapatkan XML dari blockly workspace
+        if (currentAppMode === 'text' && window.ArduiBlokEditor) {
+          cppCode = window.ArduiBlokEditor.getValue() || '';
+          // Untuk mode teks, simpan kode teks saja
+          xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+        } else if (workspace) {
+          try {
+            const xmlDom = Blockly.Xml.workspaceToDom(workspace);
+            xmlText = Blockly.Xml.domToPrettyText(xmlDom);
+          } catch (e) {
+            alert('Gagal mengambil data workspace: ' + e.message);
+            return;
+          }
+          // Dapatkan kode C++ dari panel preview
+          const codePreview = document.getElementById('codePreview');
+          if (codePreview) cppCode = codePreview.textContent || '';
+        }
+
+        if (!xmlText && !cppCode) {
+          alert('Workspace kosong — tidak ada yang bisa disimpan.');
+          return;
+        }
+
+        // Dapatkan board saat ini
+        const selectBoard = document.getElementById('selectBoardType');
+        if (selectBoard) board = selectBoard.value || 'arduino_uno';
+
+        // Disable tombol saat proses
+        if (btnSaveToCloud) {
+          btnSaveToCloud.disabled = true;
+          btnSaveToCloud.innerHTML = '<span class="loading-spinner-sm"></span> <span>Menyimpan...</span>';
+        }
+
+        try {
+          const body = {
+            id: currentCloudProjectId || undefined,
+            name: projectName,
+            board: board,
+            xml: xmlText,
+            cppCode: cppCode
+          };
+
+          const res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            currentCloudProjectId = data.project.id;
+            // Update nama project di text box
+            if (projectNameInput) {
+              projectNameInput.value = projectName;
+              localStorage.setItem('arduiblok_current_project_name', projectName);
+            }
+            // Refresh daftar
+            fetchCloudProjects();
+
+            // Animasi sukses singkat
+            if (btnSaveToCloud) {
+              btnSaveToCloud.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Tersimpan!</span>';
+              btnSaveToCloud.classList.add('btn-success-flash');
+              setTimeout(function() {
+                resetSaveButton();
+              }, 2000);
+            }
+          } else {
+            alert('Gagal menyimpan ke Cloud: ' + (data.error || 'Unknown'));
+            resetSaveButton();
+          }
+        } catch (err) {
+          alert('Gagal terhubung ke server: ' + err.message);
+          resetSaveButton();
+        }
+      }
+
+      function resetSaveButton() {
+        if (btnSaveToCloud) {
+          btnSaveToCloud.disabled = false;
+          btnSaveToCloud.classList.remove('btn-success-flash');
+          btnSaveToCloud.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg> <span>Simpan ke Cloud</span>';
+        }
+      }
+
+      // Muat proyek dari cloud ke workspace
+      async function loadCloudProject(projectId) {
+        if (!projectId) return;
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const currentBlocks = workspace ? workspace.getAllBlocks(false) : [];
+        if (currentBlocks.length > 2) {
+          if (!confirm('Muat proyek dari Cloud?\n\nPerhatian: Workspace saat ini akan digantikan oleh proyek cloud yang dipilih.')) return;
+        }
+
+        try {
+          const res = await fetch('/api/projects/' + projectId, { headers });
+          const data = await res.json();
+
+          if (res.ok && data.success && data.project) {
+            const proj = data.project;
+
+            // Load XML ke Blockly workspace
+            if (proj.xml && workspace) {
+              try {
+                workspace.clear();
+                const xmlDom = Blockly.utils.xml.textToDom(proj.xml);
+                Blockly.Xml.domToWorkspace(xmlDom, workspace);
+                setAppMode('block');
+                generateCode();
+              } catch (e) {
+                // Jika XML gagal, coba load kode C++ ke text editor
+                if (proj.cppCode && window.ArduiBlokEditor) {
+                  setAppMode('text');
+                  window.ArduiBlokEditor.setValue(proj.cppCode);
+                }
+              }
+            } else if (proj.cppCode && window.ArduiBlokEditor) {
+              setAppMode('text');
+              window.ArduiBlokEditor.setValue(proj.cppCode);
+            }
+
+            // Update nama project
+            if (projectNameInput) {
+              projectNameInput.value = proj.name;
+              localStorage.setItem('arduiblok_current_project_name', proj.name);
+            }
+            if (cloudNameInput) {
+              cloudNameInput.value = proj.name;
+            }
+
+            // Set board jika ada
+            const selectBoard = document.getElementById('selectBoardType');
+            if (selectBoard && proj.board) {
+              selectBoard.value = proj.board;
+              selectBoard.dispatchEvent(new Event('change'));
+            }
+
+            currentCloudProjectId = proj.id;
+
+            // Auto-save ke localStorage
+            try {
+              const dom = Blockly.Xml.workspaceToDom(workspace);
+              const xmlSave = Blockly.Xml.domToText(dom);
+              localStorage.setItem('arduiblok_saved_workspace', xmlSave);
+            } catch (e) {}
+
+            closeCloudModal();
+
+            // Feedback visual
+            if (typeof playSnapSound === 'function') playSnapSound();
+          } else {
+            alert('Gagal memuat proyek: ' + (data.error || 'Proyek tidak ditemukan.'));
+          }
+        } catch (err) {
+          alert('Gagal terhubung ke server: ' + err.message);
+        }
+      }
+
+      // Hapus proyek dari cloud
+      async function deleteCloudProject(projectId, projectName) {
+        if (!projectId) return;
+        if (!confirm('Hapus proyek "' + (projectName || 'Untitled') + '" dari Cloud?\n\nTindakan ini tidak bisa dibatalkan.')) return;
+
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        try {
+          const res = await fetch('/api/projects/' + projectId, {
+            method: 'DELETE',
+            headers: headers
+          });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            if (currentCloudProjectId === projectId) {
+              currentCloudProjectId = null;
+            }
+            fetchCloudProjects();
+          } else {
+            alert('Gagal menghapus proyek: ' + (data.error || 'Unknown'));
+          }
+        } catch (err) {
+          alert('Gagal terhubung ke server: ' + err.message);
+        }
+      }
+
+      // Event listeners
+      if (btnCloudProjects) btnCloudProjects.addEventListener('click', openCloudModal);
+      if (btnCloseCloud) btnCloseCloud.addEventListener('click', closeCloudModal);
+      if (btnCloseCloudFooter) btnCloseCloudFooter.addEventListener('click', closeCloudModal);
+      if (btnSaveToCloud) btnSaveToCloud.addEventListener('click', saveToCloud);
+
+      // Buka dari Dropdown Profil Pengguna
+      const btnOpenCloudProjectsDropdown = document.getElementById('btnOpenCloudProjectsDropdown');
+      if (btnOpenCloudProjectsDropdown) {
+        btnOpenCloudProjectsDropdown.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const userDropdownMenu = document.getElementById('userDropdownMenu');
+          if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
+          openCloudModal();
+        });
+      }
+
+      // Enter key pada input nama proyek cloud
+      if (cloudNameInput) {
+        cloudNameInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveToCloud();
+          }
+        });
+      }
+
+      // Klik overlay untuk tutup
+      if (cloudModal) {
+        cloudModal.addEventListener('click', function(e) {
+          if (e.target === cloudModal) closeCloudModal();
+        });
+      }
+
+      // Ekspos fungsi global
+      window.openCloudProjects = openCloudModal;
+    })();
 
     // ── File Download Utilities ───────────────────────────
     function downloadHexFile(base64Data, filename) {

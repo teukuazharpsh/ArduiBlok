@@ -6231,4 +6231,298 @@ body.mode-text #blocklyDiv {
   .admin-search-wrapper {
     width: 100%;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Cloud Projects Modal
+   ═══════════════════════════════════════════════════════════════ */
+
+.cloud-projects-modal-container {
+  max-width: 680px;
+  width: 95vw;
+}
+
+.cloud-projects-body {
+  padding: 20px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+/* Save Section */
+.cloud-save-section {
+  background: var(--bg-secondary, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.cloud-save-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cloud-save-form {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.cloud-project-name-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  background: var(--bg-primary, #0d1117);
+  color: var(--text-primary, #e2e8f0);
+  font-size: 0.92rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cloud-project-name-input:focus {
+  border-color: var(--accent-primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.cloud-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.cloud-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-success-flash {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  border-color: #22c55e !important;
+}
+
+/* Divider */
+.cloud-projects-divider {
+  height: 1px;
+  background: var(--border-color, rgba(255,255,255,0.06));
+  margin: 20px 0;
+}
+
+/* List Header */
+.cloud-projects-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cloud-projects-list-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+}
+
+.cloud-projects-count {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #94a3b8);
+  background: var(--bg-secondary, rgba(255,255,255,0.04));
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+/* Project Cards */
+.cloud-projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cloud-project-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.cloud-project-card:hover {
+  border-color: var(--accent-primary, #6366f1);
+  background: var(--bg-hover, rgba(99, 102, 241, 0.04));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.cloud-project-card.active {
+  border-color: var(--accent-primary, #6366f1);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.cloud-project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cloud-project-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-active-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.cloud-project-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.cloud-meta-item {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cloud-project-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cloud-project-actions .btn-sm {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Empty State */
+.cloud-projects-empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.cloud-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  filter: grayscale(0.3);
+}
+
+.cloud-projects-empty h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0 0 8px;
+}
+
+.cloud-projects-empty p {
+  font-size: 0.88rem;
+  color: var(--text-secondary, #94a3b8);
+  max-width: 340px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Loading / Error */
+.cloud-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.cloud-error {
+  text-align: center;
+  padding: 24px;
+  font-size: 0.88rem;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.06);
+  border-radius: 8px;
+}
+
+/* Footer Hint */
+.cloud-projects-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+  flex: 1;
+}
+
+/* Cloud Button in Header */
+.btn-cloud-projects {
+  position: relative;
+}
+
+.btn-cloud-projects .svg-icon {
+  color: var(--accent-primary, #6366f1);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .cloud-save-form {
+    flex-direction: column;
+  }
+  .cloud-save-btn {
+    justify-content: center;
+  }
+  .cloud-project-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cloud-project-actions {
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .cloud-projects-modal-container {
+    width: 100vw;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+  }
 }

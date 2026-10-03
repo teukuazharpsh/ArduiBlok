@@ -13,7 +13,8 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 // Memory cache
 let dbData = {
   users: [],
-  otps: []
+  otps: [],
+  projects: []
 };
 
 // Ensure data directory exists
@@ -29,12 +30,13 @@ function loadDatabase() {
       const parsed = JSON.parse(raw);
       dbData.users = Array.isArray(parsed.users) ? parsed.users : [];
       dbData.otps = Array.isArray(parsed.otps) ? parsed.otps : [];
+      dbData.projects = Array.isArray(parsed.projects) ? parsed.projects : [];
     } else {
       saveDatabaseSync();
     }
   } catch (err) {
     console.error('[DB] Gagal memuat db.json, menginisialisasi ulang:', err.message);
-    dbData = { users: [], otps: [] };
+    dbData = { users: [], otps: [], projects: [] };
     saveDatabaseSync();
   }
 }
@@ -248,6 +250,80 @@ function getRawDatabaseData() {
   return JSON.parse(JSON.stringify(dbData));
 }
 
+// ── User Project Cloud Operations ────────────────────────────
+
+function getUserProjects(userId) {
+  if (!userId) return [];
+  if (!Array.isArray(dbData.projects)) dbData.projects = [];
+  return dbData.projects
+    .filter(p => p.userId === userId)
+    .map(p => ({
+      id: p.id,
+      name: p.name || 'Proyek Tanpa Judul',
+      board: p.board || 'arduino_uno',
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt
+    }))
+    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+}
+
+function getProjectById(userId, projectId) {
+  if (!userId || !projectId) return null;
+  if (!Array.isArray(dbData.projects)) dbData.projects = [];
+  const proj = dbData.projects.find(p => p.id === projectId && p.userId === userId);
+  return proj ? JSON.parse(JSON.stringify(proj)) : null;
+}
+
+function saveProject(userId, { id, name, board, xml, cppCode }) {
+  if (!userId) throw new Error('Pengguna tidak valid.');
+  if (!Array.isArray(dbData.projects)) dbData.projects = [];
+
+  const nowIso = new Date().toISOString();
+  const cleanName = String(name || 'Proyek Tanpa Judul').trim();
+  const cleanBoard = String(board || 'arduino_uno').trim();
+
+  if (id) {
+    const existing = dbData.projects.find(p => p.id === id && p.userId === userId);
+    if (existing) {
+      existing.name = cleanName;
+      existing.board = cleanBoard;
+      if (xml !== undefined) existing.xml = xml;
+      if (cppCode !== undefined) existing.cppCode = cppCode;
+      existing.updatedAt = nowIso;
+      saveDatabaseSync();
+      return existing;
+    }
+  }
+
+  // Proyek Baru
+  const newProj = {
+    id: id || uuidv4(),
+    userId: userId,
+    name: cleanName,
+    board: cleanBoard,
+    xml: xml || '',
+    cppCode: cppCode || '',
+    createdAt: nowIso,
+    updatedAt: nowIso
+  };
+
+  dbData.projects.push(newProj);
+  saveDatabaseSync();
+  return newProj;
+}
+
+function deleteProject(userId, projectId) {
+  if (!userId || !projectId) return false;
+  if (!Array.isArray(dbData.projects)) dbData.projects = [];
+  const initialLen = dbData.projects.length;
+  dbData.projects = dbData.projects.filter(p => !(p.id === projectId && p.userId === userId));
+  if (dbData.projects.length !== initialLen) {
+    saveDatabaseSync();
+    return true;
+  }
+  return false;
+}
+
 function restoreDatabase(incomingData) {
   if (!incomingData || typeof incomingData !== 'object') {
     throw new Error('Format data backup tidak valid (harus objek JSON).');
@@ -258,13 +334,15 @@ function restoreDatabase(incomingData) {
 
   dbData = {
     users: incomingData.users,
-    otps: Array.isArray(incomingData.otps) ? incomingData.otps : []
+    otps: Array.isArray(incomingData.otps) ? incomingData.otps : [],
+    projects: Array.isArray(incomingData.projects) ? incomingData.projects : []
   };
 
   saveDatabaseSync();
   return {
     totalUsers: dbData.users.length,
-    totalOtps: dbData.otps.length
+    totalOtps: dbData.otps.length,
+    totalProjects: dbData.projects.length
   };
 }
 
@@ -293,6 +371,7 @@ function getDbStats() {
     onlineUsers: online,
     verifiedUsers: verified,
     unverifiedUsers: unverified,
+    totalProjects: (dbData.projects || []).length,
     dbSizeBytes: fileSize,
     lastModified: lastModified
   };
@@ -317,5 +396,9 @@ module.exports = {
   deleteUser,
   getRawDatabaseData,
   restoreDatabase,
-  getDbStats
+  getDbStats,
+  getUserProjects,
+  getProjectById,
+  saveProject,
+  deleteProject
 };
