@@ -5127,13 +5127,14 @@ body.mode-text #blocklyDiv {
    🔐 ARDUIBLOK AUTHENTICATION & OTP VERIFICATION STYLES
    ══════════════════════════════════════════════════════════════ */
 
+/* ── Modal / Overlay Autentikasi Pengguna (Standard Modern) ── */
 .auth-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5142,14 +5143,19 @@ body.mode-text #blocklyDiv {
   transition: opacity 0.25s ease;
 }
 
-.auth-overlay.hidden {
+/* Aturan Isolasi Ketat untuk Menyembunyikan View */
+.hidden,
+.auth-overlay.hidden,
+.auth-view.hidden,
+.auth-form.hidden,
+.auth-alert.hidden {
   display: none !important;
 }
 
 @keyframes authCardEnter {
   from {
     opacity: 0;
-    transform: scale(0.94) translateY(12px);
+    transform: scale(0.95) translateY(14px);
   }
   to {
     opacity: 1;
@@ -5157,17 +5163,38 @@ body.mode-text #blocklyDiv {
   }
 }
 
+@keyframes authViewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .auth-card {
   background: var(--bg-primary, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 20px;
+  border-radius: 22px;
   width: 100%;
   max-width: 440px;
-  padding: 34px 28px;
-  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.35);
+  padding: 34px 30px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
   animation: authCardEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--text-primary, #0f172a);
   position: relative;
+}
+
+[data-theme="dark"] .auth-card {
+  background: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+.auth-view {
+  animation: authViewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-header {
@@ -5181,8 +5208,8 @@ body.mode-text #blocklyDiv {
   border-radius: 20px;
   background: #ffffff;
   padding: 4px;
-  margin: 0 auto 12px;
-  box-shadow: 0 8px 20px rgba(0, 135, 138, 0.22);
+  margin: 0 auto 14px;
+  box-shadow: 0 8px 24px rgba(0, 135, 138, 0.25);
   border: 2px solid rgba(0, 135, 138, 0.25);
   display: flex;
   align-items: center;
@@ -5197,46 +5224,55 @@ body.mode-text #blocklyDiv {
 }
 
 .auth-title {
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 800;
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   color: var(--text-primary, #0f172a);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
+}
+
+[data-theme="dark"] .auth-title {
+  color: #f8fafc;
 }
 
 .auth-subtitle {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-secondary, #64748b);
   margin: 0;
+  line-height: 1.5;
 }
 
-/* Tabs */
-.auth-tabs {
+[data-theme="dark"] .auth-subtitle {
+  color: #94a3b8;
+}
+
+/* Divider dengan teks "atau" */
+.auth-divider {
   display: flex;
-  background: var(--bg-tertiary, #f1f5f9);
-  padding: 4px;
-  border-radius: 12px;
-  gap: 4px;
-  margin-bottom: 20px;
-}
-
-.auth-tab-btn {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary, #64748b);
-  font-size: 13px;
+  align-items: center;
+  margin: 18px 0 14px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 9px 12px;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.auth-tab-btn.active {
-  background: var(--bg-primary, #ffffff);
-  color: var(--accent-primary, #00878a);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color, #e2e8f0);
+}
+
+[data-theme="dark"] .auth-divider::before,
+[data-theme="dark"] .auth-divider::after {
+  background: #334155;
+}
+
+.auth-divider span {
+  padding: 0 12px;
 }
 
 /* Alert Banner */
@@ -5320,6 +5356,18 @@ body.mode-text #blocklyDiv {
   background: var(--bg-primary, #ffffff);
   box-shadow: 0 0 0 3px rgba(0, 135, 138, 0.18);
   outline: none;
+}
+
+[data-theme="dark"] .auth-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .auth-input:focus {
+  background: #0f172a;
+  border-color: #00878a;
+  box-shadow: 0 0 0 3px rgba(0, 135, 138, 0.3);
 }
 
 .auth-toggle-pwd {
@@ -5425,6 +5473,18 @@ body.mode-text #blocklyDiv {
   color: var(--accent-primary, #00878a);
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .otp-digit {
+  background: #1e293b;
+  border-color: #334155;
+  color: #2dd4bf;
+}
+
+[data-theme="dark"] .otp-digit:focus {
+  background: #0f172a;
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.25);
 }
 
 .otp-digit:focus {

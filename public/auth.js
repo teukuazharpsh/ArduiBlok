@@ -16,10 +16,11 @@
   let resendCooldownTimer = null;
 
   // DOM Elements cache
-  let authOverlay, authTabs, tabAuthLogin, tabAuthRegister, authAlert;
+  let authOverlay, authAlert;
+  let authViewLogin, authViewRegister, authViewOtp;
   let formLogin, formRegister, panelOtpVerification;
   let loginIdentifier, loginPassword, btnSubmitLogin;
-  let registerUsername, registerEmail, registerPassword, btnSubmitRegister;
+  let registerUsername, registerEmail, registerPassword, registerPasswordConfirm, btnSubmitRegister;
   let otpInputsGroup, otpBoxes = [], otpTargetEmailText, otpCountdown, btnResendOtp, btnSubmitOtp;
   let userProfileWrapper, btnUserMenu, userAvatarInitial, userNameLabel;
   let userDropdownMenu, dropdownAvatar, dropdownUsername, dropdownEmail, btnLogout;
@@ -47,32 +48,31 @@
     }
   }
 
-  // ── Tab Navigation (Login vs Register vs OTP) ───────────────
-  function switchTab(target) {
+  // ── Modern View Switcher (Login vs Sign Up vs OTP) ──────────
+  function showView(target) {
     hideAlert();
+
+    // Pastikan semua view disembunyikan secara ketat
+    if (authViewLogin) authViewLogin.classList.add('hidden');
+    if (authViewRegister) authViewRegister.classList.add('hidden');
+    if (authViewOtp) authViewOtp.classList.add('hidden');
+
     if (target === 'login') {
-      if (tabAuthLogin) tabAuthLogin.classList.add('active');
-      if (tabAuthRegister) tabAuthRegister.classList.remove('active');
-      if (formLogin) formLogin.classList.remove('hidden');
-      if (formRegister) formRegister.classList.add('hidden');
-      if (panelOtpVerification) panelOtpVerification.classList.add('hidden');
-      if (authTabs) authTabs.classList.remove('hidden');
-      if (loginIdentifier) loginIdentifier.focus();
+      if (authViewLogin) authViewLogin.classList.remove('hidden');
+      if (loginIdentifier) {
+        setTimeout(() => loginIdentifier.focus(), 50);
+      }
     } else if (target === 'register') {
-      if (tabAuthRegister) tabAuthRegister.classList.add('active');
-      if (tabAuthLogin) tabAuthLogin.classList.remove('active');
-      if (formRegister) formRegister.classList.remove('hidden');
-      if (formLogin) formLogin.classList.add('hidden');
-      if (panelOtpVerification) panelOtpVerification.classList.add('hidden');
-      if (authTabs) authTabs.classList.remove('hidden');
-      if (registerUsername) registerUsername.focus();
+      if (authViewRegister) authViewRegister.classList.remove('hidden');
+      if (registerUsername) {
+        setTimeout(() => registerUsername.focus(), 50);
+      }
     } else if (target === 'otp') {
-      if (formLogin) formLogin.classList.add('hidden');
-      if (formRegister) formRegister.classList.add('hidden');
-      if (authTabs) authTabs.classList.add('hidden');
-      if (panelOtpVerification) panelOtpVerification.classList.remove('hidden');
+      if (authViewOtp) authViewOtp.classList.remove('hidden');
       clearOtpInputs();
-      if (otpBoxes[0]) otpBoxes[0].focus();
+      if (otpBoxes[0]) {
+        setTimeout(() => otpBoxes[0].focus(), 50);
+      }
     }
   }
 
@@ -207,7 +207,7 @@
         if (data.requireVerification && data.email) {
           pendingEmail = data.email;
           if (otpTargetEmailText) otpTargetEmailText.textContent = data.email;
-          switchTab('otp');
+          showView('otp');
           showAlert('Akun Anda belum terverifikasi. Kami telah mengirimkan kode OTP baru.', 'warning');
           startOtpCountdown(600);
           startResendCooldown(45);
@@ -233,6 +233,7 @@
     const username = (registerUsername.value || '').trim();
     const email = (registerEmail.value || '').trim().toLowerCase();
     const password = (registerPassword.value || '');
+    const passwordConfirm = (registerPasswordConfirm ? registerPasswordConfirm.value : '');
 
     if (!username || !email || !password) {
       showAlert('Semua kolom pendaftaran wajib diisi.');
@@ -246,6 +247,12 @@
 
     if (password.length < 6) {
       showAlert('Password minimal terdiri dari 6 karakter.');
+      return;
+    }
+
+    if (passwordConfirm && password !== passwordConfirm) {
+      showAlert('Konfirmasi password tidak cocok dengan password yang dimasukkan.');
+      if (registerPasswordConfirm) registerPasswordConfirm.focus();
       return;
     }
 
@@ -268,7 +275,7 @@
       // Pendaftaran sukses -> buka layar OTP
       pendingEmail = data.email || email;
       if (otpTargetEmailText) otpTargetEmailText.textContent = pendingEmail;
-      switchTab('otp');
+      showView('otp');
       showAlert(data.message, 'success');
       startOtpCountdown(600);
       startResendCooldown(45);
@@ -385,10 +392,10 @@
     }
   }
 
-  function showAuthModal(initialTab = 'login') {
+  function showAuthModal(initialView = 'login') {
     if (authOverlay) {
       authOverlay.classList.remove('hidden');
-      switchTab(initialTab);
+      showView(initialView);
     }
   }
 
@@ -456,10 +463,11 @@
   // ── Inisialisasi Event Listener DOM ─────────────────────────
   function init() {
     authOverlay = document.getElementById('authOverlay');
-    authTabs = document.getElementById('authTabs');
-    tabAuthLogin = document.getElementById('tabAuthLogin');
-    tabAuthRegister = document.getElementById('tabAuthRegister');
     authAlert = document.getElementById('authAlert');
+
+    authViewLogin = document.getElementById('authViewLogin');
+    authViewRegister = document.getElementById('authViewRegister');
+    authViewOtp = document.getElementById('authViewOtp');
 
     formLogin = document.getElementById('formLogin');
     formRegister = document.getElementById('formRegister');
@@ -472,6 +480,7 @@
     registerUsername = document.getElementById('registerUsername');
     registerEmail = document.getElementById('registerEmail');
     registerPassword = document.getElementById('registerPassword');
+    registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
     btnSubmitRegister = document.getElementById('btnSubmitRegister');
 
     otpInputsGroup = document.getElementById('otpInputsGroup');
@@ -493,17 +502,20 @@
 
     initOtpBoxes();
 
-    // Tab Switches
-    if (tabAuthLogin) tabAuthLogin.addEventListener('click', () => switchTab('login'));
-    if (tabAuthRegister) tabAuthRegister.addEventListener('click', () => switchTab('register'));
+    // View Navigation Links
+    const linkToRegister = document.getElementById('linkToRegister') || document.getElementById('linkSwitchToRegister');
+    const linkToLogin = document.getElementById('linkToLogin') || document.getElementById('linkSwitchToLogin');
+    const linkBackToLoginFromOtp = document.getElementById('linkBackToLoginFromOtp') || document.getElementById('linkBackToRegister');
 
-    const linkSwitchToRegister = document.getElementById('linkSwitchToRegister');
-    const linkSwitchToLogin = document.getElementById('linkSwitchToLogin');
-    const linkBackToRegister = document.getElementById('linkBackToRegister');
+    if (linkToRegister) linkToRegister.addEventListener('click', (e) => { e.preventDefault(); showView('register'); });
+    if (linkToLogin) linkToLogin.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
+    if (linkBackToLoginFromOtp) linkBackToLoginFromOtp.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
 
-    if (linkSwitchToRegister) linkSwitchToRegister.addEventListener('click', (e) => { e.preventDefault(); switchTab('register'); });
-    if (linkSwitchToLogin) linkSwitchToLogin.addEventListener('click', (e) => { e.preventDefault(); switchTab('login'); });
-    if (linkBackToRegister) linkBackToRegister.addEventListener('click', (e) => { e.preventDefault(); switchTab('register'); });
+    // Fallback Tab Switches jika ada
+    const tabAuthLogin = document.getElementById('tabAuthLogin');
+    const tabAuthRegister = document.getElementById('tabAuthRegister');
+    if (tabAuthLogin) tabAuthLogin.addEventListener('click', () => showView('login'));
+    if (tabAuthRegister) tabAuthRegister.addEventListener('click', () => showView('register'));
 
     // Form Submits
     if (formLogin) {
@@ -522,6 +534,8 @@
     // Toggle Password Visibility
     const toggleLoginPwd = document.getElementById('toggleLoginPwd');
     const toggleRegisterPwd = document.getElementById('toggleRegisterPwd');
+    const toggleRegisterConfirmPwd = document.getElementById('toggleRegisterConfirmPwd');
+
     if (toggleLoginPwd && loginPassword) {
       toggleLoginPwd.addEventListener('click', () => {
         const isPwd = loginPassword.type === 'password';
@@ -534,6 +548,13 @@
         const isPwd = registerPassword.type === 'password';
         registerPassword.type = isPwd ? 'text' : 'password';
         toggleRegisterPwd.textContent = isPwd ? '🙈' : '👁️';
+      });
+    }
+    if (toggleRegisterConfirmPwd && registerPasswordConfirm) {
+      toggleRegisterConfirmPwd.addEventListener('click', () => {
+        const isPwd = registerPasswordConfirm.type === 'password';
+        registerPasswordConfirm.type = isPwd ? 'text' : 'password';
+        toggleRegisterConfirmPwd.textContent = isPwd ? '🙈' : '👁️';
       });
     }
 

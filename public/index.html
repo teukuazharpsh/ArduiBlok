@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=5.7">
+  <link rel="stylesheet" href="style.css?v=5.8">
 </head>
 <body>
 
@@ -40,126 +40,148 @@
     <div class="loading-subtext">Robotika Nesklar</div>
   </div>
 
-  <!-- Modal / Overlay Autentikasi Pengguna (Login, Sign Up & Verifikasi OTP) -->
+  <!-- Modal / Overlay Autentikasi Pengguna (Standard Modern Login, Sign Up & Verifikasi OTP) -->
   <div class="auth-overlay hidden" id="authOverlay">
     <div class="auth-card">
-      <!-- Logo & Branding -->
-      <div class="auth-header">
-        <div class="auth-logo-circle">
-          <img src="logo.jpeg" alt="Logo ArduiBlok" class="auth-logo-img">
-        </div>
-        <h2 class="auth-title">ArduiBlok Studio</h2>
-        <p class="auth-subtitle">Microcontroller Visual &amp; Text Studio</p>
-      </div>
-
-      <!-- Tab Switcher (Masuk / Daftar) -->
-      <div class="auth-tabs" id="authTabs">
-        <button class="auth-tab-btn active" id="tabAuthLogin" type="button">Masuk (Login)</button>
-        <button class="auth-tab-btn" id="tabAuthRegister" type="button">Daftar Akun Baru</button>
-      </div>
-
       <!-- Alert Notification Banner -->
       <div class="auth-alert hidden" id="authAlert"></div>
 
-      <!-- ── Panel 1: Form Login ────────────────────────── -->
-      <form class="auth-form" id="formLogin" onsubmit="return false;">
-        <div class="auth-field">
-          <label for="loginIdentifier" class="auth-label">Username atau Email</label>
-          <div class="auth-input-wrapper">
-            <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <input type="text" id="loginIdentifier" class="auth-input" placeholder="Masukkan username atau email" required autocomplete="username">
+      <!-- ── View 1: Standard Modern Login (Default) ─────────────── -->
+      <div class="auth-view" id="authViewLogin">
+        <div class="auth-header">
+          <div class="auth-logo-circle">
+            <img src="logo.jpeg" alt="Logo ArduiBlok" class="auth-logo-img">
           </div>
+          <h2 class="auth-title">Masuk ke ArduiBlok</h2>
+          <p class="auth-subtitle">Masuk untuk mengakses visual &amp; text microcontroller studio</p>
         </div>
 
-        <div class="auth-field">
-          <label for="loginPassword" class="auth-label">Password</label>
-          <div class="auth-input-wrapper">
-            <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <input type="password" id="loginPassword" class="auth-input" placeholder="Masukkan password" required autocomplete="current-password">
-            <button type="button" class="auth-toggle-pwd" id="toggleLoginPwd" title="Lihat/Sembunyikan password">👁️</button>
+        <form class="auth-form" id="formLogin" onsubmit="return false;">
+          <div class="auth-field">
+            <label for="loginIdentifier" class="auth-label">Username atau Email</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input type="text" id="loginIdentifier" class="auth-input" placeholder="Masukkan username atau email" required autocomplete="username">
+            </div>
           </div>
-        </div>
 
-        <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitLogin">
-          <span>Masuk ke Studio</span>
-          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </button>
-
-        <div class="auth-switch-prompt">
-          Belum punya akun? <a href="#" id="linkSwitchToRegister">Daftar Akun Baru</a>
-        </div>
-      </form>
-
-      <!-- ── Panel 2: Form Sign Up ──────────────────────── -->
-      <form class="auth-form hidden" id="formRegister" onsubmit="return false;">
-        <div class="auth-field">
-          <label for="registerUsername" class="auth-label">Username</label>
-          <div class="auth-input-wrapper">
-            <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <input type="text" id="registerUsername" class="auth-input" placeholder="Contoh: robou_99 (3–24 karakter)" required autocomplete="username">
+          <div class="auth-field">
+            <label for="loginPassword" class="auth-label">Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="loginPassword" class="auth-input" placeholder="Masukkan password" required autocomplete="current-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleLoginPwd" title="Lihat/Sembunyikan password">👁️</button>
+            </div>
           </div>
-        </div>
 
-        <div class="auth-field">
-          <label for="registerEmail" class="auth-label">Alamat Email Aktif</label>
-          <div class="auth-input-wrapper">
-            <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-            <input type="email" id="registerEmail" class="auth-input" placeholder="nama@email.com (untuk kode OTP)" required autocomplete="email">
+          <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitLogin">
+            <span>Masuk ke Studio</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            Belum punya akun? <a href="#" id="linkToRegister">Daftar sekarang</a>
           </div>
-        </div>
+        </form>
+      </div>
 
-        <div class="auth-field">
-          <label for="registerPassword" class="auth-label">Password</label>
-          <div class="auth-input-wrapper">
-            <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <input type="password" id="registerPassword" class="auth-input" placeholder="Minimal 6 karakter" required autocomplete="new-password">
-            <button type="button" class="auth-toggle-pwd" id="toggleRegisterPwd" title="Lihat/Sembunyikan password">👁️</button>
+      <!-- ── View 2: Sign Up (Daftar Akun Baru) ─────────────────── -->
+      <div class="auth-view hidden" id="authViewRegister">
+        <div class="auth-header">
+          <div class="auth-logo-circle">
+            <img src="logo.jpeg" alt="Logo ArduiBlok" class="auth-logo-img">
           </div>
+          <h2 class="auth-title">Buat Akun Baru</h2>
+          <p class="auth-subtitle">Daftarkan akun untuk mulai berkarya dengan Arduino &amp; ESP8266</p>
         </div>
 
-        <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitRegister">
-          <span>Daftar &amp; Kirim Kode OTP</span>
-          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-        </button>
+        <form class="auth-form" id="formRegister" onsubmit="return false;">
+          <div class="auth-field">
+            <label for="registerUsername" class="auth-label">Username</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input type="text" id="registerUsername" class="auth-input" placeholder="Contoh: robou_99 (3–24 karakter)" required autocomplete="username">
+            </div>
+          </div>
 
-        <div class="auth-switch-prompt">
-          Sudah punya akun? <a href="#" id="linkSwitchToLogin">Masuk di sini</a>
-        </div>
-      </form>
+          <div class="auth-field">
+            <label for="registerEmail" class="auth-label">Alamat Email Aktif</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <input type="email" id="registerEmail" class="auth-input" placeholder="nama@email.com (untuk kode OTP)" required autocomplete="email">
+            </div>
+          </div>
 
-      <!-- ── Panel 3: Layar Verifikasi OTP ──────────────── -->
-      <div class="auth-form hidden" id="panelOtpVerification">
-        <div class="otp-illustration">
+          <div class="auth-field">
+            <label for="registerPassword" class="auth-label">Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="registerPassword" class="auth-input" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleRegisterPwd" title="Lihat/Sembunyikan password">👁️</button>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerPasswordConfirm" class="auth-label">Konfirmasi Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="registerPasswordConfirm" class="auth-input" placeholder="Ulangi password di atas" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleRegisterConfirmPwd" title="Lihat/Sembunyikan konfirmasi password">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitRegister">
+            <span>Daftar &amp; Kirim Kode OTP</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            Sudah punya akun? <a href="#" id="linkToLogin">Masuk di sini</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── View 3: Layar Verifikasi OTP ───────────────────────── -->
+      <div class="auth-view hidden" id="authViewOtp">
+        <div class="auth-header">
           <div class="otp-icon-bubble">✉️</div>
-          <h3 class="otp-title">Verifikasi Alamat Email</h3>
-          <p class="otp-desc">
+          <h2 class="auth-title">Verifikasi Alamat Email</h2>
+          <p class="auth-subtitle">
             Masukkan 6 digit kode OTP yang kami kirimkan ke:<br>
             <strong id="otpTargetEmailText" class="otp-highlight-email">user@email.com</strong>
           </p>
         </div>
 
-        <!-- 6 Digit Input Group -->
-        <div class="otp-inputs-group" id="otpInputsGroup">
-          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox1" autocomplete="one-time-code">
-          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox2">
-          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox3">
-          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox4">
-          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox5">
-          <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox6">
-        </div>
+        <div class="auth-form" id="panelOtpVerification">
+          <!-- 6 Digit Input Group -->
+          <div class="otp-inputs-group" id="otpInputsGroup">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox1" autocomplete="one-time-code">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox2">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox3">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox4">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox5">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox6">
+          </div>
 
-        <div class="otp-timer-row">
-          <span id="otpTimerText">Kode berlaku dalam: <b id="otpCountdown">10:00</b></span>
-          <button type="button" class="btn-resend-otp" id="btnResendOtp">Kirim Ulang Kode</button>
-        </div>
+          <div class="otp-timer-row">
+            <span id="otpTimerText">Kode berlaku dalam: <b id="otpCountdown">10:00</b></span>
+            <button type="button" class="btn-resend-otp" id="btnResendOtp">Kirim Ulang Kode</button>
+          </div>
 
-        <button type="button" class="btn btn-compile auth-submit-btn" id="btnSubmitOtp">
-          <span>Verifikasi &amp; Masuk Studio</span>
-          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        </button>
+          <button type="button" class="btn btn-compile auth-submit-btn" id="btnSubmitOtp">
+            <span>Verifikasi &amp; Masuk Studio</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </button>
 
-        <div class="auth-switch-prompt">
-          Salah memasukkan email? <a href="#" id="linkBackToRegister">Gunakan email lain</a>
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            <a href="#" id="linkBackToLoginFromOtp">← Kembali ke Halaman Login</a>
+          </div>
         </div>
       </div>
     </div>
@@ -1522,7 +1544,7 @@
   <script src="blocks/arduino_generator.js?v=2.0"></script>
 
   <!-- Authentication & User Session Manager -->
-  <script src="auth.js?v=1.0"></script>
+  <script src="auth.js?v=2.0"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>
