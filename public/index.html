@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=5.9">
+  <link rel="stylesheet" href="style.css?v=6.0">
 </head>
 <body>
 
@@ -481,17 +481,17 @@
           <table class="admin-table" id="adminUsersTable">
             <thead>
               <tr>
-                <th style="width: 40px;">No</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th style="width: 130px;">Status</th>
-                <th>Tanggal Terdaftar</th>
-                <th style="width: 80px; text-align: center;">Aksi</th>
+                <th style="width: 50px; text-align: center;">No</th>
+                <th style="min-width: 130px;">Username</th>
+                <th style="min-width: 220px;">Email</th>
+                <th style="width: 140px; text-align: center;">Status</th>
+                <th style="width: 180px;">Tanggal Terdaftar</th>
+                <th style="width: 110px; text-align: center;">Aksi</th>
               </tr>
             </thead>
             <tbody id="adminUsersTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 24px;">Memuat data pengguna...</td>
+                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">Memuat data pengguna...</td>
               </tr>
             </tbody>
           </table>
@@ -1680,7 +1680,7 @@
   <script src="auth.js?v=2.4"></script>
 
   <!-- Superadmin Server Management & Database Migration Panel -->
-  <script src="admin.js?v=1.0"></script>
+  <script src="admin.js?v=1.1"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>

@@ -186,16 +186,16 @@
         : '<span class="badge-unverified">⏳ Belum OTP</span>';
 
       const actionBtn = isSelf
-        ? '<span style="color: var(--text-muted); font-size: 11px;">(Akun Anda)</span>'
+        ? '<span style="color: #64748b; font-size: 11px; font-weight: 600; font-style: italic;">(Akun Anda)</span>'
         : `<button class="btn-del-user" data-id="${u.id}" data-name="${u.username || u.email}">Hapus</button>`;
 
       return `
         <tr>
-          <td>${i + 1}</td>
-          <td><strong>${escapeHtml(u.username || '-')}</strong></td>
-          <td>${escapeHtml(u.email || '-')}</td>
-          <td>${statusBadge}</td>
-          <td style="color: var(--text-secondary); font-size: 11px;">${dateStr}</td>
+          <td style="text-align: center; color: #64748b; font-weight: 600;">${i + 1}</td>
+          <td><span style="font-weight: 600; color: #ffffff;">${escapeHtml(u.username || '-')}</span></td>
+          <td><span style="font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: #93c5fd;">${escapeHtml(u.email || '-')}</span></td>
+          <td style="text-align: center;">${statusBadge}</td>
+          <td style="color: #94a3b8; font-size: 12px;">${dateStr}</td>
           <td style="text-align: center;">${actionBtn}</td>
         </tr>
       `;
