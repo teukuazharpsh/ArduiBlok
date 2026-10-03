@@ -6,7 +6,7 @@
 (function(root) {
   'use strict';
 
-  let modalAdminServer, btnCloseAdminModal, btnCancelAdminModal;
+  let modalAdminServer, btnCloseAdminModal, btnCancelAdminModal, btnMaximizeAdminModal;
   let btnOpenAdminPanel, btnDownloadBackup, btnRestoreBackup, fileRestoreInput;
   let adminAlertBanner, adminUserSearchInput, adminUsersTableBody;
   let statTotalUsers, statVerifiedUsers, statUnverifiedUsers, statDbSize, statUptime;
@@ -17,6 +17,7 @@
     modalAdminServer = document.getElementById('modalAdminServer');
     btnCloseAdminModal = document.getElementById('btnCloseAdminModal');
     btnCancelAdminModal = document.getElementById('btnCancelAdminModal');
+    btnMaximizeAdminModal = document.getElementById('btnMaximizeAdminModal');
     btnOpenAdminPanel = document.getElementById('btnOpenAdminPanel');
     btnDownloadBackup = document.getElementById('btnDownloadBackup');
     btnRestoreBackup = document.getElementById('btnRestoreBackup');
@@ -30,6 +31,12 @@
     statUnverifiedUsers = document.getElementById('statUnverifiedUsers');
     statDbSize = document.getElementById('statDbSize');
     statUptime = document.getElementById('statUptime');
+
+    // Event: Maximize / Restore Layar Panel
+    if (btnMaximizeAdminModal) {
+      btnMaximizeAdminModal.addEventListener('click', toggleMaximizeAdminModal);
+    }
+    restoreMaximizeState();
 
     // Event: Buka Modal Admin dari Dropdown
     if (btnOpenAdminPanel) {
@@ -93,9 +100,54 @@
     if (adminAlertBanner) adminAlertBanner.classList.add('hidden');
   }
 
+  function toggleMaximizeAdminModal() {
+    if (!modalAdminServer) return;
+    const container = modalAdminServer.querySelector('.admin-modal-container');
+    if (!container) return;
+    const isMax = container.classList.toggle('is-maximized');
+    updateMaximizeIcons(isMax);
+    try {
+      localStorage.setItem('arduiblok_admin_maximized', isMax ? 'true' : 'false');
+    } catch (e) {}
+  }
+
+  function updateMaximizeIcons(isMax) {
+    if (!btnMaximizeAdminModal) return;
+    const iconMax = btnMaximizeAdminModal.querySelector('.admin-icon-maximize');
+    const iconRes = btnMaximizeAdminModal.querySelector('.admin-icon-restore');
+    if (iconMax && iconRes) {
+      if (isMax) {
+        iconMax.classList.add('hidden');
+        iconRes.classList.remove('hidden');
+        btnMaximizeAdminModal.title = 'Kecilkan Tampilan Panel';
+      } else {
+        iconMax.classList.remove('hidden');
+        iconRes.classList.add('hidden');
+        btnMaximizeAdminModal.title = 'Perbesar Layar Penuh (Maximize)';
+      }
+    }
+  }
+
+  function restoreMaximizeState() {
+    try {
+      const saved = localStorage.getItem('arduiblok_admin_maximized') === 'true';
+      if (!modalAdminServer) return;
+      const container = modalAdminServer.querySelector('.admin-modal-container');
+      if (container) {
+        if (saved) {
+          container.classList.add('is-maximized');
+        } else {
+          container.classList.remove('is-maximized');
+        }
+        updateMaximizeIcons(saved);
+      }
+    } catch (e) {}
+  }
+
   async function openAdminModal() {
     if (!modalAdminServer) return;
     hideAlert();
+    restoreMaximizeState();
     modalAdminServer.classList.remove('hidden');
     await loadServerStats();
     await loadUsersList();
