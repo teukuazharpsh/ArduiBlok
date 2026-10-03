@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=6.1">
+  <link rel="stylesheet" href="style.css?v=6.2">
 </head>
 <body>
 
@@ -423,9 +423,16 @@
             <span class="admin-stat-value text-accent" id="statTotalUsers">0</span>
             <span class="admin-stat-sub">Akun terdaftar</span>
           </div>
+          <div class="admin-stat-card card-online">
+            <span class="admin-stat-label" style="display: flex; align-items: center; gap: 6px;">
+              <span class="online-indicator-dot pulsing"></span> Sedang Online
+            </span>
+            <span class="admin-stat-value text-success" id="statOnlineUsers">0</span>
+            <span class="admin-stat-sub">Aktif sekarang</span>
+          </div>
           <div class="admin-stat-card">
             <span class="admin-stat-label">Akun Terverifikasi</span>
-            <span class="admin-stat-value text-success" id="statVerifiedUsers">0</span>
+            <span class="admin-stat-value" style="color: #38bdf8;" id="statVerifiedUsers">0</span>
             <span class="admin-stat-sub">OTP terkonfirmasi</span>
           </div>
           <div class="admin-stat-card">
@@ -491,17 +498,18 @@
           <table class="admin-table" id="adminUsersTable">
             <thead>
               <tr>
-                <th style="width: 50px; text-align: center;">No</th>
-                <th style="min-width: 130px;">Username</th>
-                <th style="min-width: 220px;">Email</th>
-                <th style="width: 140px; text-align: center;">Status</th>
-                <th style="width: 180px;">Tanggal Terdaftar</th>
-                <th style="width: 110px; text-align: center;">Aksi</th>
+                <th style="width: 45px; text-align: center;">No</th>
+                <th style="min-width: 120px;">Username</th>
+                <th style="min-width: 200px;">Email</th>
+                <th style="width: 125px; text-align: center;">Keaktifan</th>
+                <th style="width: 130px; text-align: center;">Status OTP</th>
+                <th style="width: 160px;">Aktivitas Terakhir</th>
+                <th style="width: 95px; text-align: center;">Aksi</th>
               </tr>
             </thead>
             <tbody id="adminUsersTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">Memuat data pengguna...</td>
+                <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">Memuat data pengguna...</td>
               </tr>
             </tbody>
           </table>
@@ -1687,10 +1695,10 @@
   <script src="blocks/arduino_generator.js?v=2.0"></script>
 
   <!-- Authentication & User Session Manager -->
-  <script src="auth.js?v=2.4"></script>
+  <script src="auth.js?v=2.5"></script>
 
   <!-- Superadmin Server Management & Database Migration Panel -->
-  <script src="admin.js?v=1.2"></script>
+  <script src="admin.js?v=1.3"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>

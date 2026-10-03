@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
 const db = require('./db');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_arduiblok_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'arduiblok_jwt_secret_key_2026';
 
 // Hash SHA-256 dari email Superadmin (teukuazharpasha@gmail.com)
 // Mengamankan identitas admin tanpa menulis email secara plaintext

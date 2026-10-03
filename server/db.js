@@ -50,6 +50,15 @@ function saveDatabaseSync() {
   }
 }
 
+let saveTimeout = null;
+function debouncedSave(delayMs = 2000) {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveDatabaseSync();
+    saveTimeout = null;
+  }, delayMs);
+}
+
 // Inisialisasi awal
 loadDatabase();
 
@@ -179,16 +188,49 @@ if (cleanupInterval && typeof cleanupInterval.unref === 'function') {
   cleanupInterval.unref();
 }
 
+// ── Online & Activity Tracking Operations ────────────────────
+
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 menit
+
+function updateUserLastActive(userId) {
+  if (!userId) return false;
+  const user = dbData.users.find(u => u.id === userId);
+  if (user) {
+    user.lastActiveAt = new Date().toISOString();
+    debouncedSave(2000);
+    return true;
+  }
+  return false;
+}
+
+function setUserOffline(userId) {
+  if (!userId) return false;
+  const user = dbData.users.find(u => u.id === userId);
+  if (user) {
+    user.lastActiveAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    saveDatabaseSync();
+    return true;
+  }
+  return false;
+}
+
 // ── Admin & Backup Operations ──────────────────────────────────
 
 function getAllUsers() {
-  return (dbData.users || []).map(u => ({
-    id: u.id,
-    username: u.username,
-    email: u.email,
-    isVerified: !!u.isVerified,
-    createdAt: u.createdAt
-  }));
+  const now = Date.now();
+  return (dbData.users || []).map(u => {
+    const lastActiveMs = u.lastActiveAt ? new Date(u.lastActiveAt).getTime() : 0;
+    const isOnline = lastActiveMs > 0 && (now - lastActiveMs < ONLINE_THRESHOLD_MS);
+    return {
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      isVerified: !!u.isVerified,
+      createdAt: u.createdAt,
+      lastActiveAt: u.lastActiveAt || null,
+      isOnline: isOnline
+    };
+  });
 }
 
 function deleteUser(id) {
@@ -237,12 +279,18 @@ function getDbStats() {
     }
   } catch (e) {}
 
+  const now = Date.now();
   const total = dbData.users.length;
   const verified = dbData.users.filter(u => u.isVerified).length;
   const unverified = total - verified;
+  const online = dbData.users.filter(u => {
+    if (!u.lastActiveAt) return false;
+    return (now - new Date(u.lastActiveAt).getTime()) < ONLINE_THRESHOLD_MS;
+  }).length;
 
   return {
     totalUsers: total,
+    onlineUsers: online,
     verifiedUsers: verified,
     unverifiedUsers: unverified,
     dbSizeBytes: fileSize,
@@ -263,6 +311,8 @@ module.exports = {
   incrementOtpAttempts,
   deleteOtpsForEmail,
   cleanupExpiredOtps,
+  updateUserLastActive,
+  setUserOffline,
   getAllUsers,
   deleteUser,
   getRawDatabaseData,

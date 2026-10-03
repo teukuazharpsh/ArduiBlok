@@ -365,6 +365,51 @@
   }
 
   // ── Sesi & Penyimpanan Lokal ────────────────────────────────
+  let heartbeatInterval = null;
+
+  function startHeartbeat() {
+    stopHeartbeat();
+    sendHeartbeat();
+    heartbeatInterval = setInterval(sendHeartbeat, 35000); // Kirim ping setiap 35 detik
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+  }
+
+  async function sendHeartbeat() {
+    if (!authToken) return;
+    try {
+      await fetch('/api/auth/heartbeat', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+    } catch (e) {
+      // Abaikan error jaringan saat heartbeat
+    }
+  }
+
+  function sendOfflineSignal() {
+    if (!authToken) return;
+    try {
+      const data = JSON.stringify({ token: authToken });
+      const blob = new Blob([data], { type: 'application/json' });
+      navigator.sendBeacon('/api/auth/offline', blob);
+    } catch (e) {
+      try {
+        fetch('/api/auth/offline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: authToken }),
+          keepalive: true
+        });
+      } catch (err) {}
+    }
+  }
+
   function onAuthSuccess(token, user) {
     authToken = token;
     currentUser = user;
@@ -373,6 +418,7 @@
 
     updateUserNavbar();
     hideAuthModal();
+    startHeartbeat();
 
     // Notifikasi selamat datang
     console.log(`[Auth] Pengguna aktif: ${user.username} (${user.email})`);
@@ -426,6 +472,9 @@
   }
 
   function logout() {
+    sendOfflineSignal();
+    stopHeartbeat();
+
     authToken = null;
     currentUser = null;
     try {
@@ -463,6 +512,7 @@
         localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
         updateUserNavbar();
         hideAuthModal();
+        startHeartbeat();
       } else {
         // Token tidak valid atau kedaluwarsa
         logout();
@@ -477,11 +527,25 @@
           authToken = savedToken;
           updateUserNavbar();
           hideAuthModal();
+          startHeartbeat();
           return;
         } catch (e) {}
       }
       showAuthModal('login');
     }
+  }
+
+  // Listener event jendela browser untuk deteksi aktif/tutup tab
+  if (typeof window !== 'undefined') {
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && authToken) {
+        sendHeartbeat();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      sendOfflineSignal();
+    });
   }
 
   // ── Inisialisasi Event Listener DOM ─────────────────────────

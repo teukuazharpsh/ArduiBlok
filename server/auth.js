@@ -39,6 +39,7 @@ function requireAuth(req, res, next) {
       email: user.email,
       isAdmin: isSuperAdmin(user.email)
     };
+    db.updateUserLastActive(user.id);
     next();
   } catch (err) {
     return res.status(401).json({ success: false, error: 'Sesi kedaluwarsa atau token tidak valid. Silakan login kembali.' });
@@ -330,6 +331,33 @@ router.get('/me', requireAuth, (req, res) => {
     success: true,
     user: req.user
   });
+});
+
+// ── 6. Heartbeat / Sinyal Keaktifan Pengguna ─────────────────
+router.post('/heartbeat', requireAuth, (req, res) => {
+  db.updateUserLastActive(req.user.id);
+  return res.json({ success: true, timestamp: Date.now() });
+});
+
+// ── 7. Offline Signal (Beacon saat Tab Browser Ditutup) ───────
+router.post('/offline', (req, res) => {
+  let token = null;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.body && req.body.token) {
+    token = req.body.token;
+  }
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.userId) {
+        db.setUserOffline(decoded.userId);
+      }
+    } catch (e) {}
+  }
+  return res.json({ success: true });
 });
 
 module.exports = {

@@ -9,7 +9,8 @@
   let modalAdminServer, btnCloseAdminModal, btnCancelAdminModal, btnMaximizeAdminModal;
   let btnOpenAdminPanel, btnDownloadBackup, btnRestoreBackup, fileRestoreInput;
   let adminAlertBanner, adminUserSearchInput, adminUsersTableBody;
-  let statTotalUsers, statVerifiedUsers, statUnverifiedUsers, statDbSize, statUptime;
+  let statTotalUsers, statOnlineUsers, statVerifiedUsers, statUnverifiedUsers, statDbSize, statUptime;
+  let adminRefreshInterval = null;
 
   let cachedUsers = [];
 
@@ -27,6 +28,7 @@
     adminUsersTableBody = document.getElementById('adminUsersTableBody');
 
     statTotalUsers = document.getElementById('statTotalUsers');
+    statOnlineUsers = document.getElementById('statOnlineUsers');
     statVerifiedUsers = document.getElementById('statVerifiedUsers');
     statUnverifiedUsers = document.getElementById('statUnverifiedUsers');
     statDbSize = document.getElementById('statDbSize');
@@ -144,6 +146,20 @@
     } catch (e) {}
   }
 
+  function formatRelativeTime(isoString) {
+    if (!isoString) return 'Belum pernah';
+    const timeMs = new Date(isoString).getTime();
+    if (isNaN(timeMs)) return '-';
+    const diffSec = Math.floor((Date.now() - timeMs) / 1000);
+    if (diffSec < 60) return 'Baru saja';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} mnt lalu`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} jam lalu`;
+    if (diffSec < 172800) return 'Kemarin';
+    return new Date(isoString).toLocaleDateString('id-ID', {
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+  }
+
   async function openAdminModal() {
     if (!modalAdminServer) return;
     hideAlert();
@@ -151,9 +167,22 @@
     modalAdminServer.classList.remove('hidden');
     await loadServerStats();
     await loadUsersList();
+
+    // Auto-refresh data setiap 20 detik selama modal admin terbuka
+    if (adminRefreshInterval) clearInterval(adminRefreshInterval);
+    adminRefreshInterval = setInterval(async () => {
+      if (modalAdminServer && !modalAdminServer.classList.contains('hidden')) {
+        await loadServerStats();
+        await loadUsersList(true);
+      }
+    }, 20000);
   }
 
   function closeAdminModal() {
+    if (adminRefreshInterval) {
+      clearInterval(adminRefreshInterval);
+      adminRefreshInterval = null;
+    }
     if (modalAdminServer) {
       modalAdminServer.classList.add('hidden');
     }
@@ -173,6 +202,7 @@
 
       const s = data.stats;
       if (statTotalUsers) statTotalUsers.textContent = s.totalUsers || 0;
+      if (statOnlineUsers) statOnlineUsers.textContent = s.onlineUsers || 0;
       if (statVerifiedUsers) statVerifiedUsers.textContent = s.verifiedUsers || 0;
       if (statUnverifiedUsers) statUnverifiedUsers.textContent = s.unverifiedUsers || 0;
       
@@ -190,9 +220,11 @@
   }
 
   // ── 2. Ambil Daftar Pengguna ─────────────────────────────────
-  async function loadUsersList() {
+  async function loadUsersList(isSilent = false) {
     if (!adminUsersTableBody) return;
-    adminUsersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 24px;">Memuat data pengguna...</td></tr>';
+    if (!isSilent) {
+      adminUsersTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 24px;">Memuat data pengguna...</td></tr>';
+    }
 
     try {
       const res = await fetch('/api/admin/users', {
@@ -207,7 +239,9 @@
         renderUsersTable(adminUserSearchInput ? adminUserSearchInput.value : '');
       }
     } catch (err) {
-      adminUsersTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 24px;">${err.message}</td></tr>`;
+      if (!isSilent) {
+        adminUsersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #ef4444; padding: 24px;">${err.message}</td></tr>`;
+      }
     }
   }
 
@@ -221,21 +255,25 @@
     });
 
     if (filtered.length === 0) {
-      adminUsersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 24px;">Tidak ada pengguna yang cocok.</td></tr>';
+      adminUsersTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 24px;">Tidak ada pengguna yang cocok.</td></tr>';
       return;
     }
 
     const currentUserId = root.ArduiBlokAuth && root.ArduiBlokAuth.getUser() ? root.ArduiBlokAuth.getUser().id : null;
 
     adminUsersTableBody.innerHTML = filtered.map((u, i) => {
-      const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('id-ID', {
-        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      }) : '-';
-
       const isSelf = u.id === currentUserId;
+      const onlineBadge = u.isOnline
+        ? '<span class="badge-online"><span class="online-indicator-dot pulsing"></span> Online</span>'
+        : '<span class="badge-offline"><span class="offline-dot"></span> Offline</span>';
+
       const statusBadge = u.isVerified
         ? '<span class="badge-verified">✅ Terverifikasi</span>'
         : '<span class="badge-unverified">⏳ Belum OTP</span>';
+
+      const lastActiveFormatted = u.isOnline
+        ? '<span style="color: #34d399; font-weight: 600; font-size: 11px;">Sedang aktif</span>'
+        : (u.lastActiveAt ? `<span style="color: #94a3b8; font-size: 11px;">${formatRelativeTime(u.lastActiveAt)}</span>` : '<span style="color: #64748b; font-size: 11px;">Belum aktif</span>');
 
       const actionBtn = isSelf
         ? '<span style="color: #64748b; font-size: 11px; font-weight: 600; font-style: italic;">(Akun Anda)</span>'
@@ -246,8 +284,9 @@
           <td style="text-align: center; color: #64748b; font-weight: 600;">${i + 1}</td>
           <td><span style="font-weight: 600; color: #ffffff;">${escapeHtml(u.username || '-')}</span></td>
           <td><span style="font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: #93c5fd;">${escapeHtml(u.email || '-')}</span></td>
+          <td style="text-align: center;">${onlineBadge}</td>
           <td style="text-align: center;">${statusBadge}</td>
-          <td style="color: #94a3b8; font-size: 12px;">${dateStr}</td>
+          <td>${lastActiveFormatted}</td>
           <td style="text-align: center;">${actionBtn}</td>
         </tr>
       `;
