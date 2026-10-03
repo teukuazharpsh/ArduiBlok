@@ -14,6 +14,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { router: authRouter } = require('./auth');
+const { router: adminRouter } = require('./admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,8 +23,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());                        // Izinkan request dari origin manapun (WebView Android)
 app.use(express.json({ limit: '50mb' })); // Parse JSON body, max 50MB (mendukung upload file .ZIP library)
 
-// ── Auth API Router (Registrasi, Login, Verifikasi OTP) ──────
+// ── Auth & Admin API Routers ─────────────────────────────────
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   etag: false,

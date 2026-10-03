@@ -382,6 +382,129 @@
     </div>
   </div>
 
+  <!-- Modal Panel Admin Server (Khusus Superadmin) -->
+  <div class="modal-overlay hidden" id="modalAdminServer">
+    <div class="modal-container admin-modal-container">
+      <div class="modal-header admin-modal-header">
+        <div class="modal-title-group">
+          <div class="admin-header-icon">🛡️</div>
+          <div>
+            <h2 class="admin-title">Panel Admin Server</h2>
+            <p class="admin-subtitle">ArduiBlok Cloud Management &amp; Database Migration</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseAdminModal" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body admin-modal-body">
+        <!-- Banner Pesan Admin -->
+        <div id="adminAlertBanner" class="admin-alert hidden"></div>
+
+        <!-- 1. Statistik Server -->
+        <div class="admin-section-title">
+          <span>📊</span>
+          <h3>Statistik Server &amp; Database</h3>
+        </div>
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Total Pengguna</span>
+            <span class="admin-stat-value text-accent" id="statTotalUsers">0</span>
+            <span class="admin-stat-sub">Akun terdaftar</span>
+          </div>
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Akun Terverifikasi</span>
+            <span class="admin-stat-value text-success" id="statVerifiedUsers">0</span>
+            <span class="admin-stat-sub">OTP terkonfirmasi</span>
+          </div>
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Belum Terverifikasi</span>
+            <span class="admin-stat-value text-warning" id="statUnverifiedUsers">0</span>
+            <span class="admin-stat-sub">Menunggu OTP</span>
+          </div>
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Ukuran Database</span>
+            <span class="admin-stat-value text-info" id="statDbSize">0 KB</span>
+            <span class="admin-stat-sub" id="statUptime">Server Aktif</span>
+          </div>
+        </div>
+
+        <!-- 2. Alat Cadangan & Pemulihan Data (Migration) -->
+        <div class="admin-section-title" style="margin-top: 24px;">
+          <span>💾</span>
+          <h3>Cadangan &amp; Pemulihan Data (Migrasi Railway)</h3>
+        </div>
+        <div class="admin-tools-grid">
+          <!-- Kartu Backup -->
+          <div class="admin-tool-card">
+            <div class="tool-card-icon">⬇️</div>
+            <div class="tool-card-content">
+              <h4>1. Unduh Cadangan Data (Backup)</h4>
+              <p>Simpan seluruh data akun pengguna dari server ke file JSON di komputer Anda untuk arsip atau persiapan migrasi akun Railway.</p>
+              <button type="button" class="btn btn-compile admin-action-btn" id="btnDownloadBackup">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Unduh File Backup (.json)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Kartu Restore -->
+          <div class="admin-tool-card">
+            <div class="tool-card-icon">🔄</div>
+            <div class="tool-card-content">
+              <h4>2. Pulihkan Data ke Server (Restore)</h4>
+              <p>Pindahkan data akun lama ke akun Railway baru dengan mengunggah file cadangan JSON yang telah Anda unduh.</p>
+              <div class="admin-file-picker">
+                <input type="file" id="fileRestoreInput" accept=".json" class="admin-file-input">
+                <button type="button" class="btn btn-secondary admin-action-btn" id="btnRestoreBackup">
+                  <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span>Mulai Pulihkan Data</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Tabel Daftar Pengguna -->
+        <div class="admin-section-title" style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>👥</span>
+            <h3>Daftar Pengguna Terdaftar</h3>
+          </div>
+          <div class="admin-search-wrapper">
+            <input type="text" id="adminUserSearchInput" class="admin-search-input" placeholder="Cari username / email...">
+          </div>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-table" id="adminUsersTable">
+            <thead>
+              <tr>
+                <th style="width: 40px;">No</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th style="width: 130px;">Status</th>
+                <th>Tanggal Terdaftar</th>
+                <th style="width: 80px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 24px;">Memuat data pengguna...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer admin-modal-footer">
+        <span class="admin-footer-security">🔒 Dilindungi Enkripsi Kriptografi SHA-256 Superadmin</span>
+        <button class="btn btn-secondary" id="btnCancelAdminModal">Tutup Panel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Konfirmasi Beralih ke Mode Teks -->
   <div class="modal-overlay hidden" id="modeSwitchConfirmModal">
     <div class="modal-container" style="max-width: 470px;">
@@ -1153,6 +1276,16 @@
                 <span id="dropdownEmail">email@domain.com</span>
               </div>
             </div>
+            <!-- Item Khusus Superadmin (Hanya muncul jika akun superadmin terotentikasi) -->
+            <div id="adminDropdownSection" class="hidden">
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item btn-admin-panel" id="btnOpenAdminPanel" type="button">
+                <svg class="svg-icon" viewBox="0 0 24 24" style="color: #f59e0b;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Panel Admin Server</span>
+                <span class="admin-badge-pill">SUPER</span>
+              </button>
+            </div>
+
             <div class="user-dropdown-divider"></div>
             <button class="user-dropdown-item btn-logout" id="btnLogout" type="button" onclick="if(window.ArduiBlokAuth &amp;&amp; window.ArduiBlokAuth.logout) window.ArduiBlokAuth.logout();">
               <svg class="svg-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -1544,7 +1677,10 @@
   <script src="blocks/arduino_generator.js?v=2.0"></script>
 
   <!-- Authentication & User Session Manager -->
-  <script src="auth.js?v=2.3"></script>
+  <script src="auth.js?v=2.4"></script>
+
+  <!-- Superadmin Server Management & Database Migration Panel -->
+  <script src="admin.js?v=1.0"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>

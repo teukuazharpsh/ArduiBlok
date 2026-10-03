@@ -381,6 +381,8 @@
   function updateUserNavbar() {
     if (!userNameLabel || !userAvatarInitial) return;
 
+    const adminDropdownSection = document.getElementById('adminDropdownSection');
+
     if (currentUser) {
       const initial = (currentUser.username || 'U').charAt(0).toUpperCase();
       userAvatarInitial.textContent = initial;
@@ -388,6 +390,13 @@
       if (dropdownAvatar) dropdownAvatar.textContent = initial;
       if (dropdownUsername) dropdownUsername.textContent = currentUser.username;
       if (dropdownEmail) dropdownEmail.textContent = currentUser.email;
+
+      // Hanya tampilkan tombol Panel Admin jika akun terverifikasi sebagai Superadmin
+      if (currentUser.isAdmin && adminDropdownSection) {
+        adminDropdownSection.classList.remove('hidden');
+      } else if (adminDropdownSection) {
+        adminDropdownSection.classList.add('hidden');
+      }
     } else {
       userAvatarInitial.textContent = '?';
       userNameLabel.textContent = 'Masuk';
@@ -395,6 +404,9 @@
       if (dropdownUsername) dropdownUsername.textContent = 'Pengguna';
       if (dropdownEmail) dropdownEmail.textContent = '';
       if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
+      if (adminDropdownSection) adminDropdownSection.classList.add('hidden');
+      const adminModal = document.getElementById('modalAdminServer');
+      if (adminModal) adminModal.classList.add('hidden');
     }
   }
 

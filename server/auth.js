@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 const mailer = require('./mailer');
+const { isSuperAdmin } = require('./admin');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'arduiblok_jwt_secret_key_2026';
@@ -32,7 +33,12 @@ function requireAuth(req, res, next) {
     if (!user) {
       return res.status(401).json({ success: false, error: 'Sesi tidak valid: Pengguna tidak ditemukan.' });
     }
-    req.user = { id: user.id, username: user.username, email: user.email };
+    req.user = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      isAdmin: isSuperAdmin(user.email)
+    };
     next();
   } catch (err) {
     return res.status(401).json({ success: false, error: 'Sesi kedaluwarsa atau token tidak valid. Silakan login kembali.' });
@@ -174,8 +180,9 @@ router.post('/verify-otp', async (req, res) => {
     db.deleteOtpsForEmail(cleanEmail);
 
     // Buat token sesi JWT
+    const isAdmin = isSuperAdmin(user.email);
     const token = jwt.sign(
-      { userId: user.id, username: user.username, email: user.email },
+      { userId: user.id, username: user.username, email: user.email, isAdmin },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
@@ -187,7 +194,8 @@ router.post('/verify-otp', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        isAdmin: isAdmin
       }
     });
 
@@ -290,8 +298,9 @@ router.post('/login', async (req, res) => {
     }
 
     // Buat JWT Token
+    const isAdmin = isSuperAdmin(user.email);
     const token = jwt.sign(
-      { userId: user.id, username: user.username, email: user.email },
+      { userId: user.id, username: user.username, email: user.email, isAdmin },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
@@ -303,7 +312,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        isAdmin: isAdmin
       }
     });
 

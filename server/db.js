@@ -179,6 +179,77 @@ if (cleanupInterval && typeof cleanupInterval.unref === 'function') {
   cleanupInterval.unref();
 }
 
+// ── Admin & Backup Operations ──────────────────────────────────
+
+function getAllUsers() {
+  return (dbData.users || []).map(u => ({
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    isVerified: !!u.isVerified,
+    createdAt: u.createdAt
+  }));
+}
+
+function deleteUser(id) {
+  if (!id) return false;
+  const initialCount = dbData.users.length;
+  dbData.users = dbData.users.filter(u => u.id !== id);
+  if (dbData.users.length !== initialCount) {
+    saveDatabaseSync();
+    return true;
+  }
+  return false;
+}
+
+function getRawDatabaseData() {
+  return JSON.parse(JSON.stringify(dbData));
+}
+
+function restoreDatabase(incomingData) {
+  if (!incomingData || typeof incomingData !== 'object') {
+    throw new Error('Format data backup tidak valid (harus objek JSON).');
+  }
+  if (!Array.isArray(incomingData.users)) {
+    throw new Error('Format data backup tidak memiliki array "users" yang valid.');
+  }
+
+  dbData = {
+    users: incomingData.users,
+    otps: Array.isArray(incomingData.otps) ? incomingData.otps : []
+  };
+
+  saveDatabaseSync();
+  return {
+    totalUsers: dbData.users.length,
+    totalOtps: dbData.otps.length
+  };
+}
+
+function getDbStats() {
+  let fileSize = 0;
+  let lastModified = null;
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const stats = fs.statSync(DB_FILE);
+      fileSize = stats.size;
+      lastModified = stats.mtime;
+    }
+  } catch (e) {}
+
+  const total = dbData.users.length;
+  const verified = dbData.users.filter(u => u.isVerified).length;
+  const unverified = total - verified;
+
+  return {
+    totalUsers: total,
+    verifiedUsers: verified,
+    unverifiedUsers: unverified,
+    dbSizeBytes: fileSize,
+    lastModified: lastModified
+  };
+}
+
 module.exports = {
   getUserById,
   getUserByEmail,
@@ -191,5 +262,10 @@ module.exports = {
   getLatestOtp,
   incrementOtpAttempts,
   deleteOtpsForEmail,
-  cleanupExpiredOtps
+  cleanupExpiredOtps,
+  getAllUsers,
+  deleteUser,
+  getRawDatabaseData,
+  restoreDatabase,
+  getDbStats
 };
