@@ -57,6 +57,16 @@
           <span>↺</span>
           <span>Reset</span>
         </button>
+
+        <button id="btnSnapNearestLine" class="btn-sim" title="Tarik Robot ke Garis Terdekat (N)">
+          <span>🎯</span>
+          <span>Snap Garis</span>
+        </button>
+
+        <button id="btnRepositionRobot" class="btn-sim" title="Mode Pindahkan Robot — Drag atau Klik di mana saja (M)">
+          <span>📍</span>
+          <span>Pindah</span>
+        </button>
       </div>
 
       <!-- Kecepatan Simulasi Multiplier -->
@@ -87,6 +97,23 @@
 
   <!-- 3D WebGL Viewport Container -->
   <div id="viewport3d"></div>
+
+  <!-- Floating Alert: Robot Keluar Garis -->
+  <div id="offTrackAlert" class="off-track-alert hidden">
+    <div class="off-track-content">
+      <span class="off-track-icon">⚠️</span>
+      <div class="off-track-info">
+        <strong>Robot Keluar Jalur Garis!</strong>
+        <span>Tarik robot ke garis terdekat atau drag bodi robot menggunakan mouse.</span>
+      </div>
+      <button id="btnQuickSnapLine" class="btn-off-track-action">
+        <span>🎯 Tarik ke Garis</span>
+      </button>
+      <button id="btnQuickReset" class="btn-off-track-action btn-secondary-action">
+        <span>↺ Start</span>
+      </button>
+    </div>
+  </div>
 
   <!-- Left Floating HUD: Telemetri & 5-IR Sensor Monitor -->
   <div class="sim-hud-left">
@@ -339,9 +366,11 @@
   <!-- Bottom Keybindings Bar -->
   <div class="sim-bottom-bar">
     <div><span class="kbd-badge">Spasi</span> Mulai / Jeda</div>
-    <div><span class="kbd-badge">R</span> Reset Posisi</div>
+    <div><span class="kbd-badge">R</span> Reset Awal</div>
+    <div><span class="kbd-badge">N</span> Snap Garis Terdekat</div>
+    <div><span class="kbd-badge">M</span> Mode Pindah</div>
+    <div><span class="kbd-badge">Mouse Kiri</span> Drag Bodi Robot</div>
     <div><span class="kbd-badge">C</span> Ganti Kamera</div>
-    <div><span class="kbd-badge">Klik Kanan + Drag</span> Putar Sudut Pandang 3D</div>
   </div>
 
   <!-- Simulation Logic Modules -->
@@ -433,12 +462,26 @@
           });
 
           if (statusLineTracking) {
-            if (anyLine) {
+            if (telemetry.isDragging) {
+              statusLineTracking.textContent = 'MEMINDAHKAN ROBOT';
+              statusLineTracking.style.color = 'var(--accent-cyan, #38bdf8)';
+            } else if (telemetry.isOffTrack) {
+              statusLineTracking.textContent = 'OFF-TRACK';
+              statusLineTracking.style.color = 'var(--accent-rose, #ef4444)';
+            } else if (anyLine) {
               statusLineTracking.textContent = 'ON-TRACK';
-              statusLineTracking.style.color = 'var(--accent-emerald)';
+              statusLineTracking.style.color = 'var(--accent-emerald, #10b981)';
             } else {
               statusLineTracking.textContent = 'OFF-LINE';
-              statusLineTracking.style.color = 'var(--accent-rose)';
+              statusLineTracking.style.color = 'var(--accent-rose, #ef4444)';
+            }
+          }
+
+          if (offTrackAlert) {
+            if (telemetry.isOffTrack && !telemetry.isDragging) {
+              offTrackAlert.classList.remove('hidden');
+            } else {
+              offTrackAlert.classList.add('hidden');
             }
           }
         }
@@ -654,6 +697,39 @@
         panelTuningRight.classList.toggle('collapsed');
       });
 
+      // Reposisi Robot & Snap ke Garis Terdekat
+      const btnSnapNearestLine = document.getElementById('btnSnapNearestLine');
+      const btnRepositionRobot = document.getElementById('btnRepositionRobot');
+      const offTrackAlert = document.getElementById('offTrackAlert');
+      const btnQuickSnapLine = document.getElementById('btnQuickSnapLine');
+      const btnQuickReset = document.getElementById('btnQuickReset');
+
+      if (btnSnapNearestLine) {
+        btnSnapNearestLine.addEventListener('click', function() {
+          ArduiBlokSimEngine.snapToNearestLine();
+        });
+      }
+
+      if (btnRepositionRobot) {
+        btnRepositionRobot.addEventListener('click', function() {
+          const newState = !ArduiBlokSimEngine.isRepositionMode();
+          ArduiBlokSimEngine.setRepositionMode(newState);
+          this.classList.toggle('active', newState);
+        });
+      }
+
+      if (btnQuickSnapLine) {
+        btnQuickSnapLine.addEventListener('click', function() {
+          ArduiBlokSimEngine.snapToNearestLine();
+        });
+      }
+
+      if (btnQuickReset) {
+        btnQuickReset.addEventListener('click', function() {
+          ArduiBlokSimEngine.resetRobot();
+        });
+      }
+
       // Keyboard Shortcuts
       window.addEventListener('keydown', function(e) {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -663,6 +739,10 @@
           btnPlayPause.click();
         } else if (e.code === 'KeyR') {
           btnResetRobot.click();
+        } else if (e.code === 'KeyN') {
+          if (btnSnapNearestLine) btnSnapNearestLine.click();
+        } else if (e.code === 'KeyM' || e.code === 'KeyP') {
+          if (btnRepositionRobot) btnRepositionRobot.click();
         } else if (e.code === 'KeyC') {
           const modes = ['follow', 'orbit', 'fpv', 'top'];
           const nextIdx = (modes.indexOf(selectCamera.value) + 1) % modes.length;

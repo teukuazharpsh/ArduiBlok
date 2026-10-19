@@ -201,10 +201,13 @@
     robot = new root.ArduiBlokRobot.LineFollowerRobot(scene);
     resetRobot();
 
-    // 8. Event Resize Jendela
+    // 8. Inisialisasi Interaksi Reposisi Robot (Drag & Drop / Click to Place)
+    setupRepositionInteraction(containerElement);
+
+    // 9. Event Resize Jendela
     window.addEventListener('resize', () => onWindowResize(containerElement));
 
-    // 9. Mulai Loop Animasi
+    // 10. Mulai Loop Animasi
     lastFrameTime = performance.now();
     requestAnimationFrame(animateLoop);
 
@@ -336,7 +339,8 @@
     // Kalikan dengan speed multiplier (1x, 2x, 4x)
     const effectiveDt = rawDt * simSpeed;
 
-    if (isRunning && robot) {
+    // Jangan jalankan kalkulasi motor saat robot sedang di-drag oleh user
+    if (isRunning && robot && !isDraggingRobot) {
       // 1. Jalankan algoritma pengontrol (menghitung motor PWM)
       const motorOutput = activeAlgorithm.run(robot.sensors, effectiveDt);
       robot.setMotors(motorOutput.left, motorOutput.right);
@@ -346,6 +350,20 @@
 
       // 3. Update Lap Timer & Checkpoints
       updateLapTiming(now);
+    }
+
+    // Deteksi jika robot keluar dari lintasan (semua 5 sensor membaca lantai putih)
+    if (robot && robot.sensors) {
+      const allWhite = robot.sensors.every(s => (s.analog || 0) < 220);
+      if (allWhite) {
+        offTrackDuration += rawDt;
+        if (offTrackDuration > 0.6) {
+          isRobotOffTrack = true;
+        }
+      } else {
+        offTrackDuration = 0;
+        isRobotOffTrack = false;
+      }
     }
 
     // 4. Update Kamera
@@ -362,6 +380,8 @@
     if (typeof root.onSimTelemetryUpdate === 'function') {
       const telemetry = robot ? robot.getTelemetry() : {};
       telemetry.isRunning = isRunning;
+      telemetry.isDragging = isDraggingRobot;
+      telemetry.isOffTrack = isRobotOffTrack;
       telemetry.currentLapTime = currentLapTime;
       telemetry.bestLapTime = bestLapTime;
       telemetry.lapCount = lapCount;
@@ -441,6 +461,15 @@
     }
   }
 
+  // Reposisi & Interaksi Robot
+  let isDraggingRobot = false;
+  let isRepositionMode = false;
+  let placementRing = null;
+  let offTrackDuration = 0;
+  let isRobotOffTrack = false;
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
   function onWindowResize(container) {
     if (!renderer || !camera || !container) return;
     const width = container.clientWidth;
@@ -450,11 +479,230 @@
     renderer.setSize(width, height);
   }
 
+  // ── Mode Interaktif Pindahkan Robot (Drag & Drop & Click-to-Place) ──
+  function createPlacementRing() {
+    if (placementRing || !scene) return;
+    const ringGroup = new THREE.Group();
+
+    const ringGeo = new THREE.RingGeometry(0.32, 0.42, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.position.y = 0.02;
+    ringGroup.add(ringMesh);
+
+    const dotGeo = new THREE.CircleGeometry(0.08, 16);
+    dotGeo.rotateX(-Math.PI / 2);
+    const dotMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      side: THREE.DoubleSide
+    });
+    const dotMesh = new THREE.Mesh(dotGeo, dotMat);
+    dotMesh.position.y = 0.025;
+    ringGroup.add(dotMesh);
+
+    ringGroup.visible = false;
+    scene.add(ringGroup);
+    placementRing = ringGroup;
+  }
+
+  function setupRepositionInteraction(containerElement) {
+    if (!renderer || !renderer.domElement) return;
+    const domElement = renderer.domElement;
+    createPlacementRing();
+
+    function getFloorIntersection(e) {
+      if (!floorMesh) return null;
+      const rect = domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(floorMesh);
+      return intersects.length > 0 ? intersects[0] : null;
+    }
+
+    function isClickOnRobot(e) {
+      if (!robot || !robot.group) return false;
+      const rect = domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(robot.group, true);
+      return intersects.length > 0;
+    }
+
+    domElement.addEventListener('mousedown', function(e) {
+      if (e.button !== 0) return; // Hanya klik kiri
+
+      if (isRepositionMode) {
+        const hit = getFloorIntersection(e);
+        if (hit) {
+          robot.setPose(hit.point.x, hit.point.z, robot.heading);
+          robot.updateSensors(0.02);
+          setRepositionMode(false);
+          if (activeAlgorithm && typeof activeAlgorithm.reset === 'function') {
+            activeAlgorithm.reset();
+          }
+        }
+        return;
+      }
+
+      if (isClickOnRobot(e)) {
+        isDraggingRobot = true;
+        if (controls) controls.enabled = false;
+        robot.position.y = 0.25; // Angkat robot sedikit dari lantai
+        robot.updateModelTransform();
+        domElement.style.cursor = 'grabbing';
+      }
+    });
+
+    domElement.addEventListener('mousemove', function(e) {
+      const hit = getFloorIntersection(e);
+
+      if (isRepositionMode) {
+        if (hit && placementRing) {
+          placementRing.visible = true;
+          placementRing.position.set(hit.point.x, 0.02, hit.point.z);
+        }
+        domElement.style.cursor = 'crosshair';
+        return;
+      }
+
+      if (isDraggingRobot && hit) {
+        const dx = hit.point.x - robot.position.x;
+        const dz = hit.point.z - robot.position.z;
+        if (Math.hypot(dx, dz) > 0.06) {
+          robot.heading = Math.atan2(dx, dz);
+        }
+        robot.position.x = Math.max(-9.5, Math.min(9.5, hit.point.x));
+        robot.position.z = Math.max(-9.5, Math.min(9.5, hit.point.z));
+        robot.updateModelTransform();
+        robot.updateSensors(0.02);
+        return;
+      }
+
+      if (!isDraggingRobot) {
+        if (isClickOnRobot(e)) {
+          domElement.style.cursor = 'grab';
+        } else {
+          domElement.style.cursor = '';
+        }
+      }
+    });
+
+    function endDrag() {
+      if (isDraggingRobot) {
+        isDraggingRobot = false;
+        robot.position.y = 0.0;
+        robot.linearVelocity = 0;
+        robot.angularVelocity = 0;
+        robot.actualMotorL = 0;
+        robot.actualMotorR = 0;
+        robot.updateModelTransform();
+        robot.updateSensors(0.02);
+        if (controls) controls.enabled = (currentCameraMode === 'orbit');
+        domElement.style.cursor = '';
+      }
+    }
+
+    domElement.addEventListener('mouseup', endDrag);
+    domElement.addEventListener('mouseleave', endDrag);
+  }
+
+  function setRepositionMode(active) {
+    isRepositionMode = !!active;
+    if (placementRing) placementRing.visible = isRepositionMode;
+    if (controls) controls.enabled = !isRepositionMode && (currentCameraMode === 'orbit');
+    const btn = document.getElementById('btnRepositionRobot');
+    if (btn) btn.classList.toggle('active', isRepositionMode);
+  }
+
+  /**
+   * Cari titik garis terdekat dari posisi robot saat ini lalu posisikan robot ke sana
+   */
+  function snapToNearestLine() {
+    if (!robot || !root.ArduiBlokTracks) return false;
+
+    const currentX = robot.position.x;
+    const currentZ = robot.position.z;
+
+    let bestX = null;
+    let bestZ = null;
+    let bestIntensity = 0;
+    let minDistanceSq = Infinity;
+
+    // Pencarian melingkar konsentris di sekitar robot (radius 0.08m s/d 5.5m)
+    for (let r = 0.08; r <= 5.5; r += (r < 1.0 ? 0.06 : 0.14)) {
+      const stepAngle = Math.max(0.08, 0.25 / r);
+      for (let angle = 0; angle < Math.PI * 2; angle += stepAngle) {
+        const testX = currentX + r * Math.cos(angle);
+        const testZ = currentZ + r * Math.sin(angle);
+
+        if (Math.abs(testX) > 9.5 || Math.abs(testZ) > 9.5) continue;
+
+        const intensity = root.ArduiBlokTracks.sampleTrack(testX, testZ);
+        if (intensity >= 0.70) {
+          const dSq = (testX - currentX) ** 2 + (testZ - currentZ) ** 2;
+          if (dSq < minDistanceSq || intensity > bestIntensity) {
+            bestIntensity = intensity;
+            bestX = testX;
+            bestZ = testZ;
+            minDistanceSq = dSq;
+          }
+        }
+      }
+      if (bestX !== null && bestIntensity >= 0.85 && r >= 0.25) {
+        break;
+      }
+    }
+
+    if (bestX !== null) {
+      // Cari orientasi heading terbaik sepanjang garis
+      let bestHeading = robot.heading;
+      let maxScore = -1;
+      const testDist = 0.18;
+
+      for (let hAngle = 0; hAngle < Math.PI * 2; hAngle += Math.PI / 12) {
+        const fwdX = bestX + testDist * Math.sin(hAngle);
+        const fwdZ = bestZ + testDist * Math.cos(hAngle);
+        const sampleFwd = root.ArduiBlokTracks.sampleTrack(fwdX, fwdZ);
+
+        const angleDiff = Math.abs(Math.atan2(Math.sin(hAngle - robot.heading), Math.cos(hAngle - robot.heading)));
+        const score = sampleFwd * 2.0 - (angleDiff * 0.35);
+
+        if (score > maxScore) {
+          maxScore = score;
+          bestHeading = hAngle;
+        }
+      }
+
+      robot.setPose(bestX, bestZ, bestHeading);
+      robot.updateSensors(0.02);
+      if (activeAlgorithm && typeof activeAlgorithm.reset === 'function') {
+        activeAlgorithm.reset();
+      }
+      return true;
+    }
+
+    // Fallback jika tidak ada garis dalam jangkauan 5.5m: kembalikan ke start line
+    resetRobot();
+    return false;
+  }
+
   // Export engine
   root.ArduiBlokSimEngine = {
     init: initEngine,
     loadTrack,
     resetRobot,
+    snapToNearestLine,
+    setRepositionMode,
+    isRepositionMode: () => isRepositionMode,
+    isOffTrack: () => isRobotOffTrack,
     setRunning,
     setSimSpeed,
     setCameraMode,

@@ -615,3 +615,95 @@ html, body {
     width: 240px;
   }
 }
+
+.btn-sim.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+}
+
+/* Floating Off-Track Alert Banner */
+.off-track-alert {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  border-radius: 9999px;
+  padding: 8px 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.3);
+  backdrop-filter: blur(12px);
+  animation: pulseAmberAlert 2s infinite ease-in-out;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.off-track-alert.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-12px);
+}
+
+@keyframes pulseAmberAlert {
+  0%, 100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(245, 158, 11, 0.2); }
+  50% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 28px rgba(245, 158, 11, 0.5); }
+}
+
+.off-track-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.off-track-icon {
+  font-size: 1.25rem;
+}
+
+.off-track-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.off-track-info strong {
+  font-size: 0.82rem;
+  color: #f59e0b;
+}
+
+.off-track-info span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.btn-off-track-action {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-off-track-action:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 14px rgba(14, 165, 233, 0.5);
+}
+
+.btn-secondary-action {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-secondary-action:hover {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
