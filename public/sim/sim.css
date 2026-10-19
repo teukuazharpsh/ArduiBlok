@@ -1,0 +1,576 @@
+/**
+ * ArduiBlok — 3D Line Follower Simulator Stylesheet (public/sim/sim.css)
+ * Cyber-Robotics Dark Glassmorphism, Glowing HUD, responsive layout.
+ */
+
+:root {
+  --bg-primary: #070b14;
+  --bg-panel: rgba(15, 23, 42, 0.78);
+  --bg-panel-solid: #0f172a;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(56, 189, 248, 0.28);
+  --accent-cyan: #38bdf8;
+  --accent-indigo: #6366f1;
+  --accent-amber: #f59e0b;
+  --accent-emerald: #10b981;
+  --accent-rose: #f43f5e;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  user-select: none;
+}
+
+#viewport3d {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Top Navigation & Control Header
+   ═══════════════════════════════════════════════════════════════ */
+
+.sim-header {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  height: 58px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 10;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.sim-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sim-brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0284c7, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+}
+
+.sim-brand-text h1 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sim-badge-5ir {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 2px 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: var(--accent-cyan);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.sim-brand-text p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Controls Toolbar */
+.sim-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-select-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.sim-select-group label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sim-select {
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 0.82rem;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.sim-select option {
+  background: var(--bg-panel-solid);
+  color: #fff;
+}
+
+.sim-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-sim {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-sim:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.btn-sim-play {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+}
+
+.btn-sim-play:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-sim-play.is-paused {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+}
+
+.sim-speed-pills {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 3px;
+}
+
+.speed-pill {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.speed-pill.active {
+  background: var(--accent-indigo);
+  color: #fff;
+}
+
+.btn-back-studio {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: var(--accent-cyan);
+}
+
+.btn-back-studio:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: var(--accent-cyan);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Left Floating HUD (Telemetry & 5-IR Sensor Display)
+   ═══════════════════════════════════════════════════════════════ */
+
+.sim-hud-left {
+  position: absolute;
+  top: 86px;
+  left: 14px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 10;
+  pointer-events: none; /* Klik tembus ke canvas kecuali panel anak */
+}
+
+.hud-panel {
+  pointer-events: auto;
+  background: var(--bg-panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s;
+}
+
+.hud-panel:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.hud-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hud-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 5 Sensor IR Visual Array */
+.sensor-array-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sensor-cell {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.sensor-cell.active {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.14);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+}
+
+.sensor-led-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.15s ease;
+}
+
+.sensor-cell.active .sensor-led-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.sensor-id {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.sensor-cell.active .sensor-id {
+  color: #fca5a5;
+}
+
+.sensor-val {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: #64748b;
+}
+
+.sensor-cell.active .sensor-val {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Motor Gauge Bars */
+.motor-gauges-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.motor-gauge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.motor-label {
+  width: 52px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.motor-bar-wrapper {
+  flex: 1;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.motor-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  border-radius: 99px;
+  transition: width 0.08s ease;
+}
+
+.motor-val {
+  width: 38px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.74rem;
+}
+
+/* Lap Timer & Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stat-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.stat-label {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Right Floating Panel (PID Tuning & Controller Parameters)
+   ═══════════════════════════════════════════════════════════════ */
+
+.sim-hud-right {
+  position: absolute;
+  top: 86px;
+  right: 14px;
+  width: 300px;
+  z-index: 10;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sim-hud-right.collapsed {
+  transform: translateX(calc(100% + 20px));
+}
+
+.hud-panel-tuning {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.slider-group {
+  margin-bottom: 12px;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  margin-bottom: 4px;
+}
+
+.slider-name {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.slider-val {
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.sim-range {
+  width: 100%;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.sim-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
+  cursor: pointer;
+}
+
+/* Quick Presets Buttons */
+.preset-btns-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.btn-preset {
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-preset:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-cyan);
+  color: #fff;
+}
+
+/* Toggle Button Panel Kanan */
+.btn-toggle-tuning {
+  position: absolute;
+  top: 10px;
+  left: -40px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px 0 0 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-right: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bottom Helper Bar (Keybindings & Shortcuts)
+   ═══════════════════════════════════════════════════════════════ */
+
+.sim-bottom-bar {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: 99px;
+  padding: 6px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  z-index: 10;
+}
+
+.kbd-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sim-header {
+    height: auto;
+    padding: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sim-hud-left {
+    width: 220px;
+  }
+  .sim-hud-right {
+    width: 240px;
+  }
+}

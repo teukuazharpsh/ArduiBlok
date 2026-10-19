@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ArduiBlok — 3D Line Follower Robot Simulator</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="sim.css?v=1.0">
+
+  <!-- Local Offline-First Three.js & OrbitControls -->
+  <script src="libs/three.min.js"></script>
+  <script src="libs/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation & Controls Bar -->
+  <header class="sim-header">
+    <div class="sim-brand">
+      <div class="sim-brand-logo">🏎️</div>
+      <div class="sim-brand-text">
+        <h1>ArduiBlok 3D Sim <span class="sim-badge-5ir">5-IR Sensor</span></h1>
+        <p>Line Follower Robot Physics &amp; Sensor Arena</p>
+      </div>
+    </div>
+
+    <div class="sim-toolbar">
+      <!-- Pilihan Lintasan -->
+      <div class="sim-select-group">
+        <label for="selectTrack">Lintasan:</label>
+        <select id="selectTrack" class="sim-select">
+          <option value="oval">1. Oval Pemula</option>
+          <option value="figure8">2. Angka 8 (S-Turn)</option>
+          <option value="sharp90">3. Siku 90° &amp; Zig-Zag</option>
+          <option value="competition">4. Lomba Nasional</option>
+        </select>
+      </div>
+
+      <!-- Pilihan Algoritma Pengontrol -->
+      <div class="sim-select-group">
+        <label for="selectAlgorithm">Algoritma:</label>
+        <select id="selectAlgorithm" class="sim-select">
+          <option value="pid">PID Controller (5 Sensor)</option>
+          <option value="statemachine">State Machine Belok Patah</option>
+          <option value="bangbang">Bang-Bang Sederhana</option>
+          <option value="custom">Kode Kustom Studio</option>
+        </select>
+      </div>
+
+      <!-- Tombol Aksi Mulai / Jeda & Reset -->
+      <div class="sim-btn-group">
+        <button id="btnPlayPause" class="btn-sim btn-sim-play" title="Mulai / Jeda Simulasi (Spasi)">
+          <span id="playIcon">▶</span>
+          <span id="playText">Mulai</span>
+        </button>
+
+        <button id="btnResetRobot" class="btn-sim" title="Kembalikan Robot ke Garis Awal (R)">
+          <span>↺</span>
+          <span>Reset</span>
+        </button>
+      </div>
+
+      <!-- Kecepatan Simulasi Multiplier -->
+      <div class="sim-speed-pills">
+        <button class="speed-pill active" data-speed="1.0">1x</button>
+        <button class="speed-pill" data-speed="2.0">2x</button>
+        <button class="speed-pill" data-speed="4.0">4x</button>
+      </div>
+
+      <!-- Mode Kamera -->
+      <div class="sim-select-group">
+        <label for="selectCamera">Kamera:</label>
+        <select id="selectCamera" class="sim-select">
+          <option value="follow">Follow (Belakang)</option>
+          <option value="orbit">Orbit (360° Bebas)</option>
+          <option value="fpv">FPV (Depan Robot)</option>
+          <option value="top">Atas (Top-Down)</option>
+        </select>
+      </div>
+
+      <!-- Tombol Kembali ke Studio -->
+      <a href="/" class="btn-sim btn-back-studio" title="Kembali ke Editor Pemrograman ArduiBlok">
+        <span>⬅</span>
+        <span>Studio</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- 3D WebGL Viewport Container -->
+  <div id="viewport3d"></div>
+
+  <!-- Left Floating HUD: Telemetri & 5-IR Sensor Monitor -->
+  <div class="sim-hud-left">
+    <!-- Panel Sensor Garis 5 IR -->
+    <div class="hud-panel">
+      <div class="hud-title-row">
+        <span class="hud-title">📡 Array 5-Sensor IR</span>
+        <span id="statusLineTracking" style="font-size:0.7rem; color:var(--accent-emerald); font-weight:700;">ON-TRACK</span>
+      </div>
+
+      <div class="sensor-array-grid">
+        <div class="sensor-cell" id="cell-S1">
+          <div class="sensor-led-dot"></div>
+          <span class="sensor-id">S1</span>
+          <span class="sensor-val" id="val-S1">0</span>
+        </div>
+        <div class="sensor-cell" id="cell-S2">
+          <div class="sensor-led-dot"></div>
+          <span class="sensor-id">S2</span>
+          <span class="sensor-val" id="val-S2">0</span>
+        </div>
+        <div class="sensor-cell" id="cell-S3">
+          <div class="sensor-led-dot"></div>
+          <span class="sensor-id">S3</span>
+          <span class="sensor-val" id="val-S3">0</span>
+        </div>
+        <div class="sensor-cell" id="cell-S4">
+          <div class="sensor-led-dot"></div>
+          <span class="sensor-id">S4</span>
+          <span class="sensor-val" id="val-S4">0</span>
+        </div>
+        <div class="sensor-cell" id="cell-S5">
+          <div class="sensor-led-dot"></div>
+          <span class="sensor-id">S5</span>
+          <span class="sensor-val" id="val-S5">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Motor DC Kiri & Kanan -->
+    <div class="hud-panel">
+      <div class="hud-title-row">
+        <span class="hud-title">⚡ Kecepatan Motor DC</span>
+        <span id="headingDegrees" style="font-size:0.7rem; color:var(--accent-cyan); font-family:var(--font-mono);">0°</span>
+      </div>
+
+      <div class="motor-gauges-container">
+        <div class="motor-gauge-row">
+          <span class="motor-label">Motor L</span>
+          <div class="motor-bar-wrapper">
+            <div class="motor-bar-fill" id="barMotorL"></div>
+          </div>
+          <span class="motor-val" id="valMotorL">0</span>
+        </div>
+        <div class="motor-gauge-row">
+          <span class="motor-label">Motor R</span>
+          <div class="motor-bar-wrapper">
+            <div class="motor-bar-fill" id="barMotorR"></div>
+          </div>
+          <span class="motor-val" id="valMotorR">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Lap Timer & Catatan Waktu -->
+    <div class="hud-panel">
+      <div class="hud-title-row">
+        <span class="hud-title">⏱️ Lap Timer</span>
+        <span id="lapCountLabel" style="font-size:0.72rem; color:var(--accent-amber); font-weight:700;">Lap 0</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Waktu Saat Ini</div>
+          <div class="stat-value" id="lapCurrent">00:00.0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Terbaik (Best)</div>
+          <div class="stat-value" id="lapBest">--:--.-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Floating Panel: PID Tuning & Parameter Drawer -->
+  <div class="sim-hud-right" id="panelTuningRight">
+    <button class="btn-toggle-tuning" id="btnToggleTuning" title="Tutup / Buka Panel Pengaturan">
+      <span id="toggleTuningIcon">⚙️</span>
+    </button>
+
+    <div class="hud-panel hud-panel-tuning">
+      <div class="hud-title-row">
+        <span class="hud-title">🎛️ Tuning Kontrol PID</span>
+        <span style="font-size:0.68rem; color:var(--accent-cyan); font-weight:600;">Live Update</span>
+      </div>
+
+      <!-- Slider Kp -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-name">Kp (Proportional)</span>
+          <span class="slider-val" id="valKp">32.0</span>
+        </div>
+        <input type="range" id="sliderKp" class="sim-range" min="0" max="80" step="0.5" value="32.0">
+      </div>
+
+      <!-- Slider Ki -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-name">Ki (Integral)</span>
+          <span class="slider-val" id="valKi">0.05</span>
+        </div>
+        <input type="range" id="sliderKi" class="sim-range" min="0" max="0.5" step="0.01" value="0.05">
+      </div>
+
+      <!-- Slider Kd -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-name">Kd (Derivative)</span>
+          <span class="slider-val" id="valKd">18.0</span>
+        </div>
+        <input type="range" id="sliderKd" class="sim-range" min="0" max="60" step="0.5" value="18.0">
+      </div>
+
+      <!-- Slider Base Speed -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-name">Kecepatan Dasar (PWM)</span>
+          <span class="slider-val" id="valBaseSpeed">175</span>
+        </div>
+        <input type="range" id="sliderBaseSpeed" class="sim-range" min="60" max="255" step="5" value="175">
+      </div>
+
+      <!-- Slider Max Speed -->
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <span class="slider-name">Kecepatan Maksimum</span>
+          <span class="slider-val" id="valMaxSpeed">235</span>
+        </div>
+        <input type="range" id="sliderMaxSpeed" class="sim-range" min="100" max="255" step="5" value="235">
+      </div>
+
+      <!-- Preset Cepat -->
+      <div class="hud-title-row" style="margin-top:12px; margin-bottom:6px;">
+        <span class="hud-title" style="font-size:0.7rem;">Preset Cepat</span>
+      </div>
+      <div class="preset-btns-row">
+        <button class="btn-preset" id="presetFast">⚡ Balap Cepat</button>
+        <button class="btn-preset" id="presetSmooth">🎯 Mulus Stabil</button>
+        <button class="btn-preset" id="presetAgile">🔄 Lincah Siku 90°</button>
+        <button class="btn-preset" id="presetDefault">↺ Reset Standar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Keybindings Bar -->
+  <div class="sim-bottom-bar">
+    <div><span class="kbd-badge">Spasi</span> Mulai / Jeda</div>
+    <div><span class="kbd-badge">R</span> Reset Posisi</div>
+    <div><span class="kbd-badge">C</span> Ganti Kamera</div>
+    <div><span class="kbd-badge">Klik Kanan + Drag</span> Putar Sudut Pandang 3D</div>
+  </div>
+
+  <!-- Simulation Logic Modules -->
+  <script src="sim_tracks.js?v=1.0"></script>
+  <script src="sim_robot.js?v=1.0"></script>
+  <script src="sim_engine.js?v=1.0"></script>
+  <script src="sim_bridge.js?v=1.0"></script>
+
+  <!-- Application Controller Script -->
+  <script>
+    (function() {
+      'use strict';
+
+      const viewportContainer = document.getElementById('viewport3d');
+      const btnPlayPause = document.getElementById('btnPlayPause');
+      const playIcon = document.getElementById('playIcon');
+      const playText = document.getElementById('playText');
+      const btnResetRobot = document.getElementById('btnResetRobot');
+      const selectTrack = document.getElementById('selectTrack');
+      const selectAlgorithm = document.getElementById('selectAlgorithm');
+      const selectCamera = document.getElementById('selectCamera');
+
+      // PID Sliders
+      const sliderKp = document.getElementById('sliderKp');
+      const valKp = document.getElementById('valKp');
+      const sliderKi = document.getElementById('sliderKi');
+      const valKi = document.getElementById('valKi');
+      const sliderKd = document.getElementById('sliderKd');
+      const valKd = document.getElementById('valKd');
+      const sliderBaseSpeed = document.getElementById('sliderBaseSpeed');
+      const valBaseSpeed = document.getElementById('valBaseSpeed');
+      const sliderMaxSpeed = document.getElementById('sliderMaxSpeed');
+      const valMaxSpeed = document.getElementById('valMaxSpeed');
+
+      // Presets
+      const presetFast = document.getElementById('presetFast');
+      const presetSmooth = document.getElementById('presetSmooth');
+      const presetAgile = document.getElementById('presetAgile');
+      const presetDefault = document.getElementById('presetDefault');
+
+      // HUD Elements
+      const barMotorL = document.getElementById('barMotorL');
+      const valMotorL = document.getElementById('valMotorL');
+      const barMotorR = document.getElementById('barMotorR');
+      const valMotorR = document.getElementById('valMotorR');
+      const headingDegrees = document.getElementById('headingDegrees');
+      const lapCurrent = document.getElementById('lapCurrent');
+      const lapBest = document.getElementById('lapBest');
+      const lapCountLabel = document.getElementById('lapCountLabel');
+      const statusLineTracking = document.getElementById('statusLineTracking');
+
+      const sensorCells = {
+        S1: document.getElementById('cell-S1'),
+        S2: document.getElementById('cell-S2'),
+        S3: document.getElementById('cell-S3'),
+        S4: document.getElementById('cell-S4'),
+        S5: document.getElementById('cell-S5')
+      };
+      const sensorVals = {
+        S1: document.getElementById('val-S1'),
+        S2: document.getElementById('val-S2'),
+        S3: document.getElementById('val-S3'),
+        S4: document.getElementById('val-S4'),
+        S5: document.getElementById('val-S5')
+      };
+
+      // Inisialisasi Engine 3D
+      ArduiBlokSimEngine.init(viewportContainer);
+
+      // Telemetri Listener dari loop render 3D
+      window.onSimTelemetryUpdate = function(telemetry) {
+        if (!telemetry) return;
+
+        // 1. Update 5 Sensor IR
+        if (Array.isArray(telemetry.sensors)) {
+          let anyLine = false;
+          telemetry.sensors.forEach(s => {
+            const cell = sensorCells[s.id];
+            const valSpan = sensorVals[s.id];
+            if (cell && valSpan) {
+              valSpan.textContent = s.analog;
+              if (s.digital === 1) {
+                cell.classList.add('active');
+                anyLine = true;
+              } else {
+                cell.classList.remove('active');
+              }
+            }
+          });
+
+          if (statusLineTracking) {
+            if (anyLine) {
+              statusLineTracking.textContent = 'ON-TRACK';
+              statusLineTracking.style.color = 'var(--accent-emerald)';
+            } else {
+              statusLineTracking.textContent = 'OFF-LINE';
+              statusLineTracking.style.color = 'var(--accent-rose)';
+            }
+          }
+        }
+
+        // 2. Update Motor DC Bars
+        const pL = Math.max(0, Math.min(100, Math.round((Math.abs(telemetry.motorLeft || 0) / 255) * 100)));
+        const pR = Math.max(0, Math.min(100, Math.round((Math.abs(telemetry.motorRight || 0) / 255) * 100)));
+        if (barMotorL) barMotorL.style.width = pL + '%';
+        if (valMotorL) valMotorL.textContent = telemetry.motorLeft || 0;
+        if (barMotorR) barMotorR.style.width = pR + '%';
+        if (valMotorR) valMotorR.textContent = telemetry.motorRight || 0;
+        if (headingDegrees) headingDegrees.textContent = (telemetry.headingDeg || 0) + '°';
+
+        // 3. Lap Timer
+        if (lapCurrent) lapCurrent.textContent = formatTime(telemetry.currentLapTime);
+        if (lapBest && telemetry.bestLapTime !== null) lapBest.textContent = formatTime(telemetry.bestLapTime);
+        if (lapCountLabel) lapCountLabel.textContent = 'Lap ' + (telemetry.lapCount || 0);
+
+        // 4. Tombol Play/Pause State
+        if (telemetry.isRunning) {
+          btnPlayPause.classList.add('is-paused');
+          playIcon.textContent = '⏸';
+          playText.textContent = 'Jeda';
+        } else {
+          btnPlayPause.classList.remove('is-paused');
+          playIcon.textContent = '▶';
+          playText.textContent = 'Mulai';
+        }
+      };
+
+      function formatTime(seconds) {
+        if (!seconds || seconds <= 0) return '00:00.0';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 10);
+        return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0') + '.' + ms;
+      }
+
+      // Event: Play / Pause
+      btnPlayPause.addEventListener('click', function() {
+        const running = ArduiBlokSimEngine.isRunning();
+        ArduiBlokSimEngine.setRunning(!running);
+      });
+
+      // Event: Reset
+      btnResetRobot.addEventListener('click', function() {
+        ArduiBlokSimEngine.resetRobot();
+      });
+
+      // Event: Pilihan Lintasan
+      selectTrack.addEventListener('change', function() {
+        ArduiBlokSimEngine.loadTrack(this.value);
+      });
+
+      // Event: Pilihan Algoritma
+      selectAlgorithm.addEventListener('change', function() {
+        ArduiBlokSimEngine.setAlgorithm(this.value);
+      });
+
+      // Event: Pilihan Kamera
+      selectCamera.addEventListener('change', function() {
+        ArduiBlokSimEngine.setCameraMode(this.value);
+      });
+
+      // Event: Speed Multipliers (1x, 2x, 4x)
+      document.querySelectorAll('.speed-pill').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.speed-pill').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          ArduiBlokSimEngine.setSimSpeed(this.getAttribute('data-speed'));
+        });
+      });
+
+      // Slider Listeners PID
+      function updatePIDParams() {
+        const algos = ArduiBlokSimEngine.getAlgorithms();
+        const pidDef = algos.find(a => a.id === 'pid');
+        if (pidDef && pidDef.params) {
+          pidDef.params.kp = parseFloat(sliderKp.value);
+          pidDef.params.ki = parseFloat(sliderKi.value);
+          pidDef.params.kd = parseFloat(sliderKd.value);
+          pidDef.params.baseSpeed = parseInt(sliderBaseSpeed.value);
+          pidDef.params.maxSpeed = parseInt(sliderMaxSpeed.value);
+        }
+        valKp.textContent = sliderKp.value;
+        valKi.textContent = sliderKi.value;
+        valKd.textContent = sliderKd.value;
+        valBaseSpeed.textContent = sliderBaseSpeed.value;
+        valMaxSpeed.textContent = sliderMaxSpeed.value;
+      }
+
+      sliderKp.addEventListener('input', updatePIDParams);
+      sliderKi.addEventListener('input', updatePIDParams);
+      sliderKd.addEventListener('input', updatePIDParams);
+      sliderBaseSpeed.addEventListener('input', updatePIDParams);
+      sliderMaxSpeed.addEventListener('input', updatePIDParams);
+
+      function setSliders(kp, ki, kd, base, max) {
+        sliderKp.value = kp;
+        sliderKi.value = ki;
+        sliderKd.value = kd;
+        sliderBaseSpeed.value = base;
+        sliderMaxSpeed.value = max;
+        updatePIDParams();
+      }
+
+      presetFast.addEventListener('click', () => setSliders(45.0, 0.08, 25.0, 220, 255));
+      presetSmooth.addEventListener('click', () => setSliders(28.0, 0.04, 15.0, 150, 200));
+      presetAgile.addEventListener('click', () => setSliders(52.0, 0.05, 30.0, 180, 240));
+      presetDefault.addEventListener('click', () => setSliders(32.0, 0.05, 18.0, 175, 235));
+
+      // Toggle Panel Kanan
+      const panelTuningRight = document.getElementById('panelTuningRight');
+      const btnToggleTuning = document.getElementById('btnToggleTuning');
+      btnToggleTuning.addEventListener('click', function() {
+        panelTuningRight.classList.toggle('collapsed');
+      });
+
+      // Keyboard Shortcuts
+      window.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          btnPlayPause.click();
+        } else if (e.code === 'KeyR') {
+          btnResetRobot.click();
+        } else if (e.code === 'KeyC') {
+          const modes = ['follow', 'orbit', 'fpv', 'top'];
+          const nextIdx = (modes.indexOf(selectCamera.value) + 1) % modes.length;
+          selectCamera.value = modes[nextIdx];
+          ArduiBlokSimEngine.setCameraMode(modes[nextIdx]);
+        }
+      });
+
+      // Inisialisasi Inter-Tab Bridge dari ArduiBlok Studio
+      ArduiBlokSimBridge.init(function(message) {
+        console.log('[Sim received from Studio]:', message);
+        if (message && message.type === 'START_SIM') {
+          ArduiBlokSimEngine.setRunning(true);
+        } else if (message && message.type === 'RESET_SIM') {
+          ArduiBlokSimEngine.resetRobot();
+        }
+      });
+
+    })();
+  </script>
+
+</body>
+</html>

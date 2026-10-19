@@ -6525,4 +6525,44 @@ body.mode-text #blocklyDiv {
     max-width: 100%;
     border-radius: 16px 16px 0 0;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3D Simulation Launcher Button
+   ═══════════════════════════════════════════════════════════════ */
+
+.btn-sim-launcher {
+  position: relative;
+  background: rgba(56, 189, 248, 0.08) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-sim-launcher:hover {
+  background: rgba(56, 189, 248, 0.18) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.btn-sim-launcher .svg-icon {
+  color: #38bdf8 !important;
+  animation: pulseSimDot 2.4s infinite ease-in-out;
+}
+
+.sim-badge-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+@keyframes pulseSimDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.75; }
 }

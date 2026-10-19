@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=6.3">
+  <link rel="stylesheet" href="style.css?v=6.4">
 </head>
 <body>
 
@@ -1322,6 +1322,16 @@
           <span class="btn-text btn-text-mobile-hide">Cloud</span>
         </button>
 
+        <!-- Tombol Simulasi 3D Robot Line Follower -->
+        <button class="btn btn-secondary btn-sim-launcher" id="btnLaunch3DSim" title="Buka Simulasi 3D Robot Line Follower (5-IR Sensor) di Tab Baru">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="color: #38bdf8;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Simulasi 3D</span>
+          <span class="sim-badge-dot"></span>
+        </button>
+
         <!-- Tombol Clear / Reset -->
         <button class="btn btn-secondary" id="btnClear" title="Kosongkan workspace">
           <svg class="svg-icon" viewBox="0 0 24 24">
@@ -1378,6 +1388,14 @@
             <button class="user-dropdown-item" id="btnOpenCloudProjectsDropdown" type="button">
               <svg class="svg-icon" viewBox="0 0 24 24" style="color: #6366f1;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
               <span>Proyek Cloud Saya</span>
+            </button>
+
+            <!-- Item Simulasi 3D Line Follower -->
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item" id="btnOpenSimDropdown" type="button">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="color: #38bdf8;"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+              <span>Simulasi 3D Robot</span>
+              <span class="admin-badge-pill" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">3D</span>
             </button>
             <!-- Item Khusus Superadmin (Hanya muncul jika akun superadmin terotentikasi) -->
             <div id="adminDropdownSection" class="hidden">
@@ -3191,6 +3209,54 @@
 
       // Ekspos fungsi global
       window.openCloudProjects = openCloudModal;
+    })();
+
+    // ── 3D Line Follower Simulator Launcher ───────────────
+    (function init3DSimLauncher() {
+      const btnLaunch3DSim = document.getElementById('btnLaunch3DSim');
+      const btnOpenSimDropdown = document.getElementById('btnOpenSimDropdown');
+
+      function open3DSimulator() {
+        // Coba kirim data proyek saat ini ke simulasi
+        try {
+          if (typeof BroadcastChannel !== 'undefined') {
+            const channel = new BroadcastChannel('arduiblok_sim_channel');
+            let currentCode = '';
+            if (currentAppMode === 'text' && window.ArduiBlokEditor) {
+              currentCode = window.ArduiBlokEditor.getValue() || '';
+            } else {
+              const codePreview = document.getElementById('codePreview');
+              if (codePreview) currentCode = codePreview.textContent || '';
+            }
+            channel.postMessage({
+              type: 'SYNC_STUDIO_SKETCH',
+              payload: {
+                projectName: (projectNameInput ? projectNameInput.value.trim() : '') || 'Sketch ArduiBlok',
+                code: currentCode
+              }
+            });
+          }
+        } catch (e) {}
+
+        // Buka tab baru simulator
+        window.open('/sim/', '_blank');
+      }
+
+      if (btnLaunch3DSim) {
+        btnLaunch3DSim.addEventListener('click', open3DSimulator);
+      }
+
+      if (btnOpenSimDropdown) {
+        btnOpenSimDropdown.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const userDropdownMenu = document.getElementById('userDropdownMenu');
+          if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
+          open3DSimulator();
+        });
+      }
+
+      window.open3DSimulator = open3DSimulator;
     })();
 
     // ── File Download Utilities ───────────────────────────
