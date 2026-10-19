@@ -450,6 +450,43 @@
         <button class="btn btn-secondary" id="btnCloseCloudProjectsFooter">Tutup</button>
       </div>
     </div>
+  <!-- Modal Konfirmasi Simulasi Line Follower -->
+  <div class="modal-overlay hidden" id="modalSimConfirm">
+    <div class="modal-container" style="max-width: 520px; width: 92%;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div style="font-size: 1.5rem; margin-right: 6px;">🏎️</div>
+          <div>
+            <h2>Simulasi 3D Robot Line Follower</h2>
+            <p class="modal-subtitle">Konfigurasi Blok Program Workspace</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseSimConfirm" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px; line-height: 1.6;">
+        <div style="display: flex; gap: 14px; align-items: flex-start; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <span style="font-size: 1.4rem;">💡</span>
+          <div>
+            <strong style="color: var(--accent-cyan, #38bdf8); display: block; margin-bottom: 4px;">Deteksi Program Workspace</strong>
+            <span style="font-size: 0.88rem; color: var(--text-secondary, #94a3b8);">Workspace Anda saat ini berisi program lain. Apakah Anda ingin menggantinya dengan template resmi blok program <strong>Robot Line Follower (5 Sensor IR)</strong> untuk diuji di arena 3D?</span>
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary, #94a3b8); margin: 0;">
+          Pilih <em>"Muat Blok Line Follower"</em> untuk otomatis memasang logika 5-IR (baca sensor, perhitungan error garis, dan kontrol motor DC), atau <em>"Gunakan Blok Saat Ini"</em> jika Anda ingin mempertahankan sketch Anda.
+        </p>
+      </div>
+
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px;">
+        <button class="btn btn-secondary" id="btnCancelSimConfirm">Batal</button>
+        <button class="btn btn-secondary" id="btnKeepBlocksSimConfirm" style="color: #94a3b8;">Gunakan Blok Saat Ini</button>
+        <button class="btn btn-compile" id="btnLoadTemplateSimConfirm">
+          <span>🏎️ Muat Blok Line Follower</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Panel Admin Server (Khusus Superadmin) -->
@@ -3215,9 +3252,154 @@
     (function init3DSimLauncher() {
       const btnLaunch3DSim = document.getElementById('btnLaunch3DSim');
       const btnOpenSimDropdown = document.getElementById('btnOpenSimDropdown');
+      const modalSimConfirm = document.getElementById('modalSimConfirm');
+      const btnCloseSimConfirm = document.getElementById('btnCloseSimConfirm');
+      const btnCancelSimConfirm = document.getElementById('btnCancelSimConfirm');
+      const btnKeepBlocksSimConfirm = document.getElementById('btnKeepBlocksSimConfirm');
+      const btnLoadTemplateSimConfirm = document.getElementById('btnLoadTemplateSimConfirm');
 
-      function open3DSimulator() {
-        // Coba kirim data proyek saat ini ke simulasi
+      // Template resmi blok program 5-IR Line Follower
+      const OFFICIAL_LINE_FOLLOWER_XML =
+        '<xml xmlns="https://developers.google.com/blockly/xml">' +
+        '  <block type="arduino_setup" x="40" y="30">' +
+        '    <statement name="SETUP_CODE">' +
+        '      <block type="comment_block">' +
+        '        <field name="COMMENT">🏎️ Robot Line Follower 5-IR (S1:A0, S2:A1, S3:A2, S4:A3, S5:A4)</field>' +
+        '        <next>' +
+        '          <block type="serial_begin">' +
+        '            <field name="BAUD">9600</field>' +
+        '          </block>' +
+        '        </next>' +
+        '      </block>' +
+        '    </statement>' +
+        '  </block>' +
+        '  <block type="arduino_loop" x="40" y="190">' +
+        '    <statement name="LOOP_CODE">' +
+        '      <block type="comment_block">' +
+        '        <field name="COMMENT">1. Baca Sensor IR Garis (A0..A4) &amp; Monitor Sensor Tengah (A2)</field>' +
+        '        <next>' +
+        '          <block type="serial_print">' +
+        '            <value name="CONTENT">' +
+        '              <block type="analog_read">' +
+        '                <field name="PIN">A2</field>' +
+        '              </block>' +
+        '            </value>' +
+        '            <next>' +
+        '              <block type="comment_block">' +
+        '                <field name="COMMENT">2. Kendali Kecepatan Motor Kiri &amp; Kanan Driver L298N</field>' +
+        '                <next>' +
+        '                  <block type="motor_dc">' +
+        '                    <field name="PIN_IN1">7</field>' +
+        '                    <field name="PIN_IN2">8</field>' +
+        '                    <field name="PIN_ENA">5</field>' +
+        '                    <field name="DIRECTION">FORWARD</field>' +
+        '                    <field name="SPEED">180</field>' +
+        '                    <next>' +
+        '                      <block type="motor_dc">' +
+        '                        <field name="PIN_IN1">9</field>' +
+        '                        <field name="PIN_IN2">10</field>' +
+        '                        <field name="PIN_ENA">6</field>' +
+        '                        <field name="DIRECTION">FORWARD</field>' +
+        '                        <field name="SPEED">180</field>' +
+        '                        <next>' +
+        '                          <block type="delay_ms">' +
+        '                            <field name="DURATION">20</field>' +
+        '                          </block>' +
+        '                        </next>' +
+        '                      </block>' +
+        '                    </next>' +
+        '                  </block>' +
+        '                </next>' +
+        '              </block>' +
+        '            </next>' +
+        '          </block>' +
+        '        </next>' +
+        '      </block>' +
+        '    </statement>' +
+        '  </block>' +
+        '</xml>';
+
+      function isWorkspaceEmptyOrClean() {
+        if (!workspace) return true;
+        const allBlocks = workspace.getAllBlocks(false);
+        if (allBlocks.length === 0) return true;
+        if (allBlocks.length === 2) {
+          const types = allBlocks.map(function(b) { return b.type; });
+          if (types.includes('arduino_setup') && types.includes('arduino_loop')) {
+            const hasInner = allBlocks.some(function(b) {
+              const setupCode = b.getInputTargetBlock && (b.getInputTargetBlock('SETUP_CODE') || b.getInputTargetBlock('LOOP_CODE'));
+              return !!setupCode;
+            });
+            if (!hasInner) return true;
+          }
+        }
+        return false;
+      }
+
+      function isLineFollowerProject() {
+        // Cek nama proyek
+        const pName = (projectNameInput ? projectNameInput.value.trim() : '');
+        if (/line[\s_-]?follower|robot[\s_-]?garis|5[\s_-]?ir/i.test(pName)) {
+          return true;
+        }
+
+        // Cek kode teks C++ jika sedang di mode teks
+        if (currentAppMode === 'text' && window.ArduiBlokEditor) {
+          const code = window.ArduiBlokEditor.getValue() || '';
+          if (/line[\s_-]?follower|5[\s_-]?ir|sensor_line|robot[\s_-]?garis/i.test(code)) {
+            return true;
+          }
+        }
+
+        // Cek isi blok visual Blockly
+        if (workspace) {
+          try {
+            const dom = Blockly.Xml.workspaceToDom(workspace);
+            const xmlStr = Blockly.Xml.domToText(dom);
+            if (/line[\s_-]?follower|Line Follower|robot[\s_-]?garis|LINE_FOLLOWER/i.test(xmlStr)) {
+              return true;
+            }
+          } catch (e) {}
+        }
+
+        return false;
+      }
+
+      function loadLineFollowerTemplate() {
+        if (typeof setAppMode === 'function' && currentAppMode !== 'block') {
+          setAppMode('block');
+        }
+
+        if (workspace) {
+          try {
+            workspace.clear();
+            const xmlDom = Blockly.utils.xml.textToDom(OFFICIAL_LINE_FOLLOWER_XML);
+            Blockly.Xml.domToWorkspace(xmlDom, workspace);
+
+            if (projectNameInput) {
+              projectNameInput.value = 'Robot_Line_Follower_5IR';
+              localStorage.setItem('arduiblok_current_project_name', 'Robot_Line_Follower_5IR');
+            }
+
+            try {
+              const dom = Blockly.Xml.workspaceToDom(workspace);
+              const xmlText = Blockly.Xml.domToText(dom);
+              localStorage.setItem('arduiblok_saved_workspace', xmlText);
+            } catch (e) {}
+
+            if (typeof generateCode === 'function') {
+              generateCode();
+            }
+            if (typeof playSnapSound === 'function') {
+              playSnapSound();
+            }
+          } catch (err) {
+            console.error('Gagal memuat template Line Follower:', err);
+          }
+        }
+      }
+
+      function open3DSimulatorWindow() {
         try {
           if (typeof BroadcastChannel !== 'undefined') {
             const channel = new BroadcastChannel('arduiblok_sim_channel');
@@ -3231,19 +3413,39 @@
             channel.postMessage({
               type: 'SYNC_STUDIO_SKETCH',
               payload: {
-                projectName: (projectNameInput ? projectNameInput.value.trim() : '') || 'Sketch ArduiBlok',
+                projectName: (projectNameInput ? projectNameInput.value.trim() : '') || 'Robot Line Follower',
                 code: currentCode
               }
             });
           }
         } catch (e) {}
 
-        // Buka tab baru simulator
         window.open('/sim/', '_blank');
       }
 
+      function handleSimLaunchRequest() {
+        if (isWorkspaceEmptyOrClean()) {
+          // Workspace kosong atau bersih -> otomatis muat template resmi line follower
+          loadLineFollowerTemplate();
+          open3DSimulatorWindow();
+        } else if (isLineFollowerProject()) {
+          // Sudah program line follower -> langsung buka simulator tanpa modal konfirmasi
+          open3DSimulatorWindow();
+        } else {
+          // Ada program blok lain -> tampilkan modal konfirmasi
+          if (modalSimConfirm) {
+            modalSimConfirm.classList.remove('hidden');
+          } else {
+            if (confirm('Workspace Anda saat ini berisi program lain.\n\nGanti dengan template resmi Robot Line Follower 5-IR untuk simulasi 3D?')) {
+              loadLineFollowerTemplate();
+            }
+            open3DSimulatorWindow();
+          }
+        }
+      }
+
       if (btnLaunch3DSim) {
-        btnLaunch3DSim.addEventListener('click', open3DSimulator);
+        btnLaunch3DSim.addEventListener('click', handleSimLaunchRequest);
       }
 
       if (btnOpenSimDropdown) {
@@ -3252,11 +3454,43 @@
           e.stopPropagation();
           const userDropdownMenu = document.getElementById('userDropdownMenu');
           if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
-          open3DSimulator();
+          handleSimLaunchRequest();
         });
       }
 
-      window.open3DSimulator = open3DSimulator;
+      // Handler Tombol Modal Konfirmasi
+      function closeSimConfirmModal() {
+        if (modalSimConfirm) modalSimConfirm.classList.add('hidden');
+      }
+
+      if (btnCloseSimConfirm) {
+        btnCloseSimConfirm.addEventListener('click', closeSimConfirmModal);
+      }
+      if (btnCancelSimConfirm) {
+        btnCancelSimConfirm.addEventListener('click', closeSimConfirmModal);
+      }
+      if (modalSimConfirm) {
+        modalSimConfirm.addEventListener('click', function(e) {
+          if (e.target === modalSimConfirm) closeSimConfirmModal();
+        });
+      }
+
+      if (btnKeepBlocksSimConfirm) {
+        btnKeepBlocksSimConfirm.addEventListener('click', function() {
+          closeSimConfirmModal();
+          open3DSimulatorWindow();
+        });
+      }
+
+      if (btnLoadTemplateSimConfirm) {
+        btnLoadTemplateSimConfirm.addEventListener('click', function() {
+          closeSimConfirmModal();
+          loadLineFollowerTemplate();
+          open3DSimulatorWindow();
+        });
+      }
+
+      window.open3DSimulator = handleSimLaunchRequest;
     })();
 
     // ── File Download Utilities ───────────────────────────

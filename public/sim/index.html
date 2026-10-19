@@ -178,65 +178,160 @@
     </button>
 
     <div class="hud-panel hud-panel-tuning">
-      <div class="hud-title-row">
-        <span class="hud-title">🎛️ Tuning Kontrol PID</span>
-        <span style="font-size:0.68rem; color:var(--accent-cyan); font-weight:600;">Live Update</span>
+      <!-- Tab Bar Pemilih Kontrol vs Fisik Robot -->
+      <div class="panel-tab-bar">
+        <button class="panel-tab-btn active" id="tabBtnPID">
+          <span>🎛️</span> <span>Kontrol PID</span>
+        </button>
+        <button class="panel-tab-btn" id="tabBtnRobot">
+          <span>⚙️</span> <span>Fisik Robot</span>
+        </button>
       </div>
 
-      <!-- Slider Kp -->
-      <div class="slider-group">
-        <div class="slider-label-row">
-          <span class="slider-name">Kp (Proportional)</span>
-          <span class="slider-val" id="valKp">32.0</span>
+      <!-- TAB 1: Kontrol & Algoritma PID -->
+      <div id="tabContentPID" class="tab-content">
+        <div class="hud-title-row">
+          <span class="hud-title">Tuning Kecepatan PID</span>
+          <span style="font-size:0.68rem; color:var(--accent-cyan); font-weight:600;">Live Update</span>
         </div>
-        <input type="range" id="sliderKp" class="sim-range" min="0" max="80" step="0.5" value="32.0">
-      </div>
 
-      <!-- Slider Ki -->
-      <div class="slider-group">
-        <div class="slider-label-row">
-          <span class="slider-name">Ki (Integral)</span>
-          <span class="slider-val" id="valKi">0.05</span>
+        <!-- Slider Kp -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Kp (Proportional)</span>
+            <span class="slider-val" id="valKp">32.0</span>
+          </div>
+          <input type="range" id="sliderKp" class="sim-range" min="0" max="80" step="0.5" value="32.0">
         </div>
-        <input type="range" id="sliderKi" class="sim-range" min="0" max="0.5" step="0.01" value="0.05">
-      </div>
 
-      <!-- Slider Kd -->
-      <div class="slider-group">
-        <div class="slider-label-row">
-          <span class="slider-name">Kd (Derivative)</span>
-          <span class="slider-val" id="valKd">18.0</span>
+        <!-- Slider Ki -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Ki (Integral)</span>
+            <span class="slider-val" id="valKi">0.05</span>
+          </div>
+          <input type="range" id="sliderKi" class="sim-range" min="0" max="0.5" step="0.01" value="0.05">
         </div>
-        <input type="range" id="sliderKd" class="sim-range" min="0" max="60" step="0.5" value="18.0">
-      </div>
 
-      <!-- Slider Base Speed -->
-      <div class="slider-group">
-        <div class="slider-label-row">
-          <span class="slider-name">Kecepatan Dasar (PWM)</span>
-          <span class="slider-val" id="valBaseSpeed">175</span>
+        <!-- Slider Kd -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Kd (Derivative)</span>
+            <span class="slider-val" id="valKd">18.0</span>
+          </div>
+          <input type="range" id="sliderKd" class="sim-range" min="0" max="60" step="0.5" value="18.0">
         </div>
-        <input type="range" id="sliderBaseSpeed" class="sim-range" min="60" max="255" step="5" value="175">
-      </div>
 
-      <!-- Slider Max Speed -->
-      <div class="slider-group">
-        <div class="slider-label-row">
-          <span class="slider-name">Kecepatan Maksimum</span>
-          <span class="slider-val" id="valMaxSpeed">235</span>
+        <!-- Slider Base Speed -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Kecepatan Dasar (PWM)</span>
+            <span class="slider-val" id="valBaseSpeed">175</span>
+          </div>
+          <input type="range" id="sliderBaseSpeed" class="sim-range" min="60" max="255" step="5" value="175">
         </div>
-        <input type="range" id="sliderMaxSpeed" class="sim-range" min="100" max="255" step="5" value="235">
+
+        <!-- Slider Max Speed -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Kecepatan Maksimum</span>
+            <span class="slider-val" id="valMaxSpeed">235</span>
+          </div>
+          <input type="range" id="sliderMaxSpeed" class="sim-range" min="100" max="255" step="5" value="235">
+        </div>
+
+        <!-- Preset Cepat PID -->
+        <div class="hud-title-row" style="margin-top:12px; margin-bottom:6px;">
+          <span class="hud-title" style="font-size:0.7rem;">Preset Cepat PID</span>
+        </div>
+        <div class="preset-btns-row">
+          <button class="btn-preset" id="presetFast">⚡ Balap Cepat</button>
+          <button class="btn-preset" id="presetSmooth">🎯 Mulus Stabil</button>
+          <button class="btn-preset" id="presetAgile">🔄 Lincah Siku 90°</button>
+          <button class="btn-preset" id="presetDefault">↺ Standar</button>
+        </div>
       </div>
 
-      <!-- Preset Cepat -->
-      <div class="hud-title-row" style="margin-top:12px; margin-bottom:6px;">
-        <span class="hud-title" style="font-size:0.7rem;">Preset Cepat</span>
-      </div>
-      <div class="preset-btns-row">
-        <button class="btn-preset" id="presetFast">⚡ Balap Cepat</button>
-        <button class="btn-preset" id="presetSmooth">🎯 Mulus Stabil</button>
-        <button class="btn-preset" id="presetAgile">🔄 Lincah Siku 90°</button>
-        <button class="btn-preset" id="presetDefault">↺ Reset Standar</button>
+      <!-- TAB 2: Spesifikasi Fisik Robot (Berat, Dimensi, dsb.) -->
+      <div id="tabContentRobot" class="tab-content hidden">
+        <div class="hud-title-row">
+          <span class="hud-title">Dimensi &amp; Kinematika</span>
+          <span style="font-size:0.68rem; color:var(--accent-emerald); font-weight:600;">3D Dynamic</span>
+        </div>
+
+        <!-- Slider Berat / Massa -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Berat / Massa Robot</span>
+            <span class="slider-val" id="valMass">650 g</span>
+          </div>
+          <input type="range" id="sliderMass" class="sim-range" min="200" max="2000" step="25" value="650">
+        </div>
+
+        <!-- Slider Panjang Chassis -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Panjang Chassis</span>
+            <span class="slider-val" id="valLength">18 cm</span>
+          </div>
+          <input type="range" id="sliderLength" class="sim-range" min="12" max="28" step="1" value="18">
+        </div>
+
+        <!-- Slider Lebar / Jarak Roda (Wheelbase) -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Lebar Roda (Wheelbase)</span>
+            <span class="slider-val" id="valWheelbase">14 cm</span>
+          </div>
+          <input type="range" id="sliderWheelbase" class="sim-range" min="10" max="24" step="1" value="14">
+        </div>
+
+        <!-- Slider Diameter Roda -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Diameter Roda</span>
+            <span class="slider-val" id="valWheelDiameter">65 mm</span>
+          </div>
+          <input type="range" id="sliderWheelDiameter" class="sim-range" min="35" max="80" step="1" value="65">
+        </div>
+
+        <!-- Slider Jarak Sensor dari Poros Roda -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Jarak Sensor ke Poros</span>
+            <span class="slider-val" id="valSensorForward">11 cm</span>
+          </div>
+          <input type="range" id="sliderSensorForward" class="sim-range" min="5" max="18" step="0.5" value="11">
+        </div>
+
+        <!-- Slider Rentang Jarak Antar Sensor -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Rentang Jarak Sensor</span>
+            <span class="slider-val" id="valSensorSpacing">24 mm</span>
+          </div>
+          <input type="range" id="sliderSensorSpacing" class="sim-range" min="15" max="38" step="1" value="24">
+        </div>
+
+        <!-- Slider Akselerasi Motor -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span class="slider-name">Akselerasi Motor</span>
+            <span class="slider-val" id="valMotorResponse">950 PWM/s</span>
+          </div>
+          <input type="range" id="sliderMotorResponse" class="sim-range" min="300" max="2000" step="50" value="950">
+        </div>
+
+        <!-- Preset Robot -->
+        <div class="hud-title-row" style="margin-top:12px; margin-bottom:6px;">
+          <span class="hud-title" style="font-size:0.7rem;">Preset Robot</span>
+        </div>
+        <div class="preset-btns-row">
+          <button class="btn-preset" id="presetRobotLight">🏎️ Mini Balap</button>
+          <button class="btn-preset" id="presetRobotStandard">🤖 Standar</button>
+          <button class="btn-preset" id="presetRobotHeavy">🛡️ Berat Kokoh</button>
+          <button class="btn-preset" id="presetRobotLong">📐 Moncong Jauh</button>
+        </div>
       </div>
     </div>
   </div>
@@ -454,6 +549,103 @@
       presetSmooth.addEventListener('click', () => setSliders(28.0, 0.04, 15.0, 150, 200));
       presetAgile.addEventListener('click', () => setSliders(52.0, 0.05, 30.0, 180, 240));
       presetDefault.addEventListener('click', () => setSliders(32.0, 0.05, 18.0, 175, 235));
+
+      // ── Tab Switcher Panel Kanan (Kontrol PID vs Fisik Robot) ───
+      const tabBtnPID = document.getElementById('tabBtnPID');
+      const tabBtnRobot = document.getElementById('tabBtnRobot');
+      const tabContentPID = document.getElementById('tabContentPID');
+      const tabContentRobot = document.getElementById('tabContentRobot');
+
+      if (tabBtnPID && tabBtnRobot) {
+        tabBtnPID.addEventListener('click', function() {
+          tabBtnPID.classList.add('active');
+          tabBtnRobot.classList.remove('active');
+          tabContentPID.classList.remove('hidden');
+          tabContentRobot.classList.add('hidden');
+        });
+
+        tabBtnRobot.addEventListener('click', function() {
+          tabBtnRobot.classList.add('active');
+          tabBtnPID.classList.remove('active');
+          tabContentRobot.classList.remove('hidden');
+          tabContentPID.classList.add('hidden');
+        });
+      }
+
+      // ── Slider Parameter Fisik Robot ──────────────────────────
+      const sliderMass = document.getElementById('sliderMass');
+      const valMass = document.getElementById('valMass');
+      const sliderLength = document.getElementById('sliderLength');
+      const valLength = document.getElementById('valLength');
+      const sliderWheelbase = document.getElementById('sliderWheelbase');
+      const valWheelbase = document.getElementById('valWheelbase');
+      const sliderWheelDiameter = document.getElementById('sliderWheelDiameter');
+      const valWheelDiameter = document.getElementById('valWheelDiameter');
+      const sliderSensorForward = document.getElementById('sliderSensorForward');
+      const valSensorForward = document.getElementById('valSensorForward');
+      const sliderSensorSpacing = document.getElementById('sliderSensorSpacing');
+      const valSensorSpacing = document.getElementById('valSensorSpacing');
+      const sliderMotorResponse = document.getElementById('sliderMotorResponse');
+      const valMotorResponse = document.getElementById('valMotorResponse');
+
+      function updateRobotPhysicalSpecs() {
+        const massKg = parseFloat(sliderMass.value) / 1000.0; // g -> kg
+        const lengthM = parseFloat(sliderLength.value) / 100.0; // cm -> m
+        const wheelbaseM = parseFloat(sliderWheelbase.value) / 100.0; // cm -> m
+        const wheelDiamM = parseFloat(sliderWheelDiameter.value) / 1000.0; // mm -> m
+        const sensorFwdM = parseFloat(sliderSensorForward.value) / 100.0; // cm -> m
+        const sensorSpcM = parseFloat(sliderSensorSpacing.value) / 1000.0; // mm -> m
+        const motorSlew = parseInt(sliderMotorResponse.value);
+
+        // Update teks label
+        valMass.textContent = sliderMass.value + ' g';
+        valLength.textContent = sliderLength.value + ' cm';
+        valWheelbase.textContent = sliderWheelbase.value + ' cm';
+        valWheelDiameter.textContent = sliderWheelDiameter.value + ' mm';
+        valSensorForward.textContent = sliderSensorForward.value + ' cm';
+        valSensorSpacing.textContent = sliderSensorSpacing.value + ' mm';
+        valMotorResponse.textContent = sliderMotorResponse.value + ' PWM/s';
+
+        // Kirim ke engine & model 3D robot secara langsung
+        ArduiBlokSimEngine.updateRobotParams({
+          mass: massKg,
+          length: lengthM,
+          wheelbase: wheelbaseM,
+          wheelDiameter: wheelDiamM,
+          sensorForward: sensorFwdM,
+          sensorSpacing: sensorSpcM,
+          motorResponse: motorSlew
+        });
+      }
+
+      if (sliderMass) sliderMass.addEventListener('input', updateRobotPhysicalSpecs);
+      if (sliderLength) sliderLength.addEventListener('input', updateRobotPhysicalSpecs);
+      if (sliderWheelbase) sliderWheelbase.addEventListener('input', updateRobotPhysicalSpecs);
+      if (sliderWheelDiameter) sliderWheelDiameter.addEventListener('input', updateRobotPhysicalSpecs);
+      if (sliderSensorForward) sliderSensorForward.addEventListener('input', updateRobotPhysicalSpecs);
+      if (sliderSensorSpacing) sliderSensorSpacing.addEventListener('input', updateRobotPhysicalSpecs);
+      if (sliderMotorResponse) sliderMotorResponse.addEventListener('input', updateRobotPhysicalSpecs);
+
+      function setRobotSliders(mass, len, wb, diam, fwd, spc, resp) {
+        sliderMass.value = mass;
+        sliderLength.value = len;
+        sliderWheelbase.value = wb;
+        sliderWheelDiameter.value = diam;
+        sliderSensorForward.value = fwd;
+        sliderSensorSpacing.value = spc;
+        sliderMotorResponse.value = resp;
+        updateRobotPhysicalSpecs();
+      }
+
+      const presetRobotLight = document.getElementById('presetRobotLight');
+      const presetRobotStandard = document.getElementById('presetRobotStandard');
+      const presetRobotHeavy = document.getElementById('presetRobotHeavy');
+      const presetRobotLong = document.getElementById('presetRobotLong');
+
+      if (presetRobotLight) presetRobotLight.addEventListener('click', () => setRobotSliders(380, 14, 11, 55, 9, 20, 1400));
+      if (presetRobotStandard) presetRobotStandard.addEventListener('click', () => setRobotSliders(650, 18, 14, 65, 11, 24, 950));
+      if (presetRobotHeavy) presetRobotHeavy.addEventListener('click', () => setRobotSliders(1200, 22, 18, 75, 13, 28, 600));
+      if (presetRobotLong) presetRobotLong.addEventListener('click', () => setRobotSliders(550, 22, 13, 60, 15, 22, 1100));
 
       // Toggle Panel Kanan
       const panelTuningRight = document.getElementById('panelTuningRight');

@@ -34,41 +34,42 @@
       lastError: 0,
       reset: function() { this.integral = 0; this.lastError = 0; },
       run: function(sensors, dt) {
-        // sensors[0] = S1 (-2), sensors[1] = S2 (-1), sensors[2] = S3 (0), sensors[3] = S4 (+1), sensors[4] = S5 (+2)
-        const s1 = sensors[0].digital;
-        const s2 = sensors[1].digital;
-        const s3 = sensors[2].digital;
-        const s4 = sensors[3].digital;
-        const s5 = sensors[4].digital;
+        // Gunakan continuous analog reflectance (0.0 s/d 1.0) untuk error analog presisi tinggi
+        const a1 = (sensors[0].analog || 0) / 1023.0;
+        const a2 = (sensors[1].analog || 0) / 1023.0;
+        const a3 = (sensors[2].analog || 0) / 1023.0;
+        const a4 = (sensors[3].analog || 0) / 1023.0;
+        const a5 = (sensors[4].analog || 0) / 1023.0;
 
-        let activeCount = s1 + s2 + s3 + s4 + s5;
+        const totalWeight = a1 + a2 + a3 + a4 + a5;
 
-        // Jika semua sensor putih (lepas garis sejenak), pertahankan belokan terakhir
-        if (activeCount === 0) {
-          const steer = this.lastError < 0 ? -190 : 190;
+        // Jika semua sensor di luar garis (total reflectance rendah)
+        if (totalWeight < 0.12) {
+          // Pertahankan belokan terakhir dengan kontrol lembut
+          const steer = this.lastError < 0 ? -160 : 160;
           return { left: this.params.baseSpeed - steer, right: this.params.baseSpeed + steer };
         }
 
-        // Hitung weighted error (-2.0 s/d +2.0)
-        const weightedSum = (s1 * -2.0) + (s2 * -1.0) + (s3 * 0.0) + (s4 * 1.0) + (s5 * 2.0);
-        const error = weightedSum / activeCount;
+        // Analog Centroid Calculation: posisi garis kontinyu (-2.0 s/d +2.0)
+        const weightedSum = (a1 * -2.0) + (a2 * -1.0) + (a3 * 0.0) + (a4 * 1.0) + (a5 * 2.0);
+        const error = weightedSum / totalWeight;
 
-        // PID Loop
+        // PID Loop Mulus
         this.integral += error * dt;
         // Anti-windup
-        this.integral = Math.max(-10, Math.min(10, this.integral));
+        this.integral = Math.max(-5, Math.min(5, this.integral));
         const derivative = (error - this.lastError) / (dt || 0.016);
         this.lastError = error;
 
         const correction = (this.params.kp * error) + (this.params.ki * this.integral) + (this.params.kd * derivative);
 
-        // Koreksi motor
+        // Koreksi kecepatan motor
         let vL = this.params.baseSpeed + correction;
         let vR = this.params.baseSpeed - correction;
 
-        // Clamp
-        vL = Math.max(-100, Math.min(this.params.maxSpeed, Math.round(vL)));
-        vR = Math.max(-100, Math.min(this.params.maxSpeed, Math.round(vR)));
+        // Batasi rentang PWM
+        vL = Math.max(-80, Math.min(this.params.maxSpeed, Math.round(vL)));
+        vR = Math.max(-80, Math.min(this.params.maxSpeed, Math.round(vR)));
 
         return { left: vL, right: vR };
       }
@@ -461,7 +462,9 @@
     setCustomLogic,
     getAlgorithms: () => Object.keys(ALGORITHMS).map(k => ({ id: k, name: ALGORITHMS[k].name, description: ALGORITHMS[k].description, params: ALGORITHMS[k].params })),
     isRunning: () => isRunning,
-    getRobot: () => robot
+    getRobot: () => robot,
+    updateRobotParams: (p) => { if (robot) robot.updateParams(p); },
+    getRobotParams: () => robot ? robot.params : null
   };
 
 })(typeof window !== 'undefined' ? window : this);

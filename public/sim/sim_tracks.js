@@ -254,46 +254,68 @@
   }
 
   /**
-   * Sample intensitas garis pada koordinat 3D World (x, z).
+   * Sample intensitas garis pada koordinat 3D World (x, z) dengan multi-point Gaussian Kernel.
+   * Mensimulasikan bukaan lensa optik IR (TCRT5000 / QRE1113) berdiameter ~5 mm.
    * Nilai balik:
-   * 0.0 = Lantai putih bersih (tidak ada garis)
+   * 0.0 = Lantai putih bersih
    * 1.0 = Tepat di atas garis hitam pekat
-   * 0.0 - 1.0 = Transisi gradien tepi garis (analog sensor)
+   * 0.0 - 1.0 = Gradien transisi kurva analog mulus (Continuous Sigmoid Response)
    */
   function sampleTrack(worldX, worldZ) {
     if (!trackImageData) return 0;
 
-    // Konversi koordinat world (-10 s/d +10) ke koordinat piksel (0 s/d 2047)
-    // Three.js world: Center is (0,0), X [-ARENA_SIZE/2, ARENA_SIZE/2], Z [-ARENA_SIZE/2, ARENA_SIZE/2]
     const u = (worldX / ARENA_SIZE) + 0.5;
     const v = (worldZ / ARENA_SIZE) + 0.5;
 
     if (u < 0 || u > 1 || v < 0 || v > 1) {
-      return 0; // Di luar arena
+      return 0; // Di luar batas arena
     }
 
-    const px = Math.floor(u * CANVAS_RES);
-    const py = Math.floor(v * CANVAS_RES);
+    const cx = Math.floor(u * CANVAS_RES);
+    const cy = Math.floor(v * CANVAS_RES);
 
-    if (px < 0 || px >= CANVAS_RES || py < 0 || py >= CANVAS_RES) {
-      return 0;
+    // 9-Point Gaussian Disk Sampling (Pusat, Kardinal, dan Diagonal)
+    // Offset ~3-5 piksel (~4-6 mm skala lintasan nyata)
+    const offsets = [
+      { dx:  0, dy:  0, w: 0.28 },
+      { dx: -3, dy:  0, w: 0.12 },
+      { dx:  3, dy:  0, w: 0.12 },
+      { dx:  0, dy: -3, w: 0.12 },
+      { dx:  0, dy:  3, w: 0.12 },
+      { dx: -3, dy: -3, w: 0.06 },
+      { dx:  3, dy: -3, w: 0.06 },
+      { dx: -3, dy:  3, w: 0.06 },
+      { dx:  3, dy:  3, w: 0.06 }
+    ];
+
+    let totalWeightedIntensity = 0;
+    let totalWeight = 0;
+
+    for (let i = 0; i < offsets.length; i++) {
+      const px = cx + offsets[i].dx;
+      const py = cy + offsets[i].dy;
+
+      if (px >= 0 && px < CANVAS_RES && py >= 0 && py < CANVAS_RES) {
+        const idx = (py * CANVAS_RES + px) * 4;
+        const r = trackImageData.data[idx];
+        const g = trackImageData.data[idx + 1];
+        const b = trackImageData.data[idx + 2];
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b; // 0..255
+        const intensity = 1.0 - (lum / 255.0); // 0 (putih) s/d 1 (hitam)
+        totalWeightedIntensity += intensity * offsets[i].w;
+        totalWeight += offsets[i].w;
+      }
     }
 
-    const idx = (py * CANVAS_RES + px) * 4;
-    const r = trackImageData.data[idx];
-    const g = trackImageData.data[idx + 1];
-    const b = trackImageData.data[idx + 2];
+    if (totalWeight === 0) return 0;
+    const avgIntensity = totalWeightedIntensity / totalWeight;
 
-    // Hitung luminance grayscale (0 = hitam pekat, 255 = putih)
-    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-    // Balikkan: 0 (putih) -> 0.0, 0 (hitam) -> 1.0
-    const rawVal = 1.0 - (lum / 255.0);
-
-    // Clamp dan curve kontras agar pembacaan sensor IR realistis
-    if (rawVal < 0.25) return 0.0;
-    if (rawVal > 0.70) return 1.0;
-    return (rawVal - 0.25) / (0.70 - 0.25);
+    // Smoothstep kurva sigmoid respons optik fotodioda
+    // Memberikan transisi analog kontinu yang sangat halus tanpa step kasar
+    const edge0 = 0.15;
+    const edge1 = 0.85;
+    const t = Math.max(0, Math.min(1, (avgIntensity - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
   }
 
   function getTrackList() {

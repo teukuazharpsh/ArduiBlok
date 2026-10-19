@@ -428,7 +428,7 @@ html, body {
   position: absolute;
   top: 86px;
   right: 14px;
-  width: 300px;
+  width: 330px;
   z-index: 10;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -440,6 +440,47 @@ html, body {
 .hud-panel-tuning {
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+}
+
+/* Panel Tab Bar */
+.panel-tab-bar {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border-color);
+}
+
+.panel-tab-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.panel-tab-btn.active {
+  background: var(--accent-indigo);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.35);
+}
+
+.tab-content {
+  display: block;
+}
+
+.tab-content.hidden {
+  display: none !important;
 }
 
 .slider-group {
