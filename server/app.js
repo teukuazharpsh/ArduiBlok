@@ -1,3 +1,11 @@
+require('dotenv').config();
+const dns = require('dns');
+
+// Prioritaskan IPv4 daripada IPv6 di seluruh proses (mengatasi ENETUNREACH di lingkungan cloud/Railway)
+if (dns && dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
@@ -5,6 +13,9 @@ const { execFile, execSync } = require('child_process');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { router: authRouter } = require('./auth');
+const { router: adminRouter } = require('./admin');
+const { router: projectsRouter } = require('./projects');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +23,12 @@ const PORT = process.env.PORT || 3000;
 // ── Middleware ──────────────────────────────────────────────
 app.use(cors());                        // Izinkan request dari origin manapun (WebView Android)
 app.use(express.json({ limit: '50mb' })); // Parse JSON body, max 50MB (mendukung upload file .ZIP library)
+
+// ── Auth, Admin & Cloud Projects API Routers ─────────────────
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/projects', projectsRouter);
+
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   etag: false,
   maxAge: 0,

@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=5.6">
+  <link rel="stylesheet" href="style.css?v=6.3">
 </head>
 <body>
 
@@ -38,6 +38,153 @@
     </div>
     <div class="loading-text">Menyiapkan Workspace ArduiBlok...</div>
     <div class="loading-subtext">Robotika Nesklar</div>
+  </div>
+
+  <!-- Modal / Overlay Autentikasi Pengguna (Standard Modern Login, Sign Up & Verifikasi OTP) -->
+  <div class="auth-overlay hidden" id="authOverlay">
+    <div class="auth-card">
+      <!-- Alert Notification Banner -->
+      <div class="auth-alert hidden" id="authAlert"></div>
+
+      <!-- ── View 1: Standard Modern Login (Default) ─────────────── -->
+      <div class="auth-view" id="authViewLogin">
+        <div class="auth-header">
+          <div class="auth-logo-circle">
+            <img src="logo.jpeg" alt="Logo ArduiBlok" class="auth-logo-img">
+          </div>
+          <h2 class="auth-title">Masuk ke ArduiBlok</h2>
+          <p class="auth-subtitle">Masuk untuk mengakses visual &amp; text microcontroller studio</p>
+        </div>
+
+        <form class="auth-form" id="formLogin" onsubmit="return false;">
+          <div class="auth-field">
+            <label for="loginIdentifier" class="auth-label">Username atau Email</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input type="text" id="loginIdentifier" class="auth-input" placeholder="Masukkan username atau email" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="loginPassword" class="auth-label">Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="loginPassword" class="auth-input" placeholder="Masukkan password" required autocomplete="current-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleLoginPwd" title="Lihat/Sembunyikan password">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitLogin">
+            <span>Masuk ke Studio</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            Belum punya akun? <a href="#" id="linkToRegister">Daftar sekarang</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── View 2: Sign Up (Daftar Akun Baru) ─────────────────── -->
+      <div class="auth-view hidden" id="authViewRegister">
+        <div class="auth-header">
+          <div class="auth-logo-circle">
+            <img src="logo.jpeg" alt="Logo ArduiBlok" class="auth-logo-img">
+          </div>
+          <h2 class="auth-title">Buat Akun Baru</h2>
+          <p class="auth-subtitle">Daftarkan akun untuk mulai berkarya dengan Arduino &amp; ESP8266</p>
+        </div>
+
+        <form class="auth-form" id="formRegister" onsubmit="return false;">
+          <div class="auth-field">
+            <label for="registerUsername" class="auth-label">Username</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input type="text" id="registerUsername" class="auth-input" placeholder="Contoh: robou_99 (3–24 karakter)" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerEmail" class="auth-label">Alamat Email Aktif</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <input type="email" id="registerEmail" class="auth-input" placeholder="nama@email.com (untuk kode OTP)" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerPassword" class="auth-label">Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="registerPassword" class="auth-input" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleRegisterPwd" title="Lihat/Sembunyikan password">👁️</button>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="registerPasswordConfirm" class="auth-label">Konfirmasi Password</label>
+            <div class="auth-input-wrapper">
+              <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="registerPasswordConfirm" class="auth-input" placeholder="Ulangi password di atas" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleRegisterConfirmPwd" title="Lihat/Sembunyikan konfirmasi password">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitRegister">
+            <span>Daftar &amp; Kirim Kode OTP</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            Sudah punya akun? <a href="#" id="linkToLogin">Masuk di sini</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── View 3: Layar Verifikasi OTP ───────────────────────── -->
+      <div class="auth-view hidden" id="authViewOtp">
+        <div class="auth-header">
+          <div class="otp-icon-bubble">✉️</div>
+          <h2 class="auth-title">Verifikasi Alamat Email</h2>
+          <p class="auth-subtitle">
+            Masukkan 6 digit kode OTP yang kami kirimkan ke:<br>
+            <strong id="otpTargetEmailText" class="otp-highlight-email">user@email.com</strong>
+          </p>
+        </div>
+
+        <div class="auth-form" id="panelOtpVerification">
+          <!-- 6 Digit Input Group -->
+          <div class="otp-inputs-group" id="otpInputsGroup">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox1" autocomplete="one-time-code">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox2">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox3">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox4">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox5">
+            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="otpBox6">
+          </div>
+
+          <div class="otp-timer-row">
+            <span id="otpTimerText">Kode berlaku dalam: <b id="otpCountdown">10:00</b></span>
+            <button type="button" class="btn-resend-otp" id="btnResendOtp">Kirim Ulang Kode</button>
+          </div>
+
+          <button type="button" class="btn btn-compile auth-submit-btn" id="btnSubmitOtp">
+            <span>Verifikasi &amp; Masuk Studio</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </button>
+
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            <a href="#" id="linkBackToLoginFromOtp">← Kembali ke Halaman Login</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Konfigurasi Board & Bootloader Target -->
@@ -231,6 +378,217 @@
           <input type="checkbox" id="chkRememberModeChoice">
           <span>Ingat pilihan saya (bisa beralih kapan saja lewat tombol di workspace)</span>
         </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cloud Projects (Proyek Saya di Cloud) -->
+  <div class="modal-overlay hidden" id="cloudProjectsModal">
+    <div class="modal-container cloud-projects-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width: 22px; height: 22px; color: var(--accent-primary); stroke: currentColor; fill: none; stroke-width: 1.8;">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+          </svg>
+          <div>
+            <h2>Proyek Saya di Cloud</h2>
+            <p class="modal-subtitle">Kelola proyek Blockly yang tersimpan di akun Anda</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseCloudProjects" title="Tutup">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body cloud-projects-body">
+        <!-- Toolbar Atas: Simpan ke Cloud -->
+        <div class="cloud-save-section">
+          <div class="cloud-save-info">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0;color:var(--accent-primary);">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Simpan workspace saat ini ke Cloud dengan nama:</span>
+          </div>
+          <div class="cloud-save-form">
+            <input type="text" id="cloudProjectNameInput" class="cloud-project-name-input" placeholder="Nama proyek..." maxlength="80" spellcheck="false" autocomplete="off">
+            <button class="btn btn-compile cloud-save-btn" id="btnSaveToCloud" title="Simpan proyek ke Cloud">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+              <span>Simpan ke Cloud</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="cloud-projects-divider"></div>
+
+        <!-- Daftar Proyek Cloud -->
+        <div class="cloud-projects-list-header">
+          <h3>Daftar Proyek Tersimpan</h3>
+          <span class="cloud-projects-count" id="cloudProjectsCount">Memuat...</span>
+        </div>
+
+        <div class="cloud-projects-list" id="cloudProjectsList">
+          <!-- Dirender via JavaScript -->
+        </div>
+
+        <!-- State Kosong -->
+        <div class="cloud-projects-empty hidden" id="cloudProjectsEmpty">
+          <div class="cloud-empty-icon">☁️</div>
+          <h3>Belum Ada Proyek</h3>
+          <p>Simpan proyek Blockly Anda ke cloud agar bisa diakses dari mana saja dan kapan saja!</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="cloud-projects-hint">💡 Proyek disimpan di server dan terikat dengan akun Anda.</span>
+        <button class="btn btn-secondary" id="btnCloseCloudProjectsFooter">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Panel Admin Server (Khusus Superadmin) -->
+  <div class="modal-overlay hidden" id="modalAdminServer">
+    <div class="modal-container admin-modal-container">
+      <div class="modal-header admin-modal-header">
+        <div class="modal-title-group">
+          <div class="admin-header-icon">🛡️</div>
+          <div>
+            <h2 class="admin-title">Panel Admin Server</h2>
+            <p class="admin-subtitle">ArduiBlok Cloud Management &amp; Database Migration</p>
+          </div>
+        </div>
+        <div class="admin-header-actions">
+          <button class="modal-close-btn admin-maximize-btn" id="btnMaximizeAdminModal" title="Perbesar Layar Penuh">
+            <svg class="svg-icon admin-icon-maximize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+            <svg class="svg-icon admin-icon-restore hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 14h6v6M20 10h-6V4M10 14L3 21M14 10l7-7"/>
+            </svg>
+          </button>
+          <button class="modal-close-btn" id="btnCloseAdminModal" title="Tutup">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body admin-modal-body">
+        <!-- Banner Pesan Admin -->
+        <div id="adminAlertBanner" class="admin-alert hidden"></div>
+
+        <!-- 1. Statistik Server -->
+        <div class="admin-section-title">
+          <span>📊</span>
+          <h3>Statistik Server &amp; Database</h3>
+        </div>
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Total Pengguna</span>
+            <span class="admin-stat-value text-accent" id="statTotalUsers">0</span>
+            <span class="admin-stat-sub">Akun terdaftar</span>
+          </div>
+          <div class="admin-stat-card card-online">
+            <span class="admin-stat-label" style="display: flex; align-items: center; gap: 6px;">
+              <span class="online-indicator-dot pulsing"></span> Sedang Online
+            </span>
+            <span class="admin-stat-value text-success" id="statOnlineUsers">0</span>
+            <span class="admin-stat-sub">Aktif sekarang</span>
+          </div>
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Akun Terverifikasi</span>
+            <span class="admin-stat-value" style="color: #38bdf8;" id="statVerifiedUsers">0</span>
+            <span class="admin-stat-sub">OTP terkonfirmasi</span>
+          </div>
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Belum Terverifikasi</span>
+            <span class="admin-stat-value text-warning" id="statUnverifiedUsers">0</span>
+            <span class="admin-stat-sub">Menunggu OTP</span>
+          </div>
+          <div class="admin-stat-card">
+            <span class="admin-stat-label">Ukuran Database</span>
+            <span class="admin-stat-value text-info" id="statDbSize">0 KB</span>
+            <span class="admin-stat-sub" id="statUptime">Server Aktif</span>
+          </div>
+        </div>
+
+        <!-- 2. Alat Cadangan & Pemulihan Data (Migration) -->
+        <div class="admin-section-title" style="margin-top: 24px;">
+          <span>💾</span>
+          <h3>Cadangan &amp; Pemulihan Data (Migrasi Railway)</h3>
+        </div>
+        <div class="admin-tools-grid">
+          <!-- Kartu Backup -->
+          <div class="admin-tool-card">
+            <div class="tool-card-icon">⬇️</div>
+            <div class="tool-card-content">
+              <h4>1. Unduh Cadangan Data (Backup)</h4>
+              <p>Simpan seluruh data akun pengguna dari server ke file JSON di komputer Anda untuk arsip atau persiapan migrasi akun Railway.</p>
+              <button type="button" class="btn btn-compile admin-action-btn" id="btnDownloadBackup">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Unduh File Backup (.json)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Kartu Restore -->
+          <div class="admin-tool-card">
+            <div class="tool-card-icon">🔄</div>
+            <div class="tool-card-content">
+              <h4>2. Pulihkan Data ke Server (Restore)</h4>
+              <p>Pindahkan data akun lama ke akun Railway baru dengan mengunggah file cadangan JSON yang telah Anda unduh.</p>
+              <div class="admin-file-picker">
+                <input type="file" id="fileRestoreInput" accept=".json" class="admin-file-input">
+                <button type="button" class="btn btn-secondary admin-action-btn" id="btnRestoreBackup">
+                  <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span>Mulai Pulihkan Data</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Tabel Daftar Pengguna -->
+        <div class="admin-section-title" style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>👥</span>
+            <h3>Daftar Pengguna Terdaftar</h3>
+          </div>
+          <div class="admin-search-wrapper">
+            <input type="text" id="adminUserSearchInput" class="admin-search-input" placeholder="Cari username / email...">
+          </div>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-table" id="adminUsersTable">
+            <thead>
+              <tr>
+                <th style="width: 45px; text-align: center;">No</th>
+                <th style="min-width: 120px;">Username</th>
+                <th style="min-width: 200px;">Email</th>
+                <th style="width: 125px; text-align: center;">Keaktifan</th>
+                <th style="width: 130px; text-align: center;">Status OTP</th>
+                <th style="width: 160px;">Aktivitas Terakhir</th>
+                <th style="width: 95px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">Memuat data pengguna...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer admin-modal-footer">
+        <span class="admin-footer-security">🔒 Dilindungi Enkripsi Kriptografi SHA-256 Superadmin</span>
+        <button class="btn btn-secondary" id="btnCancelAdminModal">Tutup Panel</button>
       </div>
     </div>
   </div>
@@ -956,6 +1314,14 @@
           <span class="btn-text btn-text-mobile-hide">Simpan</span>
         </button>
 
+        <!-- Tombol Cloud Projects -->
+        <button class="btn btn-secondary btn-cloud-projects" id="btnCloudProjects" title="Buka Proyek Cloud — Simpan & Muat proyek dari server">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+          </svg>
+          <span class="btn-text btn-text-mobile-hide">Cloud</span>
+        </button>
+
         <!-- Tombol Clear / Reset -->
         <button class="btn btn-secondary" id="btnClear" title="Kosongkan workspace">
           <svg class="svg-icon" viewBox="0 0 24 24">
@@ -991,6 +1357,45 @@
           </svg>
           <span class="btn-text btn-text-mobile-hide">Export</span>
         </button>
+
+        <!-- User Profile & Auth Badge -->
+        <div class="user-profile-wrapper" id="userProfileWrapper">
+          <button class="btn btn-secondary user-badge-btn" id="btnUserMenu" title="Profil Akun Pengguna">
+            <div class="user-avatar-initial" id="userAvatarInitial">?</div>
+            <span class="user-name-text btn-text btn-text-mobile-hide" id="userNameLabel">Masuk</span>
+          </button>
+          <div class="user-dropdown-menu hidden" id="userDropdownMenu">
+            <div class="user-dropdown-header">
+              <div class="user-dropdown-avatar" id="dropdownAvatar">?</div>
+              <div class="user-dropdown-info">
+                <strong id="dropdownUsername">Pengguna</strong>
+                <span id="dropdownEmail">email@domain.com</span>
+              </div>
+            </div>
+
+            <!-- Item Proyek Cloud Saya -->
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item" id="btnOpenCloudProjectsDropdown" type="button">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="color: #6366f1;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+              <span>Proyek Cloud Saya</span>
+            </button>
+            <!-- Item Khusus Superadmin (Hanya muncul jika akun superadmin terotentikasi) -->
+            <div id="adminDropdownSection" class="hidden">
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item btn-admin-panel" id="btnOpenAdminPanel" type="button">
+                <svg class="svg-icon" viewBox="0 0 24 24" style="color: #f59e0b;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Panel Admin Server</span>
+                <span class="admin-badge-pill">SUPER</span>
+              </button>
+            </div>
+
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item btn-logout" id="btnLogout" type="button" onclick="if(window.ArduiBlokAuth &amp;&amp; window.ArduiBlokAuth.logout) window.ArduiBlokAuth.logout();">
+              <svg class="svg-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              <span>Keluar</span>
+            </button>
+          </div>
+        </div>
 
       </div>
 
@@ -1373,6 +1778,12 @@
 
   <!-- Custom Arduino Code Generator -->
   <script src="blocks/arduino_generator.js?v=2.0"></script>
+
+  <!-- Authentication & User Session Manager -->
+  <script src="auth.js?v=2.6"></script>
+
+  <!-- Superadmin Server Management & Database Migration Panel -->
+  <script src="admin.js?v=1.3"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>
@@ -2401,6 +2812,386 @@
         }
       });
     }
+
+    // ── Cloud Project Management ──────────────────────────
+    (function initCloudProjects() {
+      const cloudModal = document.getElementById('cloudProjectsModal');
+      const btnCloudProjects = document.getElementById('btnCloudProjects');
+      const btnCloseCloud = document.getElementById('btnCloseCloudProjects');
+      const btnCloseCloudFooter = document.getElementById('btnCloseCloudProjectsFooter');
+      const cloudNameInput = document.getElementById('cloudProjectNameInput');
+      const btnSaveToCloud = document.getElementById('btnSaveToCloud');
+      const cloudProjectsList = document.getElementById('cloudProjectsList');
+      const cloudProjectsCount = document.getElementById('cloudProjectsCount');
+      const cloudProjectsEmpty = document.getElementById('cloudProjectsEmpty');
+
+      let currentCloudProjectId = null; // ID proyek yang saat ini aktif (untuk update)
+
+      function getAuthHeaders() {
+        const token = window.ArduiBlokAuth && window.ArduiBlokAuth.getToken();
+        if (!token) return null;
+        return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+      }
+
+      function openCloudModal() {
+        if (!window.ArduiBlokAuth || !window.ArduiBlokAuth.isLoggedIn()) {
+          if (confirm('Fitur Cloud Projects membutuhkan akun masuk.\n\nApakah Anda ingin membuka halaman Masuk / Daftar sekarang?')) {
+            if (window.ArduiBlokAuth && window.ArduiBlokAuth.showAuthModal) {
+              window.ArduiBlokAuth.showAuthModal('login');
+            }
+          }
+          return;
+        }
+        if (cloudModal) cloudModal.classList.remove('hidden');
+        // Pre-fill nama project dari text box
+        if (cloudNameInput && projectNameInput) {
+          cloudNameInput.value = projectNameInput.value || '';
+        }
+        fetchCloudProjects();
+      }
+
+      function closeCloudModal() {
+        if (cloudModal) cloudModal.classList.add('hidden');
+      }
+
+      // Ambil daftar proyek dari server
+      async function fetchCloudProjects() {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        if (cloudProjectsList) cloudProjectsList.innerHTML = '<div class="cloud-loading"><span class="loading-spinner-sm"></span> Memuat proyek...</div>';
+        if (cloudProjectsEmpty) cloudProjectsEmpty.classList.add('hidden');
+
+        try {
+          const res = await fetch('/api/projects', { headers });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            renderCloudProjects(data.projects || []);
+          } else {
+            if (cloudProjectsList) cloudProjectsList.innerHTML = '<div class="cloud-error">❌ Gagal memuat proyek: ' + (data.error || 'Unknown error') + '</div>';
+          }
+        } catch (err) {
+          if (cloudProjectsList) cloudProjectsList.innerHTML = '<div class="cloud-error">❌ Gagal terhubung ke server: ' + err.message + '</div>';
+        }
+      }
+
+      function renderCloudProjects(projects) {
+        if (cloudProjectsCount) {
+          cloudProjectsCount.textContent = projects.length + ' proyek';
+        }
+
+        if (!projects || projects.length === 0) {
+          if (cloudProjectsList) cloudProjectsList.innerHTML = '';
+          if (cloudProjectsEmpty) cloudProjectsEmpty.classList.remove('hidden');
+          return;
+        }
+
+        if (cloudProjectsEmpty) cloudProjectsEmpty.classList.add('hidden');
+
+        let html = '';
+        projects.forEach(function(p) {
+          const updatedDate = p.updatedAt ? new Date(p.updatedAt).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          }) : '-';
+          const createdDate = p.createdAt ? new Date(p.createdAt).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', year: 'numeric'
+          }) : '-';
+          const isActive = currentCloudProjectId === p.id;
+          const boardLabel = (p.board || 'arduino_uno').replace(/_/g, ' ');
+
+          html += '<div class="cloud-project-card' + (isActive ? ' active' : '') + '" data-project-id="' + p.id + '">';
+          html += '  <div class="cloud-project-info">';
+          html += '    <div class="cloud-project-name">' + escapeHtml(p.name) + (isActive ? ' <span class="cloud-active-badge">AKTIF</span>' : '') + '</div>';
+          html += '    <div class="cloud-project-meta">';
+          html += '      <span class="cloud-meta-item">📋 ' + boardLabel + '</span>';
+          html += '      <span class="cloud-meta-item">📅 ' + updatedDate + '</span>';
+          html += '    </div>';
+          html += '  </div>';
+          html += '  <div class="cloud-project-actions">';
+          html += '    <button class="btn btn-compile btn-sm cloud-btn-load" data-id="' + p.id + '" title="Muat proyek ini ke workspace">';
+          html += '      <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+          html += '      <span>Muat</span>';
+          html += '    </button>';
+          html += '    <button class="btn btn-danger btn-sm cloud-btn-delete" data-id="' + p.id + '" data-name="' + escapeHtml(p.name) + '" title="Hapus proyek ini">';
+          html += '      <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+          html += '      <span>Hapus</span>';
+          html += '    </button>';
+          html += '  </div>';
+          html += '</div>';
+        });
+
+        if (cloudProjectsList) {
+          cloudProjectsList.innerHTML = html;
+
+          // Event: Muat Proyek
+          cloudProjectsList.querySelectorAll('.cloud-btn-load').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              loadCloudProject(this.getAttribute('data-id'));
+            });
+          });
+
+          // Event: Hapus Proyek
+          cloudProjectsList.querySelectorAll('.cloud-btn-delete').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const id = this.getAttribute('data-id');
+              const name = this.getAttribute('data-name');
+              deleteCloudProject(id, name);
+            });
+          });
+        }
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+
+      // Simpan workspace saat ini ke cloud
+      async function saveToCloud() {
+        const headers = getAuthHeaders();
+        if (!headers) {
+          alert('Silakan masuk ke akun terlebih dahulu.');
+          return;
+        }
+
+        const projectName = (cloudNameInput ? cloudNameInput.value.trim() : '') || (projectNameInput ? projectNameInput.value.trim() : '') || 'Proyek Tanpa Judul';
+
+        let xmlText = '';
+        let cppCode = '';
+        let board = 'arduino_uno';
+
+        // Dapatkan XML dari blockly workspace
+        if (currentAppMode === 'text' && window.ArduiBlokEditor) {
+          cppCode = window.ArduiBlokEditor.getValue() || '';
+          // Untuk mode teks, simpan kode teks saja
+          xmlText = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+        } else if (workspace) {
+          try {
+            const xmlDom = Blockly.Xml.workspaceToDom(workspace);
+            xmlText = Blockly.Xml.domToPrettyText(xmlDom);
+          } catch (e) {
+            alert('Gagal mengambil data workspace: ' + e.message);
+            return;
+          }
+          // Dapatkan kode C++ dari panel preview
+          const codePreview = document.getElementById('codePreview');
+          if (codePreview) cppCode = codePreview.textContent || '';
+        }
+
+        if (!xmlText && !cppCode) {
+          alert('Workspace kosong — tidak ada yang bisa disimpan.');
+          return;
+        }
+
+        // Dapatkan board saat ini
+        const selectBoard = document.getElementById('selectBoardType');
+        if (selectBoard) board = selectBoard.value || 'arduino_uno';
+
+        // Disable tombol saat proses
+        if (btnSaveToCloud) {
+          btnSaveToCloud.disabled = true;
+          btnSaveToCloud.innerHTML = '<span class="loading-spinner-sm"></span> <span>Menyimpan...</span>';
+        }
+
+        try {
+          const body = {
+            id: currentCloudProjectId || undefined,
+            name: projectName,
+            board: board,
+            xml: xmlText,
+            cppCode: cppCode
+          };
+
+          const res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body)
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            currentCloudProjectId = data.project.id;
+            // Update nama project di text box
+            if (projectNameInput) {
+              projectNameInput.value = projectName;
+              localStorage.setItem('arduiblok_current_project_name', projectName);
+            }
+            // Refresh daftar
+            fetchCloudProjects();
+
+            // Animasi sukses singkat
+            if (btnSaveToCloud) {
+              btnSaveToCloud.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Tersimpan!</span>';
+              btnSaveToCloud.classList.add('btn-success-flash');
+              setTimeout(function() {
+                resetSaveButton();
+              }, 2000);
+            }
+          } else {
+            alert('Gagal menyimpan ke Cloud: ' + (data.error || 'Unknown'));
+            resetSaveButton();
+          }
+        } catch (err) {
+          alert('Gagal terhubung ke server: ' + err.message);
+          resetSaveButton();
+        }
+      }
+
+      function resetSaveButton() {
+        if (btnSaveToCloud) {
+          btnSaveToCloud.disabled = false;
+          btnSaveToCloud.classList.remove('btn-success-flash');
+          btnSaveToCloud.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg> <span>Simpan ke Cloud</span>';
+        }
+      }
+
+      // Muat proyek dari cloud ke workspace
+      async function loadCloudProject(projectId) {
+        if (!projectId) return;
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const currentBlocks = workspace ? workspace.getAllBlocks(false) : [];
+        if (currentBlocks.length > 2) {
+          if (!confirm('Muat proyek dari Cloud?\n\nPerhatian: Workspace saat ini akan digantikan oleh proyek cloud yang dipilih.')) return;
+        }
+
+        try {
+          const res = await fetch('/api/projects/' + projectId, { headers });
+          const data = await res.json();
+
+          if (res.ok && data.success && data.project) {
+            const proj = data.project;
+
+            // Load XML ke Blockly workspace
+            if (proj.xml && workspace) {
+              try {
+                workspace.clear();
+                const xmlDom = Blockly.utils.xml.textToDom(proj.xml);
+                Blockly.Xml.domToWorkspace(xmlDom, workspace);
+                setAppMode('block');
+                generateCode();
+              } catch (e) {
+                // Jika XML gagal, coba load kode C++ ke text editor
+                if (proj.cppCode && window.ArduiBlokEditor) {
+                  setAppMode('text');
+                  window.ArduiBlokEditor.setValue(proj.cppCode);
+                }
+              }
+            } else if (proj.cppCode && window.ArduiBlokEditor) {
+              setAppMode('text');
+              window.ArduiBlokEditor.setValue(proj.cppCode);
+            }
+
+            // Update nama project
+            if (projectNameInput) {
+              projectNameInput.value = proj.name;
+              localStorage.setItem('arduiblok_current_project_name', proj.name);
+            }
+            if (cloudNameInput) {
+              cloudNameInput.value = proj.name;
+            }
+
+            // Set board jika ada
+            const selectBoard = document.getElementById('selectBoardType');
+            if (selectBoard && proj.board) {
+              selectBoard.value = proj.board;
+              selectBoard.dispatchEvent(new Event('change'));
+            }
+
+            currentCloudProjectId = proj.id;
+
+            // Auto-save ke localStorage
+            try {
+              const dom = Blockly.Xml.workspaceToDom(workspace);
+              const xmlSave = Blockly.Xml.domToText(dom);
+              localStorage.setItem('arduiblok_saved_workspace', xmlSave);
+            } catch (e) {}
+
+            closeCloudModal();
+
+            // Feedback visual
+            if (typeof playSnapSound === 'function') playSnapSound();
+          } else {
+            alert('Gagal memuat proyek: ' + (data.error || 'Proyek tidak ditemukan.'));
+          }
+        } catch (err) {
+          alert('Gagal terhubung ke server: ' + err.message);
+        }
+      }
+
+      // Hapus proyek dari cloud
+      async function deleteCloudProject(projectId, projectName) {
+        if (!projectId) return;
+        if (!confirm('Hapus proyek "' + (projectName || 'Untitled') + '" dari Cloud?\n\nTindakan ini tidak bisa dibatalkan.')) return;
+
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        try {
+          const res = await fetch('/api/projects/' + projectId, {
+            method: 'DELETE',
+            headers: headers
+          });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            if (currentCloudProjectId === projectId) {
+              currentCloudProjectId = null;
+            }
+            fetchCloudProjects();
+          } else {
+            alert('Gagal menghapus proyek: ' + (data.error || 'Unknown'));
+          }
+        } catch (err) {
+          alert('Gagal terhubung ke server: ' + err.message);
+        }
+      }
+
+      // Event listeners
+      if (btnCloudProjects) btnCloudProjects.addEventListener('click', openCloudModal);
+      if (btnCloseCloud) btnCloseCloud.addEventListener('click', closeCloudModal);
+      if (btnCloseCloudFooter) btnCloseCloudFooter.addEventListener('click', closeCloudModal);
+      if (btnSaveToCloud) btnSaveToCloud.addEventListener('click', saveToCloud);
+
+      // Buka dari Dropdown Profil Pengguna
+      const btnOpenCloudProjectsDropdown = document.getElementById('btnOpenCloudProjectsDropdown');
+      if (btnOpenCloudProjectsDropdown) {
+        btnOpenCloudProjectsDropdown.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const userDropdownMenu = document.getElementById('userDropdownMenu');
+          if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
+          openCloudModal();
+        });
+      }
+
+      // Enter key pada input nama proyek cloud
+      if (cloudNameInput) {
+        cloudNameInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveToCloud();
+          }
+        });
+      }
+
+      // Klik overlay untuk tutup
+      if (cloudModal) {
+        cloudModal.addEventListener('click', function(e) {
+          if (e.target === cloudModal) closeCloudModal();
+        });
+      }
+
+      // Ekspos fungsi global
+      window.openCloudProjects = openCloudModal;
+    })();
 
     // ── File Download Utilities ───────────────────────────
     function downloadHexFile(base64Data, filename) {
@@ -3744,7 +4535,10 @@
     // ── Remove Loading Screen ─────────────────────────────
     setTimeout(function() {
       loadingOverlay.classList.add('hidden');
-      if (!welcomeDismissed && welcomeModeModal) {
+      var isLoggedIn = window.ArduiBlokAuth && window.ArduiBlokAuth.isLoggedIn && window.ArduiBlokAuth.isLoggedIn();
+      if (!isLoggedIn) {
+        // Biarkan authOverlay yang tampil sebagai gerbang utama jika belum login
+      } else if (!welcomeDismissed && welcomeModeModal) {
         welcomeModeModal.classList.remove('hidden');
       } else {
         setAppMode(savedAppMode);
