@@ -6,6 +6,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const { execSync, spawn } = require('child_process');
 const db = require('./db');
 
 const router = express.Router();
@@ -158,6 +160,144 @@ router.post('/restore', (req, res) => {
   } catch (err) {
     console.error('[Admin Restore Error]:', err);
     return res.status(500).json({ success: false, error: 'Gagal memulihkan database: ' + err.message });
+  }
+});
+
+// ── 6. Cek Status Pembaruan Git OTA ─────────────────────────
+router.get('/update/status', (req, res) => {
+  try {
+    const gitDir = path.join(__dirname, '..');
+
+    // 1. Ambil branch aktif
+    let branch = 'main';
+    try {
+      branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+    } catch (bErr) {
+      console.warn('[Admin Update] Gagal membaca branch:', bErr.message);
+    }
+
+    // 2. Ambil commit lokal saat ini
+    let localHash = '-';
+    let localFullHash = '-';
+    let localMessage = '-';
+    let localDate = '-';
+    try {
+      localHash = execSync('git rev-parse --short HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+      localFullHash = execSync('git rev-parse HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+      localMessage = execSync('git log -1 --pretty=%s', { cwd: gitDir, encoding: 'utf8' }).trim();
+      localDate = execSync('git log -1 --pretty=%cd --date=relative', { cwd: gitDir, encoding: 'utf8' }).trim();
+    } catch (lErr) {
+      console.warn('[Admin Update] Gagal membaca commit lokal:', lErr.message);
+    }
+
+    // 3. Cek apakah working tree bersih
+    let isClean = true;
+    try {
+      const porcelain = execSync('git status --porcelain', { cwd: gitDir, encoding: 'utf8' }).trim();
+      isClean = porcelain.length === 0;
+    } catch (cErr) {}
+
+    // 4. Lakukan fetch dari origin untuk mendeteksi update terbaru (timeout 15 detik)
+    let fetchError = null;
+    let remoteHash = localHash;
+    let remoteMessage = localMessage;
+    let commitsBehind = 0;
+    let commitsAhead = 0;
+
+    try {
+      execSync(`git fetch origin ${branch}`, { cwd: gitDir, timeout: 15000, stdio: 'pipe' });
+
+      const remoteRef = `origin/${branch}`;
+      remoteHash = execSync(`git rev-parse --short ${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
+      remoteMessage = execSync(`git log -1 --pretty=%s ${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
+
+      const behindStr = execSync(`git rev-list --count HEAD..${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
+      commitsBehind = parseInt(behindStr, 10) || 0;
+
+      const aheadStr = execSync(`git rev-list --count ${remoteRef}..HEAD`, { cwd: gitDir, encoding: 'utf8' }).trim();
+      commitsAhead = parseInt(aheadStr, 10) || 0;
+    } catch (fErr) {
+      fetchError = 'Gagal menghubungi GitHub repository (offline atau batas waktu terlampaui).';
+    }
+
+    return res.json({
+      success: true,
+      update: {
+        branch,
+        localHash,
+        localFullHash,
+        localMessage,
+        localDate,
+        remoteHash,
+        remoteMessage,
+        commitsBehind,
+        commitsAhead,
+        hasUpdate: commitsBehind > 0,
+        isClean,
+        fetchError
+      }
+    });
+
+  } catch (err) {
+    console.error('[Admin Update Status Error]:', err);
+    return res.status(500).json({ success: false, error: 'Gagal memeriksa status pembaruan: ' + err.message });
+  }
+});
+
+// ── 7. Terapkan Pembaruan Git Pull OTA & Muat Ulang Server ────
+router.post('/update/apply', (req, res) => {
+  try {
+    const gitDir = path.join(__dirname, '..');
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+
+    console.log(`[OTA Updater] Menarik pembaruan dari branch "${branch}"...`);
+
+    // 1. Eksekusi git pull
+    const pullOutput = execSync(`git pull origin ${branch}`, { cwd: gitDir, encoding: 'utf8', timeout: 60000 });
+    console.log('[OTA Updater] Git pull output:\n', pullOutput);
+
+    // 2. Baca commit baru setelah pull
+    const newHash = execSync('git rev-parse --short HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+    const newMessage = execSync('git log -1 --pretty=%s', { cwd: gitDir, encoding: 'utf8' }).trim();
+
+    // 3. Pasang dependency jika package.json terbarui
+    let npmOutput = 'Dependencies up-to-date';
+    try {
+      npmOutput = execSync('npm install --omit=dev', { cwd: gitDir, encoding: 'utf8', timeout: 120000 });
+    } catch (npmErr) {
+      npmOutput = npmErr.message;
+    }
+
+    // 4. Balas ke browser admin terlebih dahulu sebelum server mati/reboot
+    res.json({
+      success: true,
+      message: `Pembaruan berhasil diterapkan (${newHash})! Server sedang memuat ulang sistem...`,
+      newHash,
+      newMessage,
+      pullLog: pullOutput,
+      npmLog: npmOutput
+    });
+
+    // 5. Jadwalkan restart otomatis proses Node.js
+    setTimeout(() => {
+      console.log('[OTA Updater] Memuat ulang proses server ArduiBlok sekarang...');
+      try {
+        // Fallback jika tidak menggunakan PM2/systemd (spawning detached child lalu exit)
+        const child = spawn(process.argv[0], process.argv.slice(1), {
+          detached: true,
+          stdio: 'inherit',
+          cwd: gitDir
+        });
+        child.unref();
+      } catch (spawnErr) {
+        console.warn('[OTA Updater] Gagal auto-spawn child:', spawnErr.message);
+      }
+      process.exit(0);
+    }, 1200);
+
+  } catch (err) {
+    console.error('[OTA Apply Error]:', err);
+    return res.status(500).json({ success: false, error: 'Gagal menerapkan pembaruan: ' + err.message });
   }
 });
 

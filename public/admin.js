@@ -10,6 +10,10 @@
   let btnOpenAdminPanel, btnDownloadBackup, btnRestoreBackup, fileRestoreInput;
   let adminAlertBanner, adminUserSearchInput, adminUsersTableBody;
   let statTotalUsers, statOnlineUsers, statVerifiedUsers, statUnverifiedUsers, statDbSize, statUptime;
+  let updaterActiveBranch, updaterStatusBadge, updaterLocalCommit, updaterLocalDate;
+  let updaterRemoteCol, updaterRemoteCommit, updaterBehindCount, updaterCommitMessage;
+  let btnCheckUpdate, btnApplyUpdate, updaterLogBox, updaterLogContent, btnCloseUpdaterLog;
+  let cachedUpdateInfo = null;
   let adminRefreshInterval = null;
 
   let cachedUsers = [];
@@ -33,6 +37,20 @@
     statUnverifiedUsers = document.getElementById('statUnverifiedUsers');
     statDbSize = document.getElementById('statDbSize');
     statUptime = document.getElementById('statUptime');
+
+    updaterActiveBranch = document.getElementById('updaterActiveBranch');
+    updaterStatusBadge = document.getElementById('updaterStatusBadge');
+    updaterLocalCommit = document.getElementById('updaterLocalCommit');
+    updaterLocalDate = document.getElementById('updaterLocalDate');
+    updaterRemoteCol = document.getElementById('updaterRemoteCol');
+    updaterRemoteCommit = document.getElementById('updaterRemoteCommit');
+    updaterBehindCount = document.getElementById('updaterBehindCount');
+    updaterCommitMessage = document.getElementById('updaterCommitMessage');
+    btnCheckUpdate = document.getElementById('btnCheckUpdate');
+    btnApplyUpdate = document.getElementById('btnApplyUpdate');
+    updaterLogBox = document.getElementById('updaterLogBox');
+    updaterLogContent = document.getElementById('updaterLogContent');
+    btnCloseUpdaterLog = document.getElementById('btnCloseUpdaterLog');
 
     // Event: Maximize / Restore Layar Panel
     if (btnMaximizeAdminModal) {
@@ -78,6 +96,19 @@
     if (adminUserSearchInput) {
       adminUserSearchInput.addEventListener('input', function() {
         renderUsersTable(adminUserSearchInput.value);
+      });
+    }
+
+    // Event: OTA Git Updater
+    if (btnCheckUpdate) {
+      btnCheckUpdate.addEventListener('click', handleCheckUpdate);
+    }
+    if (btnApplyUpdate) {
+      btnApplyUpdate.addEventListener('click', handleApplyUpdate);
+    }
+    if (btnCloseUpdaterLog && updaterLogBox) {
+      btnCloseUpdaterLog.addEventListener('click', () => {
+        updaterLogBox.classList.add('hidden');
       });
     }
   }
@@ -167,6 +198,7 @@
     modalAdminServer.classList.remove('hidden');
     await loadServerStats();
     await loadUsersList();
+    await loadUpdateStatus(true);
 
     // Auto-refresh data setiap 20 detik selama modal admin terbuka
     if (adminRefreshInterval) clearInterval(adminRefreshInterval);
@@ -423,6 +455,154 @@
     };
 
     reader.readAsText(file);
+  }
+
+  // ── 5. Cek Status Pembaruan Git OTA ─────────────────────────
+  async function loadUpdateStatus(isSilent = false) {
+    if (!updaterStatusBadge) return;
+
+    if (!isSilent) {
+      updaterStatusBadge.className = 'updater-badge badge-checking';
+      updaterStatusBadge.innerHTML = '<span class="updater-spinner-sm"></span> Memeriksa GitHub...';
+    }
+
+    try {
+      const res = await fetch('/api/admin/update/status', {
+        headers: getAuthHeader()
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+
+      const data = await res.json();
+      if (!data.success || !data.update) return;
+
+      const u = data.update;
+      cachedUpdateInfo = u;
+
+      if (updaterActiveBranch) updaterActiveBranch.textContent = u.branch || 'main';
+      if (updaterLocalCommit) updaterLocalCommit.textContent = u.localHash || '-';
+      if (updaterLocalDate) updaterLocalDate.textContent = u.localDate ? `(${u.localDate})` : '';
+      if (updaterCommitMessage) updaterCommitMessage.textContent = u.localMessage || '-';
+
+      if (u.hasUpdate) {
+        updaterStatusBadge.className = 'updater-badge badge-update-available';
+        updaterStatusBadge.innerHTML = `⬇️ ${u.commitsBehind} Pembaruan Tersedia`;
+
+        if (updaterRemoteCol) updaterRemoteCol.style.display = 'flex';
+        if (updaterRemoteCommit) updaterRemoteCommit.textContent = u.remoteHash || '-';
+        if (updaterBehindCount) updaterBehindCount.textContent = `${u.commitsBehind} commit baru`;
+
+        if (btnApplyUpdate) {
+          btnApplyUpdate.disabled = false;
+          btnApplyUpdate.title = `Tarik ${u.commitsBehind} pembaruan terbaru dari GitHub`;
+        }
+      } else if (u.fetchError) {
+        updaterStatusBadge.className = 'updater-badge badge-offline';
+        updaterStatusBadge.textContent = '⚠️ Gagal Cek GitHub';
+        if (updaterRemoteCol) updaterRemoteCol.style.display = 'none';
+        if (btnApplyUpdate) btnApplyUpdate.disabled = true;
+      } else {
+        updaterStatusBadge.className = 'updater-badge badge-up-to-date';
+        updaterStatusBadge.textContent = '✅ Versi Terbaru (Up to Date)';
+        if (updaterRemoteCol) updaterRemoteCol.style.display = 'none';
+        if (btnApplyUpdate) btnApplyUpdate.disabled = true;
+      }
+
+      return u;
+    } catch (err) {
+      console.warn('[Admin Updater] Check failed:', err.message);
+      if (updaterStatusBadge) {
+        updaterStatusBadge.className = 'updater-badge badge-offline';
+        updaterStatusBadge.textContent = '⚠️ Gagal Cek Status';
+      }
+    }
+  }
+
+  async function handleCheckUpdate() {
+    hideAlert();
+    if (btnCheckUpdate) {
+      btnCheckUpdate.disabled = true;
+      btnCheckUpdate.innerHTML = '<span class="updater-spinner-sm"></span> <span>Memeriksa...</span>';
+    }
+
+    try {
+      const u = await loadUpdateStatus(false);
+      if (u) {
+        if (u.hasUpdate) {
+          showAlert(`Ditemukan ${u.commitsBehind} commit pembaruan baru di GitHub! Klik "Terapkan Pembaruan Sekarang" untuk memasang.`, 'warning');
+        } else if (u.fetchError) {
+          showAlert('Tidak dapat terhubung ke remote GitHub: ' + u.fetchError, 'error');
+        } else {
+          showAlert('ArduiBlok sudah menggunakan versi paling baru dari GitHub.', 'success');
+        }
+      }
+    } catch (err) {
+      showAlert('Gagal memeriksa pembaruan: ' + err.message, 'error');
+    } finally {
+      if (btnCheckUpdate) {
+        btnCheckUpdate.disabled = false;
+        btnCheckUpdate.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg><span>Periksa Pembaruan</span>';
+      }
+    }
+  }
+
+  async function handleApplyUpdate() {
+    hideAlert();
+    const branch = (cachedUpdateInfo && cachedUpdateInfo.branch) || 'main';
+
+    const confirmed = confirm(
+      `🚀 KONFIRMASI PEMBARUAN ARDUIBLOK (OTA UPDATER):\n\n` +
+      `Sistem akan menarik kode terbaru dari GitHub branch "${branch}" via git pull dan memuat ulang server secara otomatis.\n\n` +
+      `Lanjutkan pembaruan sekarang?`
+    );
+
+    if (!confirmed) return;
+
+    if (btnApplyUpdate) {
+      btnApplyUpdate.disabled = true;
+      btnApplyUpdate.innerHTML = '<span class="updater-spinner-sm"></span> <span>Menarik Pembaruan...</span>';
+    }
+
+    if (updaterLogBox) updaterLogBox.classList.remove('hidden');
+    if (updaterLogContent) updaterLogContent.textContent = `[OTA] Menghubungi server dan menjalankan git pull origin ${branch}...\n`;
+
+    try {
+      const res = await fetch('/api/admin/update/apply', {
+        method: 'POST',
+        headers: getAuthHeader()
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gagal menerapkan pembaruan.');
+      }
+
+      if (updaterLogContent) {
+        updaterLogContent.textContent += `[OTA] Git Pull:\n${data.pullLog || '(sukses)'}\n\n[OTA] NPM Dependencies:\n${data.npmLog || '(up to date)'}\n\n`;
+      }
+
+      // Mulai hitung mundur reload browser
+      let countdown = 6;
+      showAlert(`Pembaruan sukses (${data.newHash})! Server memuat ulang. Halaman disegarkan dalam ${countdown} detik...`, 'success');
+
+      const cdTimer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          showAlert(`Pembaruan sukses (${data.newHash})! Server memuat ulang. Halaman disegarkan dalam ${countdown} detik...`, 'success');
+          if (updaterLogContent) updaterLogContent.textContent += `[OTA] Menyambung ulang dalam ${countdown} detik...\n`;
+        } else {
+          clearInterval(cdTimer);
+          window.location.reload();
+        }
+      }, 1000);
+
+    } catch (err) {
+      showAlert('Pembaruan gagal: ' + err.message, 'error');
+      if (updaterLogContent) updaterLogContent.textContent += `\n[ERROR] ${err.message}\n`;
+      if (btnApplyUpdate) {
+        btnApplyUpdate.disabled = false;
+        btnApplyUpdate.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg><span>Terapkan Pembaruan Sekarang</span>';
+      }
+    }
   }
 
   function escapeHtml(str) {
