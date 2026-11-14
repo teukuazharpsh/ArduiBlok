@@ -26,7 +26,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-language_tools.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=6.5">
+  <link rel="stylesheet" href="style.css?v=6.6">
 </head>
 <body>
 
@@ -730,8 +730,16 @@
             </div>
 
             <div class="updater-info-grid">
+              <div class="updater-info-item" style="min-width: 170px;">
+                <span class="updater-info-label">Pilih Branch Target</span>
+                <div class="updater-branch-select-wrapper">
+                  <select id="updaterBranchSelect" class="updater-branch-select" title="Pilih branch GitHub untuk diterapkan">
+                    <option value="" disabled selected>Memuat branch...</option>
+                  </select>
+                </div>
+              </div>
               <div class="updater-info-item">
-                <span class="updater-info-label">Branch Aktif</span>
+                <span class="updater-info-label">Branch Aktif Server</span>
                 <span class="updater-branch-pill" id="updaterActiveBranch">-</span>
               </div>
               <div class="updater-info-item">
@@ -2025,7 +2033,7 @@
   <script src="auth.js?v=2.8"></script>
 
   <!-- Superadmin Server Management & Database Migration Panel -->
-  <script src="admin.js?v=1.4"></script>
+  <script src="admin.js?v=1.5"></script>
 
   <!-- In-Browser Arduino HEX Flasher & Web Serial Monitor (with WebUSB Polyfill for Android) -->
   <script src="serial_polyfill.js"></script>

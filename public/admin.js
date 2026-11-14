@@ -10,7 +10,7 @@
   let btnOpenAdminPanel, btnDownloadBackup, btnRestoreBackup, fileRestoreInput;
   let adminAlertBanner, adminUserSearchInput, adminUsersTableBody;
   let statTotalUsers, statOnlineUsers, statVerifiedUsers, statUnverifiedUsers, statDbSize, statUptime;
-  let updaterActiveBranch, updaterStatusBadge, updaterLocalCommit, updaterLocalDate;
+  let updaterBranchSelect, updaterActiveBranch, updaterStatusBadge, updaterLocalCommit, updaterLocalDate;
   let updaterRemoteCol, updaterRemoteCommit, updaterBehindCount, updaterCommitMessage;
   let btnCheckUpdate, btnApplyUpdate, updaterLogBox, updaterLogContent, btnCloseUpdaterLog;
   let cachedUpdateInfo = null;
@@ -38,6 +38,7 @@
     statDbSize = document.getElementById('statDbSize');
     statUptime = document.getElementById('statUptime');
 
+    updaterBranchSelect = document.getElementById('updaterBranchSelect');
     updaterActiveBranch = document.getElementById('updaterActiveBranch');
     updaterStatusBadge = document.getElementById('updaterStatusBadge');
     updaterLocalCommit = document.getElementById('updaterLocalCommit');
@@ -100,6 +101,11 @@
     }
 
     // Event: OTA Git Updater
+    if (updaterBranchSelect) {
+      updaterBranchSelect.addEventListener('change', () => {
+        loadUpdateStatus(updaterBranchSelect.value, false);
+      });
+    }
     if (btnCheckUpdate) {
       btnCheckUpdate.addEventListener('click', handleCheckUpdate);
     }
@@ -198,7 +204,7 @@
     modalAdminServer.classList.remove('hidden');
     await loadServerStats();
     await loadUsersList();
-    await loadUpdateStatus(true);
+    await loadBranchesList();
 
     // Auto-refresh data setiap 20 detik selama modal admin terbuka
     if (adminRefreshInterval) clearInterval(adminRefreshInterval);
@@ -457,9 +463,32 @@
     reader.readAsText(file);
   }
 
-  // ── 5. Cek Status Pembaruan Git OTA ─────────────────────────
-  async function loadUpdateStatus(isSilent = false) {
+  // ── 5. Ambil Daftar Branch & Status Pembaruan Git OTA ───────
+  async function loadBranchesList() {
+    if (!updaterBranchSelect) return;
+    try {
+      const res = await fetch('/api/admin/update/branches', { headers: getAuthHeader() });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.branches)) return;
+
+      const current = data.currentBranch || 'main';
+      updaterBranchSelect.innerHTML = data.branches.map(b => {
+        const isCurrent = b === current;
+        return `<option value="${escapeHtml(b)}"${isCurrent ? ' selected' : ''}>${escapeHtml(b)}${isCurrent ? ' (Aktif)' : ''}</option>`;
+      }).join('');
+
+      await loadUpdateStatus(updaterBranchSelect.value || current, true);
+    } catch (err) {
+      console.warn('[Admin Updater] Load branches failed:', err.message);
+      await loadUpdateStatus('main', true);
+    }
+  }
+
+  async function loadUpdateStatus(targetBranch = '', isSilent = false) {
     if (!updaterStatusBadge) return;
+
+    const branchToInspect = targetBranch || (updaterBranchSelect ? updaterBranchSelect.value : '') || 'main';
 
     if (!isSilent) {
       updaterStatusBadge.className = 'updater-badge badge-checking';
@@ -467,7 +496,7 @@
     }
 
     try {
-      const res = await fetch('/api/admin/update/status', {
+      const res = await fetch(`/api/admin/update/status?branch=${encodeURIComponent(branchToInspect)}`, {
         headers: getAuthHeader()
       });
       if (!res.ok) throw new Error('Status ' + res.status);
@@ -478,12 +507,41 @@
       const u = data.update;
       cachedUpdateInfo = u;
 
-      if (updaterActiveBranch) updaterActiveBranch.textContent = u.branch || 'main';
+      if (updaterActiveBranch) updaterActiveBranch.textContent = u.currentBranch || '-';
       if (updaterLocalCommit) updaterLocalCommit.textContent = u.localHash || '-';
       if (updaterLocalDate) updaterLocalDate.textContent = u.localDate ? `(${u.localDate})` : '';
-      if (updaterCommitMessage) updaterCommitMessage.textContent = u.localMessage || '-';
 
-      if (u.hasUpdate) {
+      if (updaterCommitMessage) {
+        updaterCommitMessage.textContent = u.isSameBranch
+          ? (u.localMessage || '-')
+          : `[${u.targetBranch}] ${u.remoteMessage || '-'}`;
+      }
+
+      if (u.fetchError) {
+        updaterStatusBadge.className = 'updater-badge badge-offline';
+        updaterStatusBadge.textContent = '⚠️ Gagal Cek GitHub';
+        if (updaterRemoteCol) updaterRemoteCol.style.display = 'none';
+        if (btnApplyUpdate) btnApplyUpdate.disabled = true;
+        return u;
+      }
+
+      if (!u.isSameBranch) {
+        // Target branch berbeda dari branch aktif
+        updaterStatusBadge.className = 'updater-badge badge-update-available';
+        updaterStatusBadge.innerHTML = `🔀 Branch Berbeda (${escapeHtml(u.targetBranch)})`;
+
+        if (updaterRemoteCol) updaterRemoteCol.style.display = 'flex';
+        if (updaterRemoteCommit) updaterRemoteCommit.textContent = u.remoteHash || '-';
+        if (updaterBehindCount) updaterBehindCount.textContent = 'Klik Beralih';
+
+        if (btnApplyUpdate) {
+          btnApplyUpdate.disabled = false;
+          btnApplyUpdate.className = 'btn btn-compile admin-action-btn';
+          btnApplyUpdate.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg><span>Beralih ke "${escapeHtml(u.targetBranch)}" & Muat Ulang</span>`;
+          btnApplyUpdate.title = `Beralih ke branch ${u.targetBranch} dan restart server`;
+        }
+      } else if (u.hasUpdate) {
+        // Branch sama & ada update commit baru di GitHub
         updaterStatusBadge.className = 'updater-badge badge-update-available';
         updaterStatusBadge.innerHTML = `⬇️ ${u.commitsBehind} Pembaruan Tersedia`;
 
@@ -493,18 +551,22 @@
 
         if (btnApplyUpdate) {
           btnApplyUpdate.disabled = false;
+          btnApplyUpdate.className = 'btn btn-compile admin-action-btn';
+          btnApplyUpdate.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg><span>Terapkan Pembaruan Sekarang</span>';
           btnApplyUpdate.title = `Tarik ${u.commitsBehind} pembaruan terbaru dari GitHub`;
         }
-      } else if (u.fetchError) {
-        updaterStatusBadge.className = 'updater-badge badge-offline';
-        updaterStatusBadge.textContent = '⚠️ Gagal Cek GitHub';
-        if (updaterRemoteCol) updaterRemoteCol.style.display = 'none';
-        if (btnApplyUpdate) btnApplyUpdate.disabled = true;
       } else {
+        // Branch sama & sudah versi terbaru
         updaterStatusBadge.className = 'updater-badge badge-up-to-date';
         updaterStatusBadge.textContent = '✅ Versi Terbaru (Up to Date)';
         if (updaterRemoteCol) updaterRemoteCol.style.display = 'none';
-        if (btnApplyUpdate) btnApplyUpdate.disabled = true;
+
+        if (btnApplyUpdate) {
+          btnApplyUpdate.disabled = true;
+          btnApplyUpdate.className = 'btn btn-secondary admin-action-btn';
+          btnApplyUpdate.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Versi Branch Sudah Paling Baru</span>';
+          btnApplyUpdate.title = 'Tidak ada commit pembaruan baru di GitHub';
+        }
       }
 
       return u;
@@ -525,14 +587,17 @@
     }
 
     try {
-      const u = await loadUpdateStatus(false);
+      const targetBranch = updaterBranchSelect ? updaterBranchSelect.value : '';
+      const u = await loadUpdateStatus(targetBranch, false);
       if (u) {
-        if (u.hasUpdate) {
-          showAlert(`Ditemukan ${u.commitsBehind} commit pembaruan baru di GitHub! Klik "Terapkan Pembaruan Sekarang" untuk memasang.`, 'warning');
+        if (!u.isSameBranch) {
+          showAlert(`Branch "${u.targetBranch}" siap dipasang. Klik tombol "Beralih ke ${u.targetBranch} & Muat Ulang".`, 'warning');
+        } else if (u.hasUpdate) {
+          showAlert(`Ditemukan ${u.commitsBehind} commit pembaruan baru di branch "${u.targetBranch}"! Klik "Terapkan Pembaruan Sekarang".`, 'warning');
         } else if (u.fetchError) {
           showAlert('Tidak dapat terhubung ke remote GitHub: ' + u.fetchError, 'error');
         } else {
-          showAlert('ArduiBlok sudah menggunakan versi paling baru dari GitHub.', 'success');
+          showAlert(`ArduiBlok branch "${u.currentBranch}" sudah menggunakan versi paling baru dari GitHub.`, 'success');
         }
       }
     } catch (err) {
@@ -547,28 +612,41 @@
 
   async function handleApplyUpdate() {
     hideAlert();
-    const branch = (cachedUpdateInfo && cachedUpdateInfo.branch) || 'main';
+    const targetBranch = (updaterBranchSelect ? updaterBranchSelect.value : '') || (cachedUpdateInfo && cachedUpdateInfo.targetBranch) || 'main';
+    const currentBranch = (cachedUpdateInfo && cachedUpdateInfo.currentBranch) || 'main';
+    const isSwitch = targetBranch !== currentBranch;
 
-    const confirmed = confirm(
-      `🚀 KONFIRMASI PEMBARUAN ARDUIBLOK (OTA UPDATER):\n\n` +
-      `Sistem akan menarik kode terbaru dari GitHub branch "${branch}" via git pull dan memuat ulang server secara otomatis.\n\n` +
-      `Lanjutkan pembaruan sekarang?`
-    );
+    const confirmMsg = isSwitch
+      ? `🔀 KONFIRMASI BERALIH BRANCH ARDUIBLOK:\n\n` +
+        `Sistem akan beralih dari branch "${currentBranch}" ke branch "${targetBranch}", menarik kode terbaru via git pull, dan memuat ulang server secara otomatis.\n\n` +
+        `Lanjutkan beralih ke branch "${targetBranch}"?`
+      : `🚀 KONFIRMASI PEMBARUAN ARDUIBLOK (OTA UPDATER):\n\n` +
+        `Sistem akan menarik kode terbaru dari GitHub branch "${currentBranch}" via git pull dan memuat ulang server secara otomatis.\n\n` +
+        `Lanjutkan pembaruan sekarang?`;
 
+    const confirmed = confirm(confirmMsg);
     if (!confirmed) return;
 
     if (btnApplyUpdate) {
       btnApplyUpdate.disabled = true;
-      btnApplyUpdate.innerHTML = '<span class="updater-spinner-sm"></span> <span>Menarik Pembaruan...</span>';
+      btnApplyUpdate.innerHTML = `<span class="updater-spinner-sm"></span> <span>${isSwitch ? 'Beralih Branch...' : 'Menarik Pembaruan...'}</span>`;
     }
 
     if (updaterLogBox) updaterLogBox.classList.remove('hidden');
-    if (updaterLogContent) updaterLogContent.textContent = `[OTA] Menghubungi server dan menjalankan git pull origin ${branch}...\n`;
+    if (updaterLogContent) {
+      updaterLogContent.textContent = isSwitch
+        ? `[OTA] Beralih dari "${currentBranch}" ke "${targetBranch}"...\n`
+        : `[OTA] Menghubungi server dan menjalankan git pull origin ${currentBranch}...\n`;
+    }
 
     try {
       const res = await fetch('/api/admin/update/apply', {
         method: 'POST',
-        headers: getAuthHeader()
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ targetBranch })
       });
 
       const data = await res.json();
@@ -577,7 +655,8 @@
       }
 
       if (updaterLogContent) {
-        updaterLogContent.textContent += `[OTA] Git Pull:\n${data.pullLog || '(sukses)'}\n\n[OTA] NPM Dependencies:\n${data.npmLog || '(up to date)'}\n\n`;
+        if (data.checkoutLog) updaterLogContent.textContent += `[OTA] Checkout:\n${data.checkoutLog}\n`;
+        updaterLogContent.textContent += `[OTA] Git Pull:\n${data.pullLog || '(sukses)'}\n\n[OTA] Dependencies:\n${data.npmLog || '(up to date)'}\n\n`;
       }
 
       // Mulai hitung mundur reload browser
@@ -600,7 +679,9 @@
       if (updaterLogContent) updaterLogContent.textContent += `\n[ERROR] ${err.message}\n`;
       if (btnApplyUpdate) {
         btnApplyUpdate.disabled = false;
-        btnApplyUpdate.innerHTML = '<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg><span>Terapkan Pembaruan Sekarang</span>';
+        btnApplyUpdate.innerHTML = isSwitch
+          ? `<span>Beralih ke "${escapeHtml(targetBranch)}" & Muat Ulang</span>`
+          : '<span>Terapkan Pembaruan Sekarang</span>';
       }
     }
   }

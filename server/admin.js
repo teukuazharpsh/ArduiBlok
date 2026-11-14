@@ -163,20 +163,81 @@ router.post('/restore', (req, res) => {
   }
 });
 
-// ── 6. Cek Status Pembaruan Git OTA ─────────────────────────
+// ── 6. Daftar Seluruh Branch Git Remote & Lokal ─────────────
+router.get('/update/branches', (req, res) => {
+  try {
+    const gitDir = path.join(__dirname, '..');
+
+    // 1. Ambil branch aktif saat ini
+    let currentBranch = 'main';
+    try {
+      currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+    } catch (e) {}
+
+    // 2. Fetch remote branches untuk sinkronisasi daftar terbaru
+    try {
+      execSync('git fetch --all --prune', { cwd: gitDir, timeout: 15000, stdio: 'pipe' });
+    } catch (fErr) {}
+
+    // 3. Ambil seluruh branch remote dari origin
+    const branchSet = new Set();
+    if (currentBranch) branchSet.add(currentBranch);
+
+    try {
+      const rawRemote = execSync('git branch -r --format="%(refname:short)"', { cwd: gitDir, encoding: 'utf8' });
+      rawRemote
+        .split('\n')
+        .map(b => b.trim())
+        .filter(b => b && !b.includes('HEAD'))
+        .forEach(b => {
+          const cleanName = b.replace(/^origin\//, '').trim();
+          if (cleanName) branchSet.add(cleanName);
+        });
+    } catch (rErr) {}
+
+    // Urutkan branch: prioritas branch saat ini dan 'main' di posisi paling atas
+    const branches = Array.from(branchSet).sort((a, b) => {
+      if (a === currentBranch) return -1;
+      if (b === currentBranch) return 1;
+      if (a === 'main') return -1;
+      if (b === 'main') return 1;
+      return a.localeCompare(b);
+    });
+
+    return res.json({
+      success: true,
+      currentBranch,
+      branches
+    });
+
+  } catch (err) {
+    console.error('[Admin Update Branches Error]:', err);
+    return res.status(500).json({ success: false, error: 'Gagal mengambil daftar branch: ' + err.message });
+  }
+});
+
+
+// ── 7. Cek Status Pembaruan Git OTA (Dukung Target Branch Dinamis) ──
 router.get('/update/status', (req, res) => {
   try {
     const gitDir = path.join(__dirname, '..');
 
-    // 1. Ambil branch aktif
-    let branch = 'main';
+    // 1. Ambil branch aktif saat ini
+    let currentBranch = 'main';
     try {
-      branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+      currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
     } catch (bErr) {
       console.warn('[Admin Update] Gagal membaca branch:', bErr.message);
     }
 
-    // 2. Ambil commit lokal saat ini
+    // Branch yang ingin diinspeksi (default: branch aktif)
+    const targetBranch = (req.query.branch && typeof req.query.branch === 'string' && req.query.branch.trim())
+      ? req.query.branch.trim()
+      : currentBranch;
+
+    const isSameBranch = targetBranch === currentBranch;
+
+    // 2. Ambil info commit lokal saat ini (HEAD)
     let localHash = '-';
     let localFullHash = '-';
     let localMessage = '-';
@@ -197,33 +258,48 @@ router.get('/update/status', (req, res) => {
       isClean = porcelain.length === 0;
     } catch (cErr) {}
 
-    // 4. Lakukan fetch dari origin untuk mendeteksi update terbaru (timeout 15 detik)
+    // 4. Lakukan fetch dari origin untuk target branch (timeout 15 detik)
     let fetchError = null;
     let remoteHash = localHash;
     let remoteMessage = localMessage;
     let commitsBehind = 0;
     let commitsAhead = 0;
+    let hasUpdate = false;
 
     try {
-      execSync(`git fetch origin ${branch}`, { cwd: gitDir, timeout: 15000, stdio: 'pipe' });
+      execSync(`git fetch origin ${targetBranch}`, { cwd: gitDir, timeout: 15000, stdio: 'pipe' });
 
-      const remoteRef = `origin/${branch}`;
+      const remoteRef = `origin/${targetBranch}`;
       remoteHash = execSync(`git rev-parse --short ${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
       remoteMessage = execSync(`git log -1 --pretty=%s ${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
 
-      const behindStr = execSync(`git rev-list --count HEAD..${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
-      commitsBehind = parseInt(behindStr, 10) || 0;
+      if (isSameBranch) {
+        const behindStr = execSync(`git rev-list --count HEAD..${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
+        commitsBehind = parseInt(behindStr, 10) || 0;
 
-      const aheadStr = execSync(`git rev-list --count ${remoteRef}..HEAD`, { cwd: gitDir, encoding: 'utf8' }).trim();
-      commitsAhead = parseInt(aheadStr, 10) || 0;
+        const aheadStr = execSync(`git rev-list --count ${remoteRef}..HEAD`, { cwd: gitDir, encoding: 'utf8' }).trim();
+        commitsAhead = parseInt(aheadStr, 10) || 0;
+
+        hasUpdate = commitsBehind > 0;
+      } else {
+        // Target branch berbeda dari branch aktif lokal
+        hasUpdate = true; // Perlu switch branch
+        try {
+          const behindStr = execSync(`git rev-list --count HEAD..${remoteRef}`, { cwd: gitDir, encoding: 'utf8' }).trim();
+          commitsBehind = parseInt(behindStr, 10) || 0;
+        } catch (e) {}
+      }
+
     } catch (fErr) {
-      fetchError = 'Gagal menghubungi GitHub repository (offline atau batas waktu terlampaui).';
+      fetchError = 'Gagal menghubungi GitHub repository (offline atau branch remote tidak ditemukan).';
     }
 
     return res.json({
       success: true,
       update: {
-        branch,
+        currentBranch,
+        targetBranch,
+        isSameBranch,
         localHash,
         localFullHash,
         localMessage,
@@ -232,7 +308,7 @@ router.get('/update/status', (req, res) => {
         remoteMessage,
         commitsBehind,
         commitsAhead,
-        hasUpdate: commitsBehind > 0,
+        hasUpdate,
         isClean,
         fetchError
       }
@@ -244,11 +320,35 @@ router.get('/update/status', (req, res) => {
   }
 });
 
-// ── 7. Terapkan Pembaruan Git Pull OTA & Muat Ulang Server ────
+// ── 8. Terapkan Pembaruan Git Pull OTA / Beralih Branch & Muat Ulang ────
 router.post('/update/apply', (req, res) => {
   try {
     const gitDir = path.join(__dirname, '..');
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
+
+    const { targetBranch } = req.body || {};
+    const branch = (targetBranch && typeof targetBranch === 'string' && targetBranch.trim())
+      ? targetBranch.trim()
+      : currentBranch;
+
+    let checkoutOutput = '';
+
+    // Jika admin memilih branch yang berbeda dari branch aktif
+    if (branch !== currentBranch) {
+      console.log(`[OTA Updater] Beralih dari branch "${currentBranch}" ke "${branch}"...`);
+
+      // Cek apakah branch sudah ada di lokal
+      const localBranches = execSync('git branch --format="%(refname:short)"', { cwd: gitDir, encoding: 'utf8' })
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (localBranches.includes(branch)) {
+        checkoutOutput = execSync(`git checkout ${branch}`, { cwd: gitDir, encoding: 'utf8', timeout: 30000 });
+      } else {
+        checkoutOutput = execSync(`git checkout -b ${branch} origin/${branch}`, { cwd: gitDir, encoding: 'utf8', timeout: 30000 });
+      }
+    }
 
     console.log(`[OTA Updater] Menarik pembaruan dari branch "${branch}"...`);
 
@@ -256,9 +356,10 @@ router.post('/update/apply', (req, res) => {
     const pullOutput = execSync(`git pull origin ${branch}`, { cwd: gitDir, encoding: 'utf8', timeout: 60000 });
     console.log('[OTA Updater] Git pull output:\n', pullOutput);
 
-    // 2. Baca commit baru setelah pull
+    // 2. Baca commit baru setelah pull / checkout
     const newHash = execSync('git rev-parse --short HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
     const newMessage = execSync('git log -1 --pretty=%s', { cwd: gitDir, encoding: 'utf8' }).trim();
+    const activeBranchAfter = execSync('git rev-parse --abbrev-ref HEAD', { cwd: gitDir, encoding: 'utf8' }).trim();
 
     // 3. Pasang dependency jika package.json terbarui
     let npmOutput = 'Dependencies up-to-date';
@@ -271,9 +372,11 @@ router.post('/update/apply', (req, res) => {
     // 4. Balas ke browser admin terlebih dahulu sebelum server mati/reboot
     res.json({
       success: true,
-      message: `Pembaruan berhasil diterapkan (${newHash})! Server sedang memuat ulang sistem...`,
+      message: `Pembaruan berhasil diterapkan pada branch "${activeBranchAfter}" (${newHash})! Server sedang memuat ulang sistem...`,
+      branch: activeBranchAfter,
       newHash,
       newMessage,
+      checkoutLog: checkoutOutput,
       pullLog: pullOutput,
       npmLog: npmOutput
     });
@@ -282,7 +385,6 @@ router.post('/update/apply', (req, res) => {
     setTimeout(() => {
       console.log('[OTA Updater] Memuat ulang proses server ArduiBlok sekarang...');
       try {
-        // Fallback jika tidak menggunakan PM2/systemd (spawning detached child lalu exit)
         const child = spawn(process.argv[0], process.argv.slice(1), {
           detached: true,
           stdio: 'inherit',
