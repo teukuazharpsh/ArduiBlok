@@ -28,7 +28,7 @@ function generateOtpCode() {
  * Pengiriman via Resend REST API (HTTPS Port 443)
  * Sangat direkomendasikan untuk Railway karena Railway memblokir port SMTP (25, 465, 587) pada akun Free/Hobby.
  */
-async function sendViaResend(apiKey, toEmail, username, otpCode, htmlContent) {
+async function sendViaResend(apiKey, toEmail, username, otpCode, htmlContent, subject, textBody) {
   const fromAddress = sanitizeEnv(process.env.RESEND_FROM) || 'ArduiBlok Studio <onboarding@resend.dev>';
   
   const response = await fetch('https://api.resend.com/emails', {
@@ -40,9 +40,9 @@ async function sendViaResend(apiKey, toEmail, username, otpCode, htmlContent) {
     body: JSON.stringify({
       from: fromAddress,
       to: [toEmail],
-      subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
+      subject: subject || `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
       html: htmlContent,
-      text: `Halo ${username},\n\nKode verifikasi akun ArduiBlok Anda adalah: ${otpCode}\n\nKode berlaku selama 10 menit.`
+      text: textBody || `Halo ${username},\n\nKode verifikasi akun ArduiBlok Anda adalah: ${otpCode}\n\nKode berlaku selama 10 menit.`
     })
   });
 
@@ -65,7 +65,7 @@ async function sendViaResend(apiKey, toEmail, username, otpCode, htmlContent) {
  * Mengirimkan email langsung dari Gmail pribadi pengguna (misal teukuazharpasha@gmail.com)
  * ke SIAPA SAJA tanpa butuh domain berbayar dan tanpa diblokir oleh Railway.
  */
-async function sendViaGoogleScript(webhookUrl, toEmail, username, otpCode, htmlContent) {
+async function sendViaGoogleScript(webhookUrl, toEmail, username, otpCode, htmlContent, subject) {
   const secret = sanitizeEnv(process.env.GMAIL_WEBHOOK_SECRET) || 'arduiblok_mailer_secret_2026';
   
   const response = await fetch(webhookUrl, {
@@ -77,7 +77,7 @@ async function sendViaGoogleScript(webhookUrl, toEmail, username, otpCode, htmlC
     body: JSON.stringify({
       secret: secret,
       to: toEmail,
-      subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
+      subject: subject || `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
       html: htmlContent
     })
   });
@@ -149,12 +149,104 @@ function createTransporter() {
  * @param {string} otpCode - Kode OTP 6 digit
  * @returns {Promise<{ success: boolean, mock: boolean, message: string }>}
  */
-async function sendOtpEmail(toEmail, username, otpCode) {
+/**
+ * Rantai Pengiriman Email (dipakai email verifikasi OTP maupun reset password):
+ * 1. Google Apps Script Webhook (Gmail pribadi)
+ * 2. Resend REST API
+ * 3. Nodemailer SMTP (dengan fallback dev mock)
+ */
+async function deliverEmail({ toEmail, username, subject, textBody, htmlContent }) {
   const devMock = sanitizeEnv(process.env.DEV_MOCK_OTP) === 'true';
   const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
   const resendApiKey = sanitizeEnv(process.env.RESEND_API_KEY);
   const transporter = createTransporter();
 
+  // ── Opsi 1: Pengiriman via Google Apps Script Webhook (Port 443 HTTPS - Pakai Gmail Pribadi ke Siapa Saja Tanpa Butuh Domain) ──
+  const gmailWebhookUrl = sanitizeEnv(process.env.GMAIL_WEBHOOK_URL);
+  if (gmailWebhookUrl) {
+    try {
+      return await sendViaGoogleScript(gmailWebhookUrl, toEmail, username, '', htmlContent, subject);
+    } catch (gErr) {
+      console.error('[Mailer Google Webhook Error]:', gErr.message);
+      throw new Error('Gagal mengirim email via Google Webhook: ' + gErr.message);
+    }
+  }
+
+  // ── Opsi 2: Pengiriman via Resend REST API (HTTPS Port 443) ──
+  if (resendApiKey) {
+    try {
+      return await sendViaResend(resendApiKey, toEmail, username, '', htmlContent, subject, textBody);
+    } catch (resendErr) {
+      console.error('[Mailer Resend Error]:', resendErr.message);
+      throw new Error('Gagal mengirim email via Resend API: ' + resendErr.message);
+    }
+  }
+
+  // ── Opsi 3: Pengiriman via Nodemailer SMTP (Jika kredensial diset) ──
+  if (!transporter) {
+    if (devMock && !isProduction) {
+      console.warn('[Mailer Warning] Layanan email belum diset, menggunakan mode dev mock lokal (DEV_MOCK_OTP=true)');
+      return {
+        success: true,
+        mock: true,
+        message: 'Kode dicatat di konsol server (Mode Dev).'
+      };
+    }
+    throw new Error(
+      'Layanan email belum dikonfigurasi di server. ' +
+      'Karena Railway memblokir port SMTP (465/587), tambahkan variabel RESEND_API_KEY di Railway Dashboard (dapatkan gratis di resend.com).'
+    );
+  }
+
+  try {
+    const rawFrom = sanitizeEnv(process.env.EMAIL_FROM);
+    const user = sanitizeEnv(process.env.SMTP_USER);
+    const fromAddress = rawFrom || `"ArduiBlok Studio" <${user}>`;
+
+    const info = await transporter.sendMail({
+      from: fromAddress,
+      to: toEmail,
+      subject: subject,
+      text: textBody,
+      html: htmlContent
+    });
+
+    console.log(`[Mailer] Email sukses terkirim ke ${toEmail} (MessageId: ${info.messageId})`);
+
+    return {
+      success: true,
+      mock: false,
+      message: 'Email telah dikirim.'
+    };
+  } catch (err) {
+    console.error('[Mailer SMTP Error]:', err.message);
+
+    // Deteksi jika kegagalan disebabkan blokir port SMTP oleh cloud provider (Railway)
+    const isPortBlocked = err.message.includes('timeout') ||
+                          err.message.includes('ETIMEDOUT') ||
+                          err.message.includes('ENETUNREACH') ||
+                          err.message.includes('ECONNREFUSED');
+
+    if (isPortBlocked && isProduction) {
+      throw new Error(
+        'Railway memblokir port SMTP (465/587) pada akun Free/Hobby. ' +
+        'Solusi resmi: Tambahkan variabel RESEND_API_KEY di Railway Variables. Dapatkan API Key gratis di https://resend.com (menggunakan HTTPS Port 443 yang tidak pernah diblokir).'
+      );
+    }
+
+    if (devMock && !isProduction) {
+      return {
+        success: true,
+        mock: true,
+        message: 'Koneksi SMTP lokal bermasalah, kode dicatat di konsol server (Dev Mode).'
+      };
+    }
+
+    throw new Error('Gagal mengirim email ke ' + toEmail + ': ' + err.message);
+  }
+}
+
+async function sendOtpEmail(toEmail, username, otpCode) {
   // Log ke terminal server untuk kemudahan debugging dan pengujian lokal
   console.log('\n======================================================');
   console.log('  📧 [ARDUIBLOK OTP VERIFICATION CODE]');
@@ -205,92 +297,93 @@ async function sendOtpEmail(toEmail, username, otpCode) {
     </html>
   `;
 
-  // ── Opsi 1: Pengiriman via Google Apps Script Webhook (Port 443 HTTPS - Pakai Gmail Pribadi ke Siapa Saja Tanpa Butuh Domain) ──
-  const gmailWebhookUrl = sanitizeEnv(process.env.GMAIL_WEBHOOK_URL);
-  if (gmailWebhookUrl) {
-    try {
-      return await sendViaGoogleScript(gmailWebhookUrl, toEmail, username, otpCode, htmlContent);
-    } catch (gErr) {
-      console.error('[Mailer Google Webhook Error]:', gErr.message);
-      throw new Error('Gagal mengirim email via Google Webhook: ' + gErr.message);
-    }
-  }
+  const result = await deliverEmail({
+    toEmail,
+    username,
+    subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
+    textBody: `Halo ${username},\n\nKode verifikasi akun ArduiBlok Anda adalah: ${otpCode}\n\nKode berlaku selama 10 menit.`,
+    htmlContent
+  });
 
-  // ── Opsi 2: Pengiriman via Resend REST API (HTTPS Port 443) ──
-  if (resendApiKey) {
-    try {
-      return await sendViaResend(resendApiKey, toEmail, username, otpCode, htmlContent);
-    } catch (resendErr) {
-      console.error('[Mailer Resend Error]:', resendErr.message);
-      throw new Error('Gagal mengirim email via Resend API: ' + resendErr.message);
-    }
-  }
+  return {
+    ...result,
+    message: result.mock ? 'Kode OTP dicatat di konsol server (Mode Dev).' : 'Kode OTP telah dikirim ke email Anda.'
+  };
+}
 
-  // ── Opsi 2: Pengiriman via Nodemailer SMTP (Jika kredensial diset) ──
-  if (!transporter) {
-    if (devMock && !isProduction) {
-      console.warn('[Mailer Warning] Layanan email belum diset, menggunakan mode dev mock lokal (DEV_MOCK_OTP=true)');
-      return {
-        success: true,
-        mock: true,
-        message: 'Kode OTP dicatat di konsol server (Mode Dev).'
-      };
-    }
-    throw new Error(
-      'Layanan email belum dikonfigurasi di server. ' +
-      'Karena Railway memblokir port SMTP (465/587), tambahkan variabel RESEND_API_KEY di Railway Dashboard (dapatkan gratis di resend.com).'
-    );
-  }
+/**
+ * Mengirimkan email kode reset password (6 digit) ke pemilik akun
+ * @param {string} toEmail - Alamat email pemilik akun
+ * @param {string} username - Nama pengguna
+ * @param {string} code - Kode reset 6 digit
+ * @returns {Promise<{ success: boolean, mock: boolean, message: string }>}
+ */
+async function sendResetCodeEmail(toEmail, username, code) {
+  // Log ke terminal server untuk kemudahan debugging dan pengujian lokal
+  console.log('\n======================================================');
+  console.log('  🔑 [ARDUIBLOK PASSWORD RESET CODE]');
+  console.log(`  Penerima     : ${toEmail} (${username})`);
+  console.log(`  Kode Reset   : >>> ${code} <<<`);
+  console.log('  Masa Berlaku : 10 Menit');
+  console.log('======================================================\n');
 
-  try {
-    const rawFrom = sanitizeEnv(process.env.EMAIL_FROM);
-    const user = sanitizeEnv(process.env.SMTP_USER);
-    const fromAddress = rawFrom || `"ArduiBlok Studio" <${user}>`;
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 24px; color: #1e293b; }
+        .card { max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+        .logo-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .logo-badge { background: #d97706; color: white; font-weight: 800; font-size: 18px; padding: 6px 12px; border-radius: 8px; }
+        .title { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; }
+        .otp-box { background: #fffbeb; border: 2px dashed #d97706; border-radius: 10px; text-align: center; padding: 20px; margin: 24px 0; }
+        .otp-code { font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #d97706; margin: 0; font-family: 'Courier New', monospace; }
+        .info { font-size: 14px; line-height: 1.6; color: #475569; }
+        .warning { font-size: 12px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="logo-title">
+          <span class="logo-badge">AB</span>
+          <h2 class="title">ArduiBlok Studio</h2>
+        </div>
+        <p class="info">Halo <b>${username}</b>,</p>
+        <p class="info">Kami menerima permintaan untuk <b>memperbarui kata sandi</b> akun Anda. Gunakan kode berikut untuk menetapkan kata sandi baru:</p>
 
-    const info = await transporter.sendMail({
-      from: fromAddress,
-      to: toEmail,
-      subject: `[${otpCode}] Kode Verifikasi Akun ArduiBlok`,
-      text: `Halo ${username},\n\nKode verifikasi akun ArduiBlok Anda adalah: ${otpCode}\n\nKode berlaku selama 10 menit.`,
-      html: htmlContent
-    });
+        <div class="otp-box">
+          <div class="otp-code">${code}</div>
+        </div>
 
-    console.log(`[Mailer] Email OTP sukses terkirim ke ${toEmail} (MessageId: ${info.messageId})`);
+        <p class="info">Kode ini hanya berlaku selama <b>10 menit</b>. Jangan berikan kode ini kepada siapa pun.</p>
 
-    return {
-      success: true,
-      mock: false,
-      message: 'Kode OTP telah dikirim ke email Anda.'
-    };
-  } catch (err) {
-    console.error('[Mailer SMTP Error]:', err.message);
-    
-    // Deteksi jika kegagalan disebabkan blokir port SMTP oleh cloud provider (Railway)
-    const isPortBlocked = err.message.includes('timeout') || 
-                          err.message.includes('ETIMEDOUT') || 
-                          err.message.includes('ENETUNREACH') ||
-                          err.message.includes('ECONNREFUSED');
+        <div class="warning">
+          Jika Anda tidak meminta perbaruan kata sandi, abaikan email ini — kata sandi Anda tidak akan diubah.<br>
+          &copy; ${new Date().getFullYear()} ArduiBlok — Robotika Nesklar.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 
-    if (isPortBlocked && isProduction) {
-      throw new Error(
-        'Railway memblokir port SMTP (465/587) pada akun Free/Hobby. ' +
-        'Solusi resmi: Tambahkan variabel RESEND_API_KEY di Railway Variables. Dapatkan API Key gratis di https://resend.com (menggunakan HTTPS Port 443 yang tidak pernah diblokir).'
-      );
-    }
+  const result = await deliverEmail({
+    toEmail,
+    username,
+    subject: `[ArduiBlok] Kode Perbarui Kata Sandi: ${code}`,
+    textBody: `Halo ${username},\n\nPermintaan perbaruan kata sandi diterima. Gunakan kode berikut untuk menetapkan kata sandi baru:\n\n${code}\n\nKode berlaku selama 10 menit. Jika Anda tidak memintanya, abaikan email ini.`,
+    htmlContent
+  });
 
-    if (devMock && !isProduction) {
-      return {
-        success: true,
-        mock: true,
-        message: 'Koneksi SMTP lokal bermasalah, kode dicatat di konsol server (Dev Mode).'
-      };
-    }
-
-    throw new Error('Gagal mengirim email verifikasi ke ' + toEmail + ': ' + err.message);
-  }
+  return {
+    ...result,
+    message: result.mock ? 'Kode reset dicatat di konsol server (Mode Dev).' : 'Kode reset telah dikirim ke email Anda.'
+  };
 }
 
 module.exports = {
   generateOtpCode,
-  sendOtpEmail
+  sendOtpEmail,
+  sendResetCodeEmail
 };

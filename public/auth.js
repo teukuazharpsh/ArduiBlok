@@ -17,11 +17,15 @@
 
   // DOM Elements cache
   let authOverlay, authAlert;
-  let authViewLogin, authViewRegister, authViewOtp;
-  let formLogin, formRegister, panelOtpVerification;
+  let authViewLogin, authViewRegister, authViewOtp, authViewForgot, authViewReset;
+  let formLogin, formRegister, panelOtpVerification, formForgot, panelResetPassword;
   let loginIdentifier, loginPassword, btnSubmitLogin;
   let registerUsername, registerEmail, registerPassword, registerPasswordConfirm, btnSubmitRegister;
+  let forgotIdentifier, btnSubmitForgot;
+  let resetTargetEmailText, resetCountdown, btnResendReset, resetPasswordNew, resetPasswordConfirm, btnSubmitReset;
   let otpInputsGroup, otpBoxes = [], otpTargetEmailText, otpCountdown, btnResendOtp, btnSubmitOtp;
+  let resetCodeBoxes = [], resetCountdownTimer = null, resetResendCooldownTimer = null;
+  let resetPendingEmail = '';
   let userProfileWrapper, btnUserMenu, userAvatarInitial, userNameLabel;
   let userDropdownMenu, dropdownAvatar, dropdownUsername, dropdownEmail, btnLogout;
 
@@ -48,7 +52,7 @@
     }
   }
 
-  // ── Modern View Switcher (Login vs Sign Up vs OTP) ──────────
+  // ── Modern View Switcher (Login vs Sign Up vs OTP vs Forgot vs Reset) ──
   function showView(target) {
     hideAlert();
 
@@ -56,6 +60,8 @@
     if (authViewLogin) authViewLogin.classList.add('hidden');
     if (authViewRegister) authViewRegister.classList.add('hidden');
     if (authViewOtp) authViewOtp.classList.add('hidden');
+    if (authViewForgot) authViewForgot.classList.add('hidden');
+    if (authViewReset) authViewReset.classList.add('hidden');
 
     if (target === 'login') {
       if (authViewLogin) authViewLogin.classList.remove('hidden');
@@ -72,6 +78,17 @@
       clearOtpInputs();
       if (otpBoxes[0]) {
         setTimeout(() => otpBoxes[0].focus(), 50);
+      }
+    } else if (target === 'forgot') {
+      if (authViewForgot) authViewForgot.classList.remove('hidden');
+      if (forgotIdentifier) {
+        setTimeout(() => forgotIdentifier.focus(), 50);
+      }
+    } else if (target === 'reset') {
+      if (authViewReset) authViewReset.classList.remove('hidden');
+      clearResetCodeInputs();
+      if (resetCodeBoxes[0]) {
+        setTimeout(() => resetCodeBoxes[0].focus(), 50);
       }
     }
   }
@@ -135,6 +152,245 @@
 
   function clearOtpInputs() {
     otpBoxes.forEach(b => { if (b) b.value = ''; });
+  }
+
+  // ── Reset Code Boxes (auto-advance, backspace, paste) ───────
+  function initResetCodeBoxes() {
+    resetCodeBoxes = [
+      document.getElementById('resetCodeBox1'),
+      document.getElementById('resetCodeBox2'),
+      document.getElementById('resetCodeBox3'),
+      document.getElementById('resetCodeBox4'),
+      document.getElementById('resetCodeBox5'),
+      document.getElementById('resetCodeBox6')
+    ].filter(Boolean);
+
+    resetCodeBoxes.forEach(function(box, index) {
+      box.addEventListener('input', function(e) {
+        const val = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = val ? val.charAt(val.length - 1) : '';
+        if (e.target.value && index < resetCodeBoxes.length - 1) {
+          resetCodeBoxes[index + 1].focus();
+          resetCodeBoxes[index + 1].select();
+        }
+        hideAlert();
+      });
+
+      box.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+          resetCodeBoxes[index - 1].focus();
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+          resetCodeBoxes[index - 1].focus();
+        } else if (e.key === 'ArrowRight' && index < resetCodeBoxes.length - 1) {
+          resetCodeBoxes[index + 1].focus();
+        }
+      });
+
+      box.addEventListener('paste', function(e) {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        const digits = pasted.replace(/[^0-9]/g, '').slice(0, 6);
+        if (digits.length > 0) {
+          for (let i = 0; i < resetCodeBoxes.length; i++) {
+            resetCodeBoxes[i].value = digits[i] || '';
+          }
+          const nextFocus = Math.min(digits.length, resetCodeBoxes.length - 1);
+          resetCodeBoxes[nextFocus].focus();
+        }
+      });
+    });
+  }
+
+  function getEnteredResetCode() {
+    return resetCodeBoxes.map(b => b.value.trim()).join('');
+  }
+
+  function clearResetCodeInputs() {
+    resetCodeBoxes.forEach(b => { if (b) b.value = ''; });
+    if (resetPasswordNew) resetPasswordNew.value = '';
+    if (resetPasswordConfirm) resetPasswordConfirm.value = '';
+  }
+
+  // ── Reset Code Timers ───────────────────────────────────────
+  function startResetCountdown(durationSeconds = 600) {
+    if (resetCountdownTimer) clearInterval(resetCountdownTimer);
+    let remaining = durationSeconds;
+
+    function renderTime() {
+      const mins = Math.floor(remaining / 60);
+      const secs = remaining % 60;
+      if (resetCountdown) {
+        resetCountdown.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+      if (remaining <= 0) {
+        clearInterval(resetCountdownTimer);
+        showAlert('Kode reset telah kedaluwarsa. Silakan klik "Kirim Ulang Kode".', 'warning');
+      }
+      remaining--;
+    }
+
+    renderTime();
+    resetCountdownTimer = setInterval(renderTime, 1000);
+  }
+
+  function startResetResendCooldown(cooldownSeconds = 45) {
+    if (resetResendCooldownTimer) clearInterval(resetResendCooldownTimer);
+    if (!btnResendReset) return;
+
+    let remaining = cooldownSeconds;
+    btnResendReset.disabled = true;
+
+    function renderCooldown() {
+      btnResendReset.textContent = `Kirim Ulang (${remaining}s)`;
+      if (remaining <= 0) {
+        clearInterval(resetResendCooldownTimer);
+        btnResendReset.disabled = false;
+        btnResendReset.textContent = 'Kirim Ulang Kode';
+      }
+      remaining--;
+    }
+
+    renderCooldown();
+    resetResendCooldownTimer = setInterval(renderCooldown, 1000);
+  }
+
+  // ── API Calls: Lupa Password (Minta Kode Reset) ─────────────
+  async function handleForgotPassword() {
+    hideAlert();
+    const identifier = (forgotIdentifier.value || '').trim();
+
+    if (!identifier) {
+      showAlert('Mohon isi email atau username Anda.');
+      return;
+    }
+
+    setButtonLoading(btnSubmitForgot, true);
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showAlert(data.error || 'Gagal meminta kode reset.');
+        return;
+      }
+
+      if (data.email) {
+        // Akun terdaftar: lanjut ke form reset dengan kode yang dikirim
+        resetPendingEmail = data.email;
+        if (resetTargetEmailText) resetTargetEmailText.textContent = data.email;
+        showView('reset');
+        showAlert(data.message || 'Kode reset telah dikirim ke email Anda.', 'success');
+        startResetCountdown(600);
+        startResetResendCooldown(45);
+      } else {
+        // Email tidak terdaftar: pesan terdisamarkan, tetap tampilkan sukses
+        showAlert(data.message || 'Jika email terdaftar, kode reset telah dikirim.', 'success');
+      }
+
+    } catch (err) {
+      showAlert('Gagal terhubung ke server: ' + err.message);
+    } finally {
+      setButtonLoading(btnSubmitForgot, false);
+    }
+  }
+
+  // ── API Calls: Perbarui Kata Sandi (Reset) ──────────────────
+  async function handleResetPassword() {
+    hideAlert();
+
+    const code = getEnteredResetCode();
+    const newPassword = (resetPasswordNew ? resetPasswordNew.value : '');
+    const confirmPassword = (resetPasswordConfirm ? resetPasswordConfirm.value : '');
+
+    if (code.length < 6) {
+      showAlert('Mohon masukkan 6 digit kode reset dari email Anda.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showAlert('Kata sandi baru minimal 6 karakter.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showAlert('Konfirmasi kata sandi tidak cocok.');
+      return;
+    }
+
+    setButtonLoading(btnSubmitReset, true);
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetPendingEmail, code, newPassword })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showAlert(data.error || 'Gagal memperbarui kata sandi.');
+        if (data.error && data.error.indexOf('Sisa kesempatan') !== -1) {
+          clearResetCodeInputs();
+          startResetResendCooldown(30);
+        }
+        return;
+      }
+
+      // Berhasil: kembali ke form login
+      showView('login');
+      if (loginPassword) loginPassword.value = '';
+      showAlert('Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.', 'success');
+
+    } catch (err) {
+      showAlert('Gagal terhubung ke server: ' + err.message);
+    } finally {
+      setButtonLoading(btnSubmitReset, false);
+    }
+  }
+
+  // ── API Calls: Kirim Ulang Kode Reset ───────────────────────
+  async function handleResendResetCode() {
+    hideAlert();
+    if (!resetPendingEmail) {
+      showAlert('Email akun tidak ditemukan. Silakan minta kode reset dari awal.');
+      showView('forgot');
+      return;
+    }
+
+    btnResendReset.disabled = true;
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: resetPendingEmail })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showAlert(data.error || 'Gagal mengirim ulang kode reset.');
+        btnResendReset.disabled = false;
+        return;
+      }
+
+      clearResetCodeInputs();
+      if (resetCodeBoxes[0]) {
+        resetCodeBoxes[0].focus();
+      }
+      showAlert(data.message || 'Kode reset baru telah dikirimkan ke email Anda.', 'success');
+      startResetCountdown(600);
+      startResetResendCooldown(45);
+
+    } catch (err) {
+      showAlert('Gagal terhubung ke server: ' + err.message);
+      btnResendReset.disabled = false;
+    }
   }
 
   // ── OTP Timers ──────────────────────────────────────────────
@@ -471,6 +727,9 @@
     }
     if (otpCountdownTimer) clearInterval(otpCountdownTimer);
     if (resendCooldownTimer) clearInterval(resendCooldownTimer);
+    if (resetCountdownTimer) clearInterval(resetCountdownTimer);
+    if (resetResendCooldownTimer) clearInterval(resetResendCooldownTimer);
+    resetPendingEmail = '';
   }
 
   function logout() {
@@ -558,10 +817,14 @@
     authViewLogin = document.getElementById('authViewLogin');
     authViewRegister = document.getElementById('authViewRegister');
     authViewOtp = document.getElementById('authViewOtp');
+    authViewForgot = document.getElementById('authViewForgot');
+    authViewReset = document.getElementById('authViewReset');
 
     formLogin = document.getElementById('formLogin');
     formRegister = document.getElementById('formRegister');
     panelOtpVerification = document.getElementById('panelOtpVerification');
+    formForgot = document.getElementById('formForgot');
+    panelResetPassword = document.getElementById('panelResetPassword');
 
     loginIdentifier = document.getElementById('loginIdentifier');
     loginPassword = document.getElementById('loginPassword');
@@ -572,6 +835,16 @@
     registerPassword = document.getElementById('registerPassword');
     registerPasswordConfirm = document.getElementById('registerPasswordConfirm');
     btnSubmitRegister = document.getElementById('btnSubmitRegister');
+
+    forgotIdentifier = document.getElementById('forgotIdentifier');
+    btnSubmitForgot = document.getElementById('btnSubmitForgot');
+
+    resetTargetEmailText = document.getElementById('resetTargetEmailText');
+    resetCountdown = document.getElementById('resetCountdown');
+    btnResendReset = document.getElementById('btnResendReset');
+    resetPasswordNew = document.getElementById('resetPasswordNew');
+    resetPasswordConfirm = document.getElementById('resetPasswordConfirm');
+    btnSubmitReset = document.getElementById('btnSubmitReset');
 
     otpInputsGroup = document.getElementById('otpInputsGroup');
     otpTargetEmailText = document.getElementById('otpTargetEmailText');
@@ -591,15 +864,22 @@
     btnLogout = document.getElementById('btnLogout');
 
     initOtpBoxes();
+    initResetCodeBoxes();
 
     // View Navigation Links
     const linkToRegister = document.getElementById('linkToRegister') || document.getElementById('linkSwitchToRegister');
     const linkToLogin = document.getElementById('linkToLogin') || document.getElementById('linkSwitchToLogin');
     const linkBackToLoginFromOtp = document.getElementById('linkBackToLoginFromOtp') || document.getElementById('linkBackToRegister');
+    const linkForgotPassword = document.getElementById('linkForgotPassword');
+    const linkBackToLoginFromForgot = document.getElementById('linkBackToLoginFromForgot');
+    const linkBackToLoginFromReset = document.getElementById('linkBackToLoginFromReset');
 
     if (linkToRegister) linkToRegister.addEventListener('click', (e) => { e.preventDefault(); showView('register'); });
     if (linkToLogin) linkToLogin.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
     if (linkBackToLoginFromOtp) linkBackToLoginFromOtp.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
+    if (linkForgotPassword) linkForgotPassword.addEventListener('click', (e) => { e.preventDefault(); showView('forgot'); });
+    if (linkBackToLoginFromForgot) linkBackToLoginFromForgot.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
+    if (linkBackToLoginFromReset) linkBackToLoginFromReset.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
 
     // Fallback Tab Switches jika ada
     const tabAuthLogin = document.getElementById('tabAuthLogin');
@@ -614,11 +894,20 @@
     if (formRegister) {
       formRegister.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(); });
     }
+    if (formForgot) {
+      formForgot.addEventListener('submit', (e) => { e.preventDefault(); handleForgotPassword(); });
+    }
     if (btnSubmitOtp) {
       btnSubmitOtp.addEventListener('click', handleVerifyOtp);
     }
     if (btnResendOtp) {
       btnResendOtp.addEventListener('click', handleResendOtp);
+    }
+    if (btnSubmitReset) {
+      btnSubmitReset.addEventListener('click', handleResetPassword);
+    }
+    if (btnResendReset) {
+      btnResendReset.addEventListener('click', handleResendResetCode);
     }
 
     // Toggle Password Visibility

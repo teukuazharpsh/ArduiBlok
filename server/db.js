@@ -130,15 +130,17 @@ function updateUserPassword(userId, newPasswordHash) {
 
 // ── OTP Operations ───────────────────────────────────────────
 
-function saveOtp({ email, otpCode, expiresAtMs }) {
+// purpose: 'verify' (verifikasi email pendaftaran) | 'reset' (lupa password)
+function saveOtp({ email, otpCode, expiresAtMs, purpose = 'verify' }) {
   const normalizedEmail = email.trim().toLowerCase();
-  // Hapus OTP lama untuk email ini
-  dbData.otps = dbData.otps.filter(o => o.email !== normalizedEmail);
+  // Hapus kode lama untuk email ini pada purpose yang sama (kode lain tidak terhapus)
+  dbData.otps = dbData.otps.filter(o => o.email !== normalizedEmail || (o.purpose || 'verify') !== purpose);
 
   const otpEntry = {
     id: uuidv4(),
     email: normalizedEmail,
     code: String(otpCode).trim(),
+    purpose: purpose,
     createdAt: Date.now(),
     expiresAt: Date.now() + (expiresAtMs || 10 * 60 * 1000), // Default 10 menit
     attempts: 0
@@ -149,17 +151,17 @@ function saveOtp({ email, otpCode, expiresAtMs }) {
   return otpEntry;
 }
 
-function getLatestOtp(email) {
+function getLatestOtp(email, purpose = 'verify') {
   if (!email) return null;
   const normalized = email.trim().toLowerCase();
-  // Ambil yang paling baru
-  const matches = dbData.otps.filter(o => o.email === normalized);
+  // Ambil yang paling baru untuk purpose yang diminta
+  const matches = dbData.otps.filter(o => o.email === normalized && (o.purpose || 'verify') === purpose);
   if (matches.length === 0) return null;
   return matches[matches.length - 1];
 }
 
-function incrementOtpAttempts(email) {
-  const otp = getLatestOtp(email);
+function incrementOtpAttempts(email, purpose = 'verify') {
+  const otp = getLatestOtp(email, purpose);
   if (otp) {
     otp.attempts = (otp.attempts || 0) + 1;
     saveDatabaseSync();
@@ -168,10 +170,27 @@ function incrementOtpAttempts(email) {
   return 0;
 }
 
-function deleteOtpsForEmail(email) {
+// Hitung jumlah kode yang dibuat dalam jendela waktu terakhir (untuk rate-limit)
+function countRecentOtps(email, purpose, windowMs = 10 * 60 * 1000) {
+  if (!email) return 0;
+  const normalized = email.trim().toLowerCase();
+  const now = Date.now();
+  return dbData.otps.filter(o =>
+    o.email === normalized &&
+    (o.purpose || 'verify') === purpose &&
+    (now - (o.createdAt || 0)) < windowMs
+  ).length;
+}
+
+// Hapus kode: tanpa purpose = semua kode email ini; dengan purpose = hanya tujuan tersebut
+function deleteOtpsForEmail(email, purpose) {
   if (!email) return;
   const normalized = email.trim().toLowerCase();
-  dbData.otps = dbData.otps.filter(o => o.email !== normalized);
+  if (!purpose) {
+    dbData.otps = dbData.otps.filter(o => o.email !== normalized);
+  } else {
+    dbData.otps = dbData.otps.filter(o => !(o.email === normalized && (o.purpose || 'verify') === purpose));
+  }
   saveDatabaseSync();
 }
 
@@ -388,6 +407,7 @@ module.exports = {
   saveOtp,
   getLatestOtp,
   incrementOtpAttempts,
+  countRecentOtps,
   deleteOtpsForEmail,
   cleanupExpiredOtps,
   updateUserLastActive,

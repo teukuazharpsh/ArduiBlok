@@ -5425,6 +5425,25 @@ body.mode-text #blocklyDiv {
   text-decoration: underline;
 }
 
+/* ── Lupa Password Prompt ───────────────────────────────────── */
+.auth-forgot-prompt {
+  text-align: center;
+  font-size: 12.5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-soft, rgba(100, 116, 139, 0.25));
+}
+
+.auth-forgot-prompt a {
+  color: var(--accent-primary, #00878a);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-forgot-prompt a:hover {
+  text-decoration: underline;
+}
+
 /* ── OTP Verification Panel ───────────────────────────────── */
 .otp-illustration {
   text-align: center;

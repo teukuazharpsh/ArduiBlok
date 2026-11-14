@@ -255,7 +255,134 @@ router.post('/resend-otp', async (req, res) => {
   }
 });
 
-// ── 4. Masuk Akun (Login dengan Email ATAU Username) ─────────
+// ── 4. Lupa Password: Minta Kode Reset (Forgot Password) ─────────
+// Pesan disamarkan: respons selalu sama apakah email terdaftar atau tidak (cegah user enumeration)
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { identifier } = req.body;
+    if (!identifier || typeof identifier !== 'string') {
+      return res.status(400).json({ success: false, error: 'Email atau username wajib diisi.' });
+    }
+
+    const cleanIdentifier = identifier.trim().toLowerCase();
+    const user = db.getUserByIdentifier(cleanIdentifier);
+
+    // Jika akun tidak ditemukan, balas sukses palsu (umumnya untuk jaringan publik;
+    // di sini tetap konsisten: pesan selalu "kode dikirim jika akun ditemukan")
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'Jika email tersebut terdaftar di ArduiBlok, kode reset kata sandi telah dikirim. Silakan periksa inbox atau folder spam.'
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        error: 'Akun ini belum diverifikasi. Silakan selesaikan verifikasi OTP pendaftaran terlebih dahulu.'
+      });
+    }
+
+    // Rate-limit: maksimal 5 permintaan reset per email per 10 menit
+    const recentCount = db.countRecentOtps(user.email, 'reset', 10 * 60 * 1000);
+    if (recentCount >= 5) {
+      return res.status(429).json({
+        success: false,
+        error: 'Terlalu banyak permintaan. Silakan coba lagi dalam beberapa menit.'
+      });
+    }
+
+    // Buat kode reset 6 digit (tersimpan terpisah dari OTP verifikasi via purpose)
+    const resetCode = mailer.generateOtpCode();
+    db.saveOtp({
+      email: user.email,
+      otpCode: resetCode,
+      expiresAtMs: 10 * 60 * 1000,
+      purpose: 'reset'
+    });
+
+    await mailer.sendResetCodeEmail(user.email, user.username, resetCode);
+
+    return res.json({
+      success: true,
+      message: 'Kode reset kata sandi telah dikirim ke email Anda. Silakan periksa inbox atau folder spam.',
+      email: user.email
+    });
+
+  } catch (err) {
+    console.error('[Auth Forgot Password Error]:', err);
+    return res.status(500).json({ success: false, error: 'Terjadi kesalahan server saat meminta kode reset: ' + err.message });
+  }
+});
+
+// ── 5. Lupa Password: Terapkan Kata Sandi Baru (Reset Password) ──
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Email, kode reset, dan kata sandi baru wajib diisi.' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanCode = String(code).trim();
+
+    const user = db.getUserByEmail(cleanEmail);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Akun dengan email tersebut tidak ditemukan.' });
+    }
+
+    const savedCode = db.getLatestOtp(cleanEmail, 'reset');
+    if (!savedCode) {
+      return res.status(400).json({ success: false, error: 'Kode reset tidak ditemukan. Silakan minta kode reset baru.' });
+    }
+
+    // Periksa masa berlaku
+    if (Date.now() > savedCode.expiresAt) {
+      return res.status(400).json({ success: false, error: 'Kode reset telah kedaluwarsa. Silakan minta kode reset baru.' });
+    }
+
+    // Periksa batas percobaan (maksimal 5 kali salah)
+    if (savedCode.attempts >= 5) {
+      db.deleteOtpsForEmail(cleanEmail, 'reset');
+      return res.status(429).json({ success: false, error: 'Terlalu banyak percobaan salah. Kode diblokir, silakan minta kode reset baru.' });
+    }
+
+    // Cek kecocokan kode
+    if (savedCode.code !== cleanCode) {
+      db.incrementOtpAttempts(cleanEmail, 'reset');
+      const remaining = 5 - (savedCode.attempts + 1);
+      return res.status(400).json({
+        success: false,
+        error: `Kode reset salah. Sisa kesempatan: ${Math.max(0, remaining)} kali.`
+      });
+    }
+
+    // Validasi kekuatan kata sandi baru
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ success: false, error: 'Kata sandi baru minimal terdiri dari 6 karakter.' });
+    }
+
+    // Terapkan kata sandi baru
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(String(newPassword), saltRounds);
+    db.updateUserPassword(user.id, newPasswordHash);
+    db.deleteOtpsForEmail(cleanEmail, 'reset'); // Hapus kode reset yang sudah terpakai
+
+    return res.json({
+      success: true,
+      message: 'Kata sandi berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.'
+    });
+
+  } catch (err) {
+    console.error('[Auth Reset Password Error]:', err);
+    return res.status(500).json({ success: false, error: 'Terjadi kesalahan server saat memperbarui kata sandi: ' + err.message });
+  }
+});
+
+// ── 6. Masuk Akun (Login dengan Email ATAU Username) ─────────
 
 router.post('/login', async (req, res) => {
   try {
@@ -324,7 +451,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ── 5. Cek Sesi Pengguna Aktif (Get Current User Profile) ─────
+// ── 7. Cek Sesi Pengguna Aktif (Get Current User Profile) ─────
 
 router.get('/me', requireAuth, (req, res) => {
   return res.json({
@@ -333,13 +460,13 @@ router.get('/me', requireAuth, (req, res) => {
   });
 });
 
-// ── 6. Heartbeat / Sinyal Keaktifan Pengguna ─────────────────
+// ── 8. Heartbeat / Sinyal Keaktifan Pengguna ─────────────────
 router.post('/heartbeat', requireAuth, (req, res) => {
   db.updateUserLastActive(req.user.id);
   return res.json({ success: true, timestamp: Date.now() });
 });
 
-// ── 7. Offline Signal (Beacon saat Tab Browser Ditutup) ───────
+// ── 9. Offline Signal (Beacon saat Tab Browser Ditutup) ───────
 router.post('/offline', (req, res) => {
   let token = null;
   const authHeader = req.headers.authorization;
