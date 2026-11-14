@@ -17,15 +17,17 @@
 
   // DOM Elements cache
   let authOverlay, authAlert;
-  let authViewLogin, authViewRegister, authViewOtp, authViewForgot, authViewReset;
-  let formLogin, formRegister, panelOtpVerification, formForgot, panelResetPassword;
+  let authViewLogin, authViewRegister, authViewOtp, authViewForgot, authViewResetCode, authViewNewPassword;
+  let formLogin, formRegister, panelOtpVerification, formForgot, panelResetCode, formNewPassword;
   let loginIdentifier, loginPassword, btnSubmitLogin;
   let registerUsername, registerEmail, registerPassword, registerPasswordConfirm, btnSubmitRegister;
   let forgotIdentifier, btnSubmitForgot;
-  let resetTargetEmailText, resetCountdown, btnResendReset, resetPasswordNew, resetPasswordConfirm, btnSubmitReset;
+  let resetTargetEmailText, resetCountdown, btnResendReset, btnSubmitVerifyReset;
+  let resetPasswordNew, resetPasswordConfirm, btnSubmitNewPassword;
   let otpInputsGroup, otpBoxes = [], otpTargetEmailText, otpCountdown, btnResendOtp, btnSubmitOtp;
   let resetCodeBoxes = [], resetCountdownTimer = null, resetResendCooldownTimer = null;
   let resetPendingEmail = '';
+  let resetAuthorizedToken = null;
   let userProfileWrapper, btnUserMenu, userAvatarInitial, userNameLabel;
   let userDropdownMenu, dropdownAvatar, dropdownUsername, dropdownEmail, btnLogout;
 
@@ -52,7 +54,7 @@
     }
   }
 
-  // ── Modern View Switcher (Login vs Sign Up vs OTP vs Forgot vs Reset) ──
+  // ── Modern View Switcher (Login vs Sign Up vs OTP vs Forgot vs ResetCode vs NewPassword) ──
   function showView(target) {
     hideAlert();
 
@@ -61,7 +63,8 @@
     if (authViewRegister) authViewRegister.classList.add('hidden');
     if (authViewOtp) authViewOtp.classList.add('hidden');
     if (authViewForgot) authViewForgot.classList.add('hidden');
-    if (authViewReset) authViewReset.classList.add('hidden');
+    if (authViewResetCode) authViewResetCode.classList.add('hidden');
+    if (authViewNewPassword) authViewNewPassword.classList.add('hidden');
 
     if (target === 'login') {
       if (authViewLogin) authViewLogin.classList.remove('hidden');
@@ -84,11 +87,20 @@
       if (forgotIdentifier) {
         setTimeout(() => forgotIdentifier.focus(), 50);
       }
-    } else if (target === 'reset') {
-      if (authViewReset) authViewReset.classList.remove('hidden');
+    } else if (target === 'resetCode') {
+      if (authViewResetCode) authViewResetCode.classList.remove('hidden');
       clearResetCodeInputs();
       if (resetCodeBoxes[0]) {
         setTimeout(() => resetCodeBoxes[0].focus(), 50);
+      }
+    } else if (target === 'newPassword') {
+      if (authViewNewPassword) authViewNewPassword.classList.remove('hidden');
+      if (resetPasswordNew) {
+        resetPasswordNew.value = '';
+        setTimeout(() => resetPasswordNew.focus(), 50);
+      }
+      if (resetPasswordConfirm) {
+        resetPasswordConfirm.value = '';
       }
     }
   }
@@ -207,8 +219,6 @@
 
   function clearResetCodeInputs() {
     resetCodeBoxes.forEach(b => { if (b) b.value = ''; });
-    if (resetPasswordNew) resetPasswordNew.value = '';
-    if (resetPasswordConfirm) resetPasswordConfirm.value = '';
   }
 
   // ── Reset Code Timers ───────────────────────────────────────
@@ -254,7 +264,7 @@
     resetResendCooldownTimer = setInterval(renderCooldown, 1000);
   }
 
-  // ── API Calls: Lupa Password (Minta Kode Reset) ─────────────
+  // ── API Calls: Lupa Password Tahap 1 (Minta Kode Reset) ─────
   async function handleForgotPassword() {
     hideAlert();
     const identifier = (forgotIdentifier.value || '').trim();
@@ -281,10 +291,10 @@
       }
 
       if (data.email) {
-        // Akun terdaftar: lanjut ke form reset dengan kode yang dikirim
+        // Akun terdaftar: pindah ke tampilan verifikasi 6 digit kode reset
         resetPendingEmail = data.email;
         if (resetTargetEmailText) resetTargetEmailText.textContent = data.email;
-        showView('reset');
+        showView('resetCode');
         showAlert(data.message || 'Kode reset telah dikirim ke email Anda.', 'success');
         startResetCountdown(600);
         startResetResendCooldown(45);
@@ -300,56 +310,114 @@
     }
   }
 
-  // ── API Calls: Perbarui Kata Sandi (Reset) ──────────────────
-  async function handleResetPassword() {
+  // ── API Calls: Lupa Password Tahap 2 (Verifikasi 6 Digit Kode Reset) ──
+  async function handleVerifyResetCode() {
     hideAlert();
 
     const code = getEnteredResetCode();
+    if (code.length < 6) {
+      showAlert('Mohon masukkan lengkap 6 digit kode reset dari email Anda.');
+      return;
+    }
+
+    if (!resetPendingEmail) {
+      showAlert('Sesi reset tidak ditemukan. Silakan masukkan email kembali.');
+      showView('forgot');
+      return;
+    }
+
+    setButtonLoading(btnSubmitVerifyReset, true);
+
+    try {
+      const res = await fetch('/api/auth/verify-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetPendingEmail, code })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showAlert(data.error || 'Kode verifikasi tidak valid.');
+        if (data.error && data.error.indexOf('Sisa kesempatan') !== -1) {
+          clearResetCodeInputs();
+          if (resetCodeBoxes[0]) resetCodeBoxes[0].focus();
+        }
+        return;
+      }
+
+      // Kode valid! Simpan token otorisasi reset
+      resetAuthorizedToken = data.resetToken;
+
+      // Hentikan timer kode reset
+      if (resetCountdownTimer) clearInterval(resetCountdownTimer);
+
+      // Beralih ke tampilan baru: Form Masukkan Kata Sandi Baru
+      showView('newPassword');
+      showAlert(data.message || 'Kode terverifikasi! Silakan buat kata sandi baru Anda.', 'success');
+
+    } catch (err) {
+      showAlert('Gagal terhubung ke server: ' + err.message);
+    } finally {
+      setButtonLoading(btnSubmitVerifyReset, false);
+    }
+  }
+
+  // ── API Calls: Lupa Password Tahap 3 (Simpan Kata Sandi Baru) ─
+  async function handleSaveNewPassword() {
+    hideAlert();
+
     const newPassword = (resetPasswordNew ? resetPasswordNew.value : '');
     const confirmPassword = (resetPasswordConfirm ? resetPasswordConfirm.value : '');
 
-    if (code.length < 6) {
-      showAlert('Mohon masukkan 6 digit kode reset dari email Anda.');
-      return;
-    }
-    if (newPassword.length < 6) {
-      showAlert('Kata sandi baru minimal 6 karakter.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showAlert('Konfirmasi kata sandi tidak cocok.');
+    if (!newPassword || newPassword.length < 6) {
+      showAlert('Kata sandi baru minimal terdiri dari 6 karakter.');
+      if (resetPasswordNew) resetPasswordNew.focus();
       return;
     }
 
-    setButtonLoading(btnSubmitReset, true);
+    if (newPassword !== confirmPassword) {
+      showAlert('Konfirmasi kata sandi tidak cocok. Mohon periksa kembali.');
+      if (resetPasswordConfirm) resetPasswordConfirm.focus();
+      return;
+    }
+
+    if (!resetAuthorizedToken) {
+      showAlert('Otorisasi reset telah kedaluwarsa. Silakan minta kode verifikasi baru.');
+      showView('forgot');
+      return;
+    }
+
+    setButtonLoading(btnSubmitNewPassword, true);
 
     try {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetPendingEmail, code, newPassword })
+        body: JSON.stringify({ resetToken: resetAuthorizedToken, newPassword })
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
         showAlert(data.error || 'Gagal memperbarui kata sandi.');
-        if (data.error && data.error.indexOf('Sisa kesempatan') !== -1) {
-          clearResetCodeInputs();
-          startResetResendCooldown(30);
-        }
         return;
       }
 
-      // Berhasil: kembali ke form login
+      // Berhasil 100%! Bersihkan state reset & kembali ke form login
+      resetAuthorizedToken = null;
+      resetPendingEmail = '';
+      if (resetPasswordNew) resetPasswordNew.value = '';
+      if (resetPasswordConfirm) resetPasswordConfirm.value = '';
+
       showView('login');
       if (loginPassword) loginPassword.value = '';
-      showAlert('Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.', 'success');
+      showAlert('Kata sandi berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.', 'success');
 
     } catch (err) {
       showAlert('Gagal terhubung ke server: ' + err.message);
     } finally {
-      setButtonLoading(btnSubmitReset, false);
+      setButtonLoading(btnSubmitNewPassword, false);
     }
   }
 
@@ -730,6 +798,7 @@
     if (resetCountdownTimer) clearInterval(resetCountdownTimer);
     if (resetResendCooldownTimer) clearInterval(resetResendCooldownTimer);
     resetPendingEmail = '';
+    resetAuthorizedToken = null;
   }
 
   function logout() {
@@ -818,13 +887,15 @@
     authViewRegister = document.getElementById('authViewRegister');
     authViewOtp = document.getElementById('authViewOtp');
     authViewForgot = document.getElementById('authViewForgot');
-    authViewReset = document.getElementById('authViewReset');
+    authViewResetCode = document.getElementById('authViewResetCode');
+    authViewNewPassword = document.getElementById('authViewNewPassword');
 
     formLogin = document.getElementById('formLogin');
     formRegister = document.getElementById('formRegister');
     panelOtpVerification = document.getElementById('panelOtpVerification');
     formForgot = document.getElementById('formForgot');
-    panelResetPassword = document.getElementById('panelResetPassword');
+    panelResetCode = document.getElementById('panelResetCode');
+    formNewPassword = document.getElementById('formNewPassword');
 
     loginIdentifier = document.getElementById('loginIdentifier');
     loginPassword = document.getElementById('loginPassword');
@@ -842,9 +913,11 @@
     resetTargetEmailText = document.getElementById('resetTargetEmailText');
     resetCountdown = document.getElementById('resetCountdown');
     btnResendReset = document.getElementById('btnResendReset');
+    btnSubmitVerifyReset = document.getElementById('btnSubmitVerifyReset');
+
     resetPasswordNew = document.getElementById('resetPasswordNew');
     resetPasswordConfirm = document.getElementById('resetPasswordConfirm');
-    btnSubmitReset = document.getElementById('btnSubmitReset');
+    btnSubmitNewPassword = document.getElementById('btnSubmitNewPassword');
 
     otpInputsGroup = document.getElementById('otpInputsGroup');
     otpTargetEmailText = document.getElementById('otpTargetEmailText');
@@ -872,14 +945,16 @@
     const linkBackToLoginFromOtp = document.getElementById('linkBackToLoginFromOtp') || document.getElementById('linkBackToRegister');
     const linkForgotPassword = document.getElementById('linkForgotPassword');
     const linkBackToLoginFromForgot = document.getElementById('linkBackToLoginFromForgot');
-    const linkBackToLoginFromReset = document.getElementById('linkBackToLoginFromReset');
+    const linkBackToLoginFromResetCode = document.getElementById('linkBackToLoginFromResetCode');
+    const linkBackToLoginFromNewPwd = document.getElementById('linkBackToLoginFromNewPwd');
 
     if (linkToRegister) linkToRegister.addEventListener('click', (e) => { e.preventDefault(); showView('register'); });
     if (linkToLogin) linkToLogin.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
     if (linkBackToLoginFromOtp) linkBackToLoginFromOtp.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
     if (linkForgotPassword) linkForgotPassword.addEventListener('click', (e) => { e.preventDefault(); showView('forgot'); });
     if (linkBackToLoginFromForgot) linkBackToLoginFromForgot.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
-    if (linkBackToLoginFromReset) linkBackToLoginFromReset.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
+    if (linkBackToLoginFromResetCode) linkBackToLoginFromResetCode.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
+    if (linkBackToLoginFromNewPwd) linkBackToLoginFromNewPwd.addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
 
     // Fallback Tab Switches jika ada
     const tabAuthLogin = document.getElementById('tabAuthLogin');
@@ -903,17 +978,22 @@
     if (btnResendOtp) {
       btnResendOtp.addEventListener('click', handleResendOtp);
     }
-    if (btnSubmitReset) {
-      btnSubmitReset.addEventListener('click', handleResetPassword);
+    if (btnSubmitVerifyReset) {
+      btnSubmitVerifyReset.addEventListener('click', handleVerifyResetCode);
     }
     if (btnResendReset) {
       btnResendReset.addEventListener('click', handleResendResetCode);
+    }
+    if (formNewPassword) {
+      formNewPassword.addEventListener('submit', (e) => { e.preventDefault(); handleSaveNewPassword(); });
     }
 
     // Toggle Password Visibility
     const toggleLoginPwd = document.getElementById('toggleLoginPwd');
     const toggleRegisterPwd = document.getElementById('toggleRegisterPwd');
     const toggleRegisterConfirmPwd = document.getElementById('toggleRegisterConfirmPwd');
+    const toggleResetNewPwd = document.getElementById('toggleResetNewPwd');
+    const toggleResetConfirmPwd = document.getElementById('toggleResetConfirmPwd');
 
     if (toggleLoginPwd && loginPassword) {
       toggleLoginPwd.addEventListener('click', () => {
@@ -934,6 +1014,20 @@
         const isPwd = registerPasswordConfirm.type === 'password';
         registerPasswordConfirm.type = isPwd ? 'text' : 'password';
         toggleRegisterConfirmPwd.textContent = isPwd ? '🙈' : '👁️';
+      });
+    }
+    if (toggleResetNewPwd && resetPasswordNew) {
+      toggleResetNewPwd.addEventListener('click', () => {
+        const isPwd = resetPasswordNew.type === 'password';
+        resetPasswordNew.type = isPwd ? 'text' : 'password';
+        toggleResetNewPwd.textContent = isPwd ? '🙈' : '👁️';
+      });
+    }
+    if (toggleResetConfirmPwd && resetPasswordConfirm) {
+      toggleResetConfirmPwd.addEventListener('click', () => {
+        const isPwd = resetPasswordConfirm.type === 'password';
+        resetPasswordConfirm.type = isPwd ? 'text' : 'password';
+        toggleResetConfirmPwd.textContent = isPwd ? '🙈' : '👁️';
       });
     }
 

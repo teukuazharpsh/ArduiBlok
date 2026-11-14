@@ -124,18 +124,18 @@
         </form>
       </div>
 
-      <!-- ── View 5: Perbarui Kata Sandi (Kode Reset + Password Baru) ── -->
-      <div class="auth-view hidden" id="authViewReset">
+      <!-- ── View 5: Verifikasi Kode Reset (Tahap 1 Lupa Password) ── -->
+      <div class="auth-view hidden" id="authViewResetCode">
         <div class="auth-header">
-          <div class="otp-icon-bubble">🔒</div>
-          <h2 class="auth-title">Perbarui Kata Sandi</h2>
+          <div class="otp-icon-bubble">🔑</div>
+          <h2 class="auth-title">Verifikasi Kode Reset</h2>
           <p class="auth-subtitle">
-            Masukkan kode reset yang dikirim ke:<br>
+            Masukkan 6 digit kode reset yang kami kirimkan ke:<br>
             <strong id="resetTargetEmailText" class="otp-highlight-email">user@email.com</strong>
           </p>
         </div>
 
-        <div class="auth-form" id="panelResetPassword">
+        <div class="auth-form" id="panelResetCode">
           <!-- 6 Digit Input Group -->
           <div class="otp-inputs-group" id="resetCodeGroup">
             <input type="text" maxlength="1" inputmode="numeric" class="otp-digit" id="resetCodeBox1" autocomplete="one-time-code">
@@ -151,11 +151,36 @@
             <button type="button" class="btn-resend-otp" id="btnResendReset">Kirim Ulang Kode</button>
           </div>
 
+          <button type="button" class="btn btn-compile auth-submit-btn" id="btnSubmitVerifyReset">
+            <span>Verifikasi Kode</span>
+            <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </button>
+
+          <div class="auth-divider"><span>atau</span></div>
+
+          <div class="auth-switch-prompt">
+            <a href="#" id="linkBackToLoginFromResetCode">← Kembali ke Halaman Login</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── View 6: Buat Kata Sandi Baru (Tahap 2 Lupa Password - Hanya Setelah Terverifikasi) ── -->
+      <div class="auth-view hidden" id="authViewNewPassword">
+        <div class="auth-header">
+          <div class="otp-icon-bubble">🔒</div>
+          <h2 class="auth-title">Buat Kata Sandi Baru</h2>
+          <p class="auth-subtitle">
+            Kode terverifikasi! Silakan tentukan kata sandi baru untuk akun Anda.
+          </p>
+        </div>
+
+        <form class="auth-form" id="formNewPassword" onsubmit="return false;">
           <div class="auth-field">
             <label for="resetPasswordNew" class="auth-label">Kata Sandi Baru</label>
             <div class="auth-input-wrapper">
               <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
               <input type="password" id="resetPasswordNew" class="auth-input" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleResetNewPwd" title="Lihat/Sembunyikan kata sandi">👁️</button>
             </div>
           </div>
 
@@ -164,23 +189,24 @@
             <div class="auth-input-wrapper">
               <svg class="svg-icon auth-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
               <input type="password" id="resetPasswordConfirm" class="auth-input" placeholder="Ulangi kata sandi baru" required autocomplete="new-password">
+              <button type="button" class="auth-toggle-pwd" id="toggleResetConfirmPwd" title="Lihat/Sembunyikan konfirmasi kata sandi">👁️</button>
             </div>
           </div>
 
-          <button type="button" class="btn btn-compile auth-submit-btn" id="btnSubmitReset">
-            <span>Perbarui Kata Sandi</span>
+          <button type="submit" class="btn btn-compile auth-submit-btn" id="btnSubmitNewPassword">
+            <span>Simpan Kata Sandi Baru</span>
             <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </button>
 
           <div class="auth-divider"><span>atau</span></div>
 
           <div class="auth-switch-prompt">
-            <a href="#" id="linkBackToLoginFromReset">← Kembali ke Halaman Login</a>
+            <a href="#" id="linkBackToLoginFromNewPwd">← Batal &amp; Kembali ke Login</a>
           </div>
-        </div>
+        </form>
       </div>
 
-      <!-- ── View 6: Sign Up (Daftar Akun Baru) ─────────────────── -->
+      <!-- ── View 7: Sign Up (Daftar Akun Baru) ─────────────────── -->
       <div class="auth-view hidden" id="authViewRegister">
         <div class="auth-header">
           <div class="auth-logo-circle">
@@ -1930,7 +1956,7 @@
   <script src="blocks/arduino_generator.js?v=2.0"></script>
 
   <!-- Authentication & User Session Manager -->
-  <script src="auth.js?v=2.7"></script>
+  <script src="auth.js?v=2.8"></script>
 
   <!-- Superadmin Server Management & Database Migration Panel -->
   <script src="admin.js?v=1.3"></script>
