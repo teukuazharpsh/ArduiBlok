@@ -1,6 +1,6 @@
 {
   "name": "arduiblok",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Arduino Blockly Programmer — Visual block-based Arduino Uno programming editor",
   "main": "server/app.js",
   "scripts": {
